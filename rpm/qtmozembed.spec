@@ -37,8 +37,6 @@ qmake
 
 %files
 %defattr(-,root,root,-)
-%attr(755,-,-) %{_bindir}/*
-%dir %{_libdir}/qtmozembed-%{greversion}/dictionaries
 %{_libdir}/*.so.*
 
 %files devel
