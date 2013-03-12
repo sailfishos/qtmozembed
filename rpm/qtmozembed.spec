@@ -11,7 +11,7 @@ Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(QtCore) >= 4.6.0
 BuildRequires:  pkgconfig(QtOpenGL)
 BuildRequires:  pkgconfig(QtGui)
-BuildRequires:  pkgconfig(xulrunner)
+BuildRequires:  pkgconfig(libxul-embedding)
 
 %description
 Mozilla XUL runner
