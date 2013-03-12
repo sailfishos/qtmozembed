@@ -34,6 +34,8 @@ qmake
 
 %install
 %{__make} install INSTALL_ROOT=%{buildroot}
+%post -p /sbin/ldconfig
+%postun -p /sbin/ldconfig
 
 %files
 %defattr(-,root,root,-)
