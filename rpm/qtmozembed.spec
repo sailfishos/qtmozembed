@@ -11,6 +11,7 @@ Source0:    %{name}-%{version}.tar.gz
 BuildRequires:  pkgconfig(QtCore) >= 4.6.0
 BuildRequires:  pkgconfig(QtOpenGL)
 BuildRequires:  pkgconfig(QtGui)
+BuildRequires:  pkgconfig(QJson)
 BuildRequires:  pkgconfig(libxul-embedding)
 
 %description
