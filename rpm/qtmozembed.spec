@@ -41,7 +41,6 @@ qmake
 
 %files devel
 %defattr(-,root,root,-)
-%{_datadir}/*
 %{_libdir}/*.so
 %{_libdir}/pkgconfig
 %{_includedir}/*
