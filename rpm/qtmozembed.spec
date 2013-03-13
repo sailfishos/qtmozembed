@@ -13,6 +13,7 @@ BuildRequires:  pkgconfig(QtOpenGL)
 BuildRequires:  pkgconfig(QtGui)
 BuildRequires:  pkgconfig(QJson)
 BuildRequires:  pkgconfig(libxul-embedding)
+BuildRequires:  pkgconfig(nspr)
 
 %description
 Mozilla XUL runner
