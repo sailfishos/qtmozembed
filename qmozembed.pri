@@ -18,9 +18,10 @@ isEmpty(OBJ_PATH) {
   message($$BIN_DIR - binary dir)
 }
 
-INCLUDEPATH += $$GECKO_INCLUDE_DIR $$GECKO_INCLUDE_DIR/nspr
+INCLUDEPATH += $$GECKO_INCLUDE_DIR
 LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue
 LIBS += -Wl,--no-whole-archive -rdynamic -ldl
+PKGCONFIG += nspr
 
 DEFINES += BUILD_GRE_HOME=\"\\\"$$BIN_DIR\\\"\"
 
