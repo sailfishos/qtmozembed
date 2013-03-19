@@ -26,6 +26,17 @@ Summary: Headers for qtmozembed
 %description devel
 Development files for qtmozembed.
 
+%package tests
+Summary:    Unit tests for QtMozEmbed tests
+Group:      Applications/Multimedia
+BuildRequires:  pkgconfig(QtTest)
+BuildRequires:  pkgconfig(qtembedwidget)
+Requires:   %{name} = %{version}-%{release}
+Requires:   qtest-qml
+
+%description tests
+This package contains QML unit tests for QtMozEmbed library
+
 %prep
 %setup -q -n %{name}-%{version}
 
@@ -47,5 +58,11 @@ qmake
 %{_libdir}/*.so
 %{_libdir}/pkgconfig
 %{_includedir}/*
+
+%files tests
+%defattr(-,root,root,-)
+# >> files tests
+/opt/tests/qtmozembed/*
+# << files tests
 
 %changelog

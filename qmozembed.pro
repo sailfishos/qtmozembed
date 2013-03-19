@@ -1,5 +1,7 @@
 CONFIG += qt thread debug ordered create_pc create_prl no_install_prl
 
+SUBDIRS = tests
+
 TARGET = qtembedwidget
 TEMPLATE = lib
 
