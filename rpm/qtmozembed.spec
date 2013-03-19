@@ -14,6 +14,7 @@ BuildRequires:  pkgconfig(QtGui)
 BuildRequires:  pkgconfig(QJson)
 BuildRequires:  pkgconfig(libxul-embedding)
 BuildRequires:  pkgconfig(nspr)
+BuildRequires:  pkgconfig(QtTest)
 
 %description
 Mozilla XUL runner
@@ -29,8 +30,6 @@ Development files for qtmozembed.
 %package tests
 Summary:    Unit tests for QtMozEmbed tests
 Group:      Applications/Multimedia
-BuildRequires:  pkgconfig(QtTest)
-BuildRequires:  pkgconfig(qtembedwidget)
 Requires:   %{name} = %{version}-%{release}
 Requires:   qtest-qml
 
