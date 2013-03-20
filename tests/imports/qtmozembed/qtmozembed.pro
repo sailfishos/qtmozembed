@@ -9,11 +9,7 @@ QT += dbus declarative script
 CONFIG += mobility link_pkgconfig
 MOBILITY += qtmozembed
 
-isEmpty(QTEMBED_LIB) {
-  PKGCONFIG += qtembedwidget x11
-} else {
-  LIBS+=$$QTEMBED_LIB -lX11
-}
+LIBS+=-L../../../ -lqtembedwidget -lX11
 
 INCLUDEPATH += $$QTMOZEMBED_SOURCE_PATH
 
