@@ -1,8 +1,1 @@
 plugin qtmozembedplugin
-FlickableImageView 1.0 /usr/share/qtmozembed/pages/FlickableImageView.qml
-GalleryDetailsPage 1.0 /usr/share/qtmozembed/pages/GalleryDetailsPage.qml
-GalleryFullscreenPage 1.0 /usr/share/qtmozembed/pages/GalleryFullscreenPage.qml
-GalleryGridPage 1.0 /usr/share/qtmozembed/pages/GalleryGridPage.qml
-GalleryStartPage 1.0 /usr/share/qtmozembed/pages/GalleryStartPage.qml
-VideoPlayer 1.0 /usr/share/qtmozembed/pages/VideoPlayer.qml
-ZoomableImage 1.0 /usr/share/qtmozembed/pages/ZoomableImage.qml
