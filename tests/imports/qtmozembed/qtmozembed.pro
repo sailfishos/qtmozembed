@@ -9,23 +9,16 @@ QT += dbus declarative script
 CONFIG += mobility link_pkgconfig
 MOBILITY += qtmozembed
 
+isEmpty(QTEMBED_LIB) {
+  PKGCONFIG += qtembedwidget x11
+} else {
+  LIBS+=$$QTEMBED_LIB -lX11
+}
+
 INCLUDEPATH += $$QTMOZEMBED_SOURCE_PATH
 
-HEADERS += \
-        $$QTMOZEMBED_SOURCE_PATH/declarativedbusinterface.h \
-        $$QTMOZEMBED_SOURCE_PATH/declarativemediamodel.h \
-        $$QTMOZEMBED_SOURCE_PATH/declarativemediasource.h \
-        $$QTMOZEMBED_SOURCE_PATH/declarativefileinfo.h \
-        $$QTMOZEMBED_SOURCE_PATH/declarativewallpaper.h
-
 SOURCES += \
-        main.cpp \
-        $$QTMOZEMBED_SOURCE_PATH/declarativedbusinterface.cpp \
-        $$QTMOZEMBED_SOURCE_PATH/declarativemediamodel.cpp \
-        $$QTMOZEMBED_SOURCE_PATH/declarativemediasource.cpp \
-        $$QTMOZEMBED_SOURCE_PATH/declarativefileinfo.cpp \
-        $$QTMOZEMBED_SOURCE_PATH/declarativewallpaper.cpp
-
+        main.cpp
 
 import.files = qmldir
 import.path = $$TARGETPATH
