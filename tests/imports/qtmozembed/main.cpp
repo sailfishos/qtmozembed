@@ -15,11 +15,11 @@ public:
     virtual void registerTypes(const char *uri)
     {
         printf(">>>>>>>>>>>> QtMozEmbedPlugin Declarative Extension: uri:%s\n", uri);
-        Q_ASSERT(QLatin1String(uri) == QLatin1String("com.mozilla.qtmozembed"));
+        Q_ASSERT(QLatin1String(uri) == QLatin1String("QtMozilla"));
 
-        qmlRegisterType<QmlMozContext>("com.mozilla.qtmozembed", 1, 0, "QmlMozContext");
-        qmlRegisterType<QGraphicsMozView>("com.mozilla.qtmozembed", 1, 0, "QGraphicsMozView");
-        qmlRegisterType<QDeclarativeMozView>("com.mozilla.qtmozembed", 1, 0, "QmlMozView");
+        qmlRegisterType<QmlMozContext>("QtMozilla", 1, 0, "QmlMozContext");
+        qmlRegisterType<QGraphicsMozView>("QtMozilla", 1, 0, "QGraphicsMozView");
+        qmlRegisterType<QDeclarativeMozView>("QtMozilla", 1, 0, "QmlMozView");
     }
 };
 

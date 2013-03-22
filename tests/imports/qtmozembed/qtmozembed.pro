@@ -1,4 +1,4 @@
-MODULENAME = com/mozilla/qtmozembed
+MODULENAME = QtMozilla
 TARGET = qtmozembedplugin
 
 include (../imports.pri)

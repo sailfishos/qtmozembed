@@ -2,8 +2,8 @@
 
 Name:       qtmozembed
 Summary:    Qt MozEmbed
-Version:    %{qtmozembedversion}
-Release:    1
+Version:    1.0.3+master
+Release:    10.19.1.jolla
 Group:      Applications/Internet
 License:    Mozilla License
 URL:        http://www.mozilla.com
@@ -15,6 +15,7 @@ BuildRequires:  pkgconfig(QJson)
 BuildRequires:  pkgconfig(libxul-embedding)
 BuildRequires:  pkgconfig(nspr)
 BuildRequires:  pkgconfig(QtTest)
+BuildRequires:  qtest-qml
 
 %description
 Mozilla XUL runner
@@ -62,6 +63,12 @@ qmake
 %defattr(-,root,root,-)
 # >> files tests
 /opt/tests/qtmozembed/*
+/usr/bin/*
 # << files tests
 
 %changelog
+* Wed Mar 20 2013 Tatiana Meshkova <tanya.meshkova@gmail.com> - 1.0.3
+- [browser] Fixed linking flag for autotests to link it with local built library. Contributes to JB#5879
+* Tue Mar 19 2013 Tatiana Meshkova <tanya.meshkova@gmail.com> - 1.0.1
+- [qtmozembed] Created basic tests sceleton (copypasted from gallery). Contributes to JB#5485
+- [qtmozembed] Drop circular build dependency on itself
