@@ -6,10 +6,8 @@ include (../imports.pri)
 QTMOZEMBED_SOURCE_PATH = $$PWD/../../../src
 
 QT += dbus declarative script
-CONFIG += mobility link_pkgconfig
-MOBILITY += qtmozembed
 
-LIBS+=-L../../../ -lqtembedwidget -lX11
+LIBS+=-L../../../ -lqtembedwidget
 
 INCLUDEPATH += $$QTMOZEMBED_SOURCE_PATH
 
