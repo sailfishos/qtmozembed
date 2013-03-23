@@ -4,7 +4,7 @@
 export `dbus-launch`
 export QML_IMPORT_PATH=/opt/tests/qtmozembed/imports
 
-qmltestrunner $@
+qmlmoztestrunner $@
 exit_code=$?
 
 kill $DBUS_SESSION_BUS_PID

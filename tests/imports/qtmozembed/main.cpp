@@ -14,6 +14,7 @@ class QtMozEmbedPlugin : public QDeclarativeExtensionPlugin
 public:
     virtual void registerTypes(const char *uri)
     {
+        printf(">>>>>>>>>>>> QtMozEmbedPlugin Declarative Extension: uri:%s\n", uri);
         Q_ASSERT(QLatin1String(uri) == QLatin1String("QtMozilla"));
 
         qmlRegisterType<QmlMozContext>("QtMozilla", 1, 0, "QmlMozContext");
