@@ -39,11 +39,16 @@
 **
 ****************************************************************************/
 
+#include <QApplication>
 #include <QtQuickTest/quicktest.h>
 #include <QtCore/qstring.h>
 #ifdef QT_OPENGL_LIB
 #include <QtOpenGL/qgl.h>
 #endif
+#if defined(Q_WS_X11)
+#include <X11/Xlib.h>
+#endif
+
 
 #ifdef QT_OPENGL_LIB
 
@@ -56,6 +61,14 @@ static QWidget *qmltestrunner_create_gl_viewport()
 
 int main(int argc, char **argv)
 {
+#if defined(Q_WS_X11)
+#if QT_VERSION >= 0x040800
+    QApplication::setAttribute(Qt::AA_X11InitThreads, true);
+#else
+    XInitThreads();
+    QApplication::setAttribute(static_cast<Qt::ApplicationAttribute>(10), true);
+#endif
+#endif
 #ifdef QT_OPENGL_LIB
     bool isOpenGL = false;
     for (int index = 1; index < argc; ++index) {
@@ -65,11 +78,11 @@ int main(int argc, char **argv)
         }
     }
     if (isOpenGL) {
-        return quick_test_main(argc, argv, "qmltestrunner",
+        return quick_test_main(argc, argv, "qmlmoztestrunner",
                                qmltestrunner_create_gl_viewport, ".");
     } else
 #endif
     {
-        return quick_test_main(argc, argv, "qmltestrunner", 0, ".");
+        return quick_test_main(argc, argv, "qmlmoztestrunner", 0, ".");
     }
 }
