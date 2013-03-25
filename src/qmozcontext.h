@@ -59,8 +59,9 @@ public Q_SLOTS:
     void addObserver(const QString& aTopic);
     quint32 newWindow(const QString& url, const quint32& parentId);
     void sendObserve(const QString& aTopic, const QVariant& variant);
-    void runEmbedding();
+    void runEmbedding(int aDelay = -1);
     void stopEmbedding();
+    void setPref(const QString& aName, const QVariant& aPref);
 
 private:
     QMozContext(QObject* parent = 0, bool autoInit = true);
@@ -76,7 +77,7 @@ class QmlMozContext : public QObject
     Q_INTERFACES(QDeclarativeParserStatus)
 
     Q_PROPERTY(bool autoinit WRITE setAutoInit)
-    Q_PROPERTY(QObject* child READ getChild)
+    Q_PROPERTY(QObject* child READ getChild CONSTANT)
 
 public:
     QmlMozContext(QObject* parent = 0);
@@ -91,7 +92,6 @@ protected:
     void componentComplete();
 
 public Q_SLOTS:
-    void setPref(const QString& aName, const QVariant& aPref);
     void newWindow(const QString& url = "about:mozilla");
 };
 
