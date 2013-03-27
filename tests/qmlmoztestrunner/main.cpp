@@ -39,16 +39,21 @@
 **
 ****************************************************************************/
 
+#include "qmozcontext.h"
 #include <QApplication>
 #include <QtQuickTest/quicktest.h>
 #include <QtCore/qstring.h>
 #ifdef QT_OPENGL_LIB
 #include <QtOpenGL/qgl.h>
 #endif
+#include <QTimer>
+#include <stdio.h>
 #if defined(Q_WS_X11)
 #include <X11/Xlib.h>
 #endif
 
+static int gargc;
+static char **gargv;
 
 #ifdef QT_OPENGL_LIB
 
@@ -58,6 +63,43 @@ static QWidget *qmltestrunner_create_gl_viewport()
 }
 
 #endif
+
+class QTestRunner : public QObject
+{
+    Q_OBJECT
+public:
+    QTestRunner() : QObject(0)  {}
+    ~QTestRunner()
+    {
+    }
+public Q_SLOTS:
+    void DropInStartup()
+    {
+        int ret = RunMainTest();
+        QMozContext::GetInstance(false)->stopEmbedding();
+    }
+private:
+    int RunMainTest()
+    {
+#ifdef QT_OPENGL_LIB
+        bool isOpenGL = false;
+        for (int index = 1; index < gargc; ++index) {
+            if (strcmp(gargv[index], "-opengl") == 0) {
+                isOpenGL = true;
+                break;
+            }
+        }
+        if (isOpenGL) {
+            return quick_test_main(gargc, gargv, "qmlmoztestrunner",
+                                   qmltestrunner_create_gl_viewport, ".");
+        } else
+#endif
+        {
+            return quick_test_main(gargc, gargv, "qmlmoztestrunner", 0, ".");
+        }
+    }
+};
+
 
 int main(int argc, char **argv)
 {
@@ -69,20 +111,14 @@ int main(int argc, char **argv)
     QApplication::setAttribute(static_cast<Qt::ApplicationAttribute>(10), true);
 #endif
 #endif
-#ifdef QT_OPENGL_LIB
-    bool isOpenGL = false;
-    for (int index = 1; index < argc; ++index) {
-        if (strcmp(argv[index], "-opengl") == 0) {
-            isOpenGL = true;
-            break;
-        }
-    }
-    if (isOpenGL) {
-        return quick_test_main(argc, argv, "qmlmoztestrunner",
-                               qmltestrunner_create_gl_viewport, ".");
-    } else
-#endif
-    {
-        return quick_test_main(argc, argv, "qmlmoztestrunner", 0, ".");
-    }
+    gargc = argc;
+    gargv = argv;
+
+    QApplication app(argc, argv);
+    QTestRunner runn;
+    QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
+    QMozContext::GetInstance(false)->runEmbedding();
+    return 0;
 }
+
+#include "main.moc"
