@@ -25,13 +25,13 @@ function finishCreation() {
 }
 
 function waitMozContext() {
-    if (mozContext.child === undefined) {
+    if (mozContext.instance === undefined) {
         return false;
     }
-    if (mozContext.child.initialized()) {
+    if (mozContext.instance.initialized()) {
         return true;
     }
-    while (!mozContext.child.initialized()) {
+    while (!mozContext.instance.initialized()) {
         testcaseid.wait(10);
     }
     return true;

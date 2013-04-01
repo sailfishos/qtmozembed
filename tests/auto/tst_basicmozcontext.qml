@@ -17,15 +17,14 @@ ApplicationWindow {
 
     QmlMozContext {
         id: mozContext
-        autoinit: false
     }
     Connections {
-        target: mozContext.child
+        target: mozContext.instance
         onOnInitialized: {
             // Gecko does not switch to SW mode if gl context failed to init
             // and qmlmoztestrunner does not build in GL mode
             // Let's put it here for now in SW mode always
-            mozContext.child.setIsAccelerated(false);
+            mozContext.instance.setIsAccelerated(false);
         }
         onRecvObserve: {
             lastObserveMessage = { msg: message, data: data }
@@ -44,28 +43,28 @@ ApplicationWindow {
 
         function test_context1Init()
         {
-            verify(mozContext.child !== undefined)
-            while (mozContext.child.initialized() === false) {
+            verify(mozContext.instance !== undefined)
+            while (mozContext.instance.initialized() === false) {
                 wait(500)
             }
-            verify(mozContext.child.initialized())
+            verify(mozContext.instance.initialized())
         }
         function test_context2AcceleratedAPI()
         {
-            mozContext.child.setIsAccelerated(true);
-            verify(mozContext.child.isAccelerated() === true)
-            mozContext.child.setIsAccelerated(false);
-            verify(mozContext.child.isAccelerated() === false)
+            mozContext.instance.setIsAccelerated(true);
+            verify(mozContext.instance.isAccelerated() === true)
+            mozContext.instance.setIsAccelerated(false);
+            verify(mozContext.instance.isAccelerated() === false)
         }
         function test_context3PrefAPI()
         {
-            mozContext.child.setPref("test.embedlite.pref", "result");
+            mozContext.instance.setPref("test.embedlite.pref", "result");
         }
         function test_context4ObserveAPI()
         {
-            mozContext.child.sendObserve("memory-pressure", null);
-            mozContext.child.addObserver("test-observe-message");
-            mozContext.child.sendObserve("test-observe-message", {msg: "testMessage", val: 1});
+            mozContext.instance.sendObserve("memory-pressure", null);
+            mozContext.instance.addObserver("test-observe-message");
+            mozContext.instance.sendObserve("test-observe-message", {msg: "testMessage", val: 1});
             wait(50)
             compare(lastObserveMessage.msg, "test-observe-message");
             compare(lastObserveMessage.data.val, 1);

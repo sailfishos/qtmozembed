@@ -76,7 +76,7 @@ public Q_SLOTS:
     void DropInStartup()
     {
         int ret = RunMainTest();
-        QMozContext::GetInstance(false)->stopEmbedding();
+        QMozContext::GetInstance()->stopEmbedding();
     }
 private:
     int RunMainTest()
@@ -117,7 +117,7 @@ int main(int argc, char **argv)
     QApplication app(argc, argv);
     QTestRunner runn;
     QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
-    QMozContext::GetInstance(false)->runEmbedding();
+    QMozContext::GetInstance()->runEmbedding();
     return 0;
 }
 
