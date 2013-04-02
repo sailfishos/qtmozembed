@@ -71,3 +71,4 @@ qmake
 * Tue Mar 19 2013 Tatiana Meshkova <tanya.meshkova@gmail.com> - 1.0.1
 - [qtmozembed] Created basic tests sceleton (copypasted from gallery). Contributes to JB#5485
 - [qtmozembed] Drop circular build dependency on itself
+
