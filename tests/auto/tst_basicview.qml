@@ -16,15 +16,14 @@ ApplicationWindow {
 
     QmlMozContext {
         id: mozContext
-        autoinit: false
     }
     Connections {
-        target: mozContext.child
+        target: mozContext.instance
         onOnInitialized: {
             // Gecko does not switch to SW mode if gl context failed to init
             // and qmlmoztestrunner does not build in GL mode
             // Let's put it here for now in SW mode always
-            mozContext.child.setIsAccelerated(false);
+            mozContext.instance.setIsAccelerated(false);
         }
     }
 
@@ -40,15 +39,15 @@ ApplicationWindow {
 
         function test_1contextPrepareViewContext()
         {
-            verify(mozContext.child !== undefined)
-            while (mozContext.child.initialized() === false) {
+            verify(mozContext.instance !== undefined)
+            while (mozContext.instance.initialized() === false) {
                 wait(500)
             }
-            verify(mozContext.child.initialized())
+            verify(mozContext.instance.initialized())
         }
         function test_2viewInit()
         {
-            verify(mozContext.child.initialized())
+            verify(mozContext.instance.initialized())
             MyScript.createSpriteObjects();
             while (mozView === null) {
                 wait(500)

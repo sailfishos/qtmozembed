@@ -5,7 +5,7 @@
 #include <QStringList>
 #include <QVector>
 
-#include "qmozcontext.h"
+#include "qmlmozcontext.h"
 #include "qgraphicsmozview.h"
 #include "qdeclarativemozview.h"
 

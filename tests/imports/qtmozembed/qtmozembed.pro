@@ -13,8 +13,12 @@ LIBS+=-L../../../ -lqtembedwidget -lX11
 
 INCLUDEPATH += $$QTMOZEMBED_SOURCE_PATH
 
+HEADERS += \
+        qmlmozcontext.h
+
 SOURCES += \
-        main.cpp
+        main.cpp \
+        qmlmozcontext.cpp
 
 import.files = qmldir
 import.path = $$TARGETPATH
