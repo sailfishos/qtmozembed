@@ -13,7 +13,7 @@ ApplicationWindow {
 
     property bool mozViewInitialized : false
     property variant mozView : null
-    property variant lastObserveMessage : null
+    property variant lastObserveMessage
 
     QmlMozContext {
         id: mozContext
@@ -45,7 +45,7 @@ ApplicationWindow {
         {
             verify(mozContext.instance !== undefined)
             while (mozContext.instance.initialized() === false) {
-                wait(500)
+                wait()
             }
             verify(mozContext.instance.initialized())
         }
@@ -65,7 +65,9 @@ ApplicationWindow {
             mozContext.instance.sendObserve("memory-pressure", null);
             mozContext.instance.addObserver("test-observe-message");
             mozContext.instance.sendObserve("test-observe-message", {msg: "testMessage", val: 1});
-            wait(50)
+            while (lastObserveMessage === undefined) {
+                wait()
+            }
             compare(lastObserveMessage.msg, "test-observe-message");
             compare(lastObserveMessage.data.val, 1);
             compare(lastObserveMessage.data.msg, "testMessage");

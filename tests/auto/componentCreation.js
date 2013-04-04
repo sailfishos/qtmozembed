@@ -32,7 +32,7 @@ function waitMozContext() {
         return true;
     }
     while (!mozContext.instance.initialized()) {
-        testcaseid.wait(10);
+        testcaseid.wait();
     }
     return true;
 }
@@ -42,7 +42,7 @@ function waitMozView() {
         return true;
     }
     while (!appWindow.mozViewInitialized) {
-        testcaseid.wait(10)
+        testcaseid.wait();
     }
     return true;
 }
@@ -52,7 +52,7 @@ function waitLoadStarted(view) {
         return true;
     }
     while (!view.child.loading) {
-        testcaseid.wait()
+        testcaseid.wait();
     }
     return true;
 }
@@ -62,7 +62,7 @@ function waitLoadFinished(view) {
         return true;
     }
     while (view.child.loading) {
-        testcaseid.wait()
+        testcaseid.wait();
     }
     return true;
 }
