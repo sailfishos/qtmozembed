@@ -92,7 +92,6 @@ public:
             mApp->AddObserver(str.toUtf8().data());
         }
         mObserversList.clear();
-        mApp->SendObserve("embed:getdownloadlist", 0);
     }
     // App Destroyed, and ready to delete and program exit
     virtual void Destroyed() {
@@ -198,7 +197,16 @@ QMozContext::sendObserve(const QString& aTopic, const QVariant& variant)
     QByteArray array = doc.toJson();
 #endif
 
-    d->mApp->SendObserve(aTopic.toUtf8().data(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    d->mApp->SendObserve(aTopic.toUtf8().data(), (const PRUnichar*)QString(array).constData());
+}
+
+void
+QMozContext::sendObserve(const QString& aTopic, const QString& string)
+{
+    if (!d->mApp)
+        return;
+
+    d->mApp->SendObserve(aTopic.toUtf8().data(), (const PRUnichar*)string.constData());
 }
 
 void
