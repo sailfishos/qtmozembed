@@ -82,10 +82,10 @@ private:
     int RunMainTest()
     {
 #ifdef QT_OPENGL_LIB
-        bool isOpenGL = false;
+        bool isOpenGL = true;
         for (int index = 1; index < gargc; ++index) {
-            if (strcmp(gargv[index], "-opengl") == 0) {
-                isOpenGL = true;
+            if (strcmp(gargv[index], "-no-opengl") == 0) {
+                isOpenGL = false;
                 break;
             }
         }
@@ -114,10 +114,15 @@ int main(int argc, char **argv)
     gargc = argc;
     gargv = argv;
 
-    QApplication app(argc, argv);
-    QTestRunner runn;
-    QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
-    QMozContext::GetInstance()->runEmbedding();
+    {
+        QApplication app(argc, argv);
+        {
+            QTestRunner runn;
+            QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
+            QMozContext::GetInstance()->runEmbedding();
+        }
+        app.quit();
+    }
     return 0;
 }
 

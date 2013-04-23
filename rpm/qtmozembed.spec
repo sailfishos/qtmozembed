@@ -62,7 +62,7 @@ qmake
 %defattr(-,root,root,-)
 # >> files tests
 /opt/tests/qtmozembed/*
-/usr/bin/*
+%{_libdir}/qt4/bin/*
 # << files tests
 
 %changelog
