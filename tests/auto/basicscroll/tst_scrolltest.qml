@@ -46,6 +46,7 @@ ApplicationWindow {
                 appWindow.clickY = point.y
             }
             onViewAreaChanged: {
+                print("onViewAreaChanged: ", webViewport.child.scrollableOffset.x, webViewport.child.scrollableOffset.y);
                 var offset = webViewport.child.scrollableOffset
                 appWindow.scrollX = offset.x
                 appWindow.scrollY = offset.y
@@ -73,6 +74,8 @@ ApplicationWindow {
             while (!webViewport.child.painted) {
                 wait();
             }
+            wait(500)
+            MyScript.scrollBy(1, 401, 0, -400, 100, false);
             MyScript.scrollBy(1, 401, 0, -400, 100, false);
             while (appWindow.scrollY === 0) {
                 wait();
