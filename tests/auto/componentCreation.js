@@ -47,21 +47,11 @@ function waitMozView() {
     return true;
 }
 
-function waitLoadStarted(view) {
-    if (view.child.loading) {
-        return true;
-    }
-    while (!view.child.loading) {
-        mozContext.waitLoop();
-    }
-    return true;
-}
-
 function waitLoadFinished(view) {
-    if (!view.child.loading) {
+    if (!view.child.loading && view.child.loadProgress !== 0) {
         return true;
     }
-    while (view.child.loading) {
+    while (view.child.loading || view.child.loadProgress === 0) {
         mozContext.waitLoop();
     }
     return true;

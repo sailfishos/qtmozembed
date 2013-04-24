@@ -54,7 +54,6 @@ ApplicationWindow {
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             webViewport.child.url = "about:blank";
-            verify(MyScript.waitLoadStarted(webViewport))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100)
             mozContext.dumpTS("end")
@@ -63,7 +62,6 @@ ApplicationWindow {
         {
             mozContext.dumpTS("start")
             webViewport.child.url = "about:mozilla";
-            verify(MyScript.waitLoadStarted(webViewport))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.title, "The Book of Mozilla, 15:1")
             mozContext.dumpTS("end")

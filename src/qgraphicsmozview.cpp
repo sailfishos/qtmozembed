@@ -196,14 +196,7 @@ QUrl QGraphicsMozView::url() const
 
 void QGraphicsMozView::setUrl(const QUrl& url)
 {
-    if (url.isEmpty())
-        return;
-
-    if (!d->mViewInitialized) {
-        return;
-    }
-    LOGT("url: %s", url.toString().toUtf8().data());
-    d->mView->LoadURL(url.toString().toUtf8().data());
+    load(url.toString());
 }
 
 void QGraphicsMozView::load(const QString& url)
@@ -215,6 +208,7 @@ void QGraphicsMozView::load(const QString& url)
         return;
     }
     LOGT("url: %s", url.toUtf8().data());
+    d->mProgress = 0;
     d->mView->LoadURL(url.toUtf8().data());
 }
 

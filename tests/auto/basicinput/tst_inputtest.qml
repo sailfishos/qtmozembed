@@ -86,7 +86,6 @@ ApplicationWindow {
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             webViewport.child.url = "data:text/html,<input id=myelem value=''>";
-            verify(MyScript.waitLoadStarted(webViewport))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100);
             mouseClick(webViewport, 10, 10)
@@ -98,6 +97,7 @@ ApplicationWindow {
             keyClick(Qt.Key_O);
             keyClick(Qt.Key_R);
             keyClick(Qt.Key_P);
+            wait(100);
             webViewport.child.sendAsyncMessage("embedtest:getelementprop", {
                                                 name: "myelem",
                                                 property: "value"

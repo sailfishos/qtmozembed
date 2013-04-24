@@ -142,6 +142,7 @@ void QGraphicsMozViewPrivate::OnLoadStarted(const char* aLocation)
     }
     if (!mIsLoading) {
         mIsLoading = true;
+        mProgress = 1;
         Q_EMIT q->loadingChanged();
     }
 }
@@ -149,6 +150,7 @@ void QGraphicsMozViewPrivate::OnLoadStarted(const char* aLocation)
 void QGraphicsMozViewPrivate::OnLoadFinished(void)
 {
     if (mIsLoading) {
+        mProgress = 100;
         mIsLoading = false;
         Q_EMIT q->loadingChanged();
     }

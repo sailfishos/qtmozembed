@@ -65,7 +65,6 @@ ApplicationWindow {
             mozContext.dumpTS("start")
             verify(mozView.child !== undefined)
             mozView.child.url = "about:mozilla";
-            verify(MyScript.waitLoadStarted(mozView))
             verify(MyScript.waitLoadFinished(mozView))
             compare(mozView.child.url, "about:mozilla")
             mozContext.dumpTS("end")
