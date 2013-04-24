@@ -12,7 +12,6 @@ ApplicationWindow {
             : ""
 
     property bool mozViewInitialized : false
-    property bool viewRendered : false
     property int scrollX : 0
     property int scrollY : 0
     property int clickX : 0
@@ -41,9 +40,6 @@ ApplicationWindow {
             target: webViewport.child
             onViewInitialized: {
                 appWindow.mozViewInitialized = true
-            }
-            onFirstPaint: {
-                viewRendered = true;
             }
             onHandleSingleTap: {
                 appWindow.clickX = point.x
@@ -74,7 +70,7 @@ ApplicationWindow {
             webViewport.child.url = "data:text/html,<body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100);
-            while (!appWindow.viewRendered) {
+            while (!webViewport.child.painted) {
                 wait();
             }
             MyScript.scrollBy(1, 401, 0, -400, 100, false);

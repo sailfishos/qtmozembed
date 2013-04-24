@@ -245,6 +245,11 @@ QPointF QGraphicsMozView::scrollableOffset() const
     return d->mScrollableOffset;
 }
 
+bool QGraphicsMozView::isPainted() const
+{
+    return d->mIsPainted;
+}
+
 float QGraphicsMozView::resolution() const
 {
     return d->mContentResolution;

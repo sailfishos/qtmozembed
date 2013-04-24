@@ -84,7 +84,7 @@ private:
 #ifdef QT_OPENGL_LIB
         bool isOpenGL = false;
         for (int index = 1; index < gargc; ++index) {
-            if (strcmp(gargv[index], "-no-opengl") == 0) {
+            if (strcmp(gargv[index], "-opengl") == 0) {
                 isOpenGL = true;
                 break;
             }

@@ -49,6 +49,9 @@ ApplicationWindow {
                 appWindow.mozViewInitialized = true
                 webViewport.child.addMessageListener("testembed:elementpropvalue");
             }
+            onHandleSingleTap: {
+                print("HandleSingleTap: [",point.x,",",point.y,"]");
+            }
             onRecvAsyncMessage: {
                 // print("onRecvAsyncMessage:" + message + ", data:" + data)
                 switch (message) {
@@ -88,6 +91,9 @@ ApplicationWindow {
             webViewport.child.url = "data:text/html,<input id=myelem value=''>";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100);
+            while (!webViewport.child.painted) {
+                wait();
+            }
             mouseClick(webViewport, 10, 10)
             while (!appWindow.isState(1, 0, 3)) {
                 wait();
@@ -97,7 +103,6 @@ ApplicationWindow {
             keyClick(Qt.Key_O);
             keyClick(Qt.Key_R);
             keyClick(Qt.Key_P);
-            wait(100);
             webViewport.child.sendAsyncMessage("embedtest:getelementprop", {
                                                 name: "myelem",
                                                 property: "value"

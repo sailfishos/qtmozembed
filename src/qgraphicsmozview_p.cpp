@@ -45,6 +45,7 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(QGraphicsMozView* view)
     , mScrollableSize(0,0)
     , mScrollableOffset(0,0)
     , mContentResolution(1.0)
+    , mIsPainted(false)
 {
 }
 
@@ -236,6 +237,7 @@ void QGraphicsMozViewPrivate::OnSecurityChanged(const char* aStatus, unsigned in
 void QGraphicsMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 {
     LOGT();
+    mIsPainted = true;
     Q_EMIT q->firstPaint(aX, aY);
 }
 
