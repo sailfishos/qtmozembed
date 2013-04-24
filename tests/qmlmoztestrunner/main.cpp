@@ -82,10 +82,10 @@ private:
     int RunMainTest()
     {
 #ifdef QT_OPENGL_LIB
-        bool isOpenGL = true;
+        bool isOpenGL = false;
         for (int index = 1; index < gargc; ++index) {
             if (strcmp(gargv[index], "-no-opengl") == 0) {
-                isOpenGL = false;
+                isOpenGL = true;
                 break;
             }
         }
