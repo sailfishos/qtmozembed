@@ -67,6 +67,9 @@ ApplicationWindow {
             mozView.child.url = "about:mozilla";
             verify(MyScript.waitLoadFinished(mozView))
             compare(mozView.child.url, "about:mozilla")
+            while (!mozView.child.painted) {
+                wait();
+            }
             mozContext.dumpTS("end")
         }
     }

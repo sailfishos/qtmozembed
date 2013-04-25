@@ -56,6 +56,9 @@ ApplicationWindow {
             webViewport.child.url = "about:blank";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100)
+            while (!webViewport.child.painted) {
+                wait();
+            }
             mozContext.dumpTS("end")
         }
         function test_Test2LoadAboutMozillaCheckTitle()
@@ -64,6 +67,9 @@ ApplicationWindow {
             webViewport.child.url = "about:mozilla";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.title, "The Book of Mozilla, 15:1")
+            while (!webViewport.child.painted) {
+                wait();
+            }
             mozContext.dumpTS("end")
         }
     }
