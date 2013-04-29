@@ -80,12 +80,12 @@ ApplicationWindow {
         when: windowShown
 
         function cleanup() {
-            mozContext.dumpTS("cleanup")
+            mozContext.dumpTS("tst_inputtest cleanup")
         }
 
         function test_Test1LoadInputPage()
         {
-            mozContext.dumpTS("start")
+            mozContext.dumpTS("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             webViewport.child.url = "data:text/html,<input id=myelem value=''>";
@@ -111,7 +111,7 @@ ApplicationWindow {
                 wait();
             }
             compare(appWindow.inputContent, "korp");
-            mozContext.dumpTS("end");
+            mozContext.dumpTS("test_Test1LoadInputPage end");
         }
     }
 }

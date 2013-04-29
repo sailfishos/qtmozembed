@@ -80,6 +80,10 @@ public Q_SLOTS:
     void newWindow(const QString& url = "about:blank");
     quint32 uniqueID() const;
     void setParentID(unsigned aParentID);
+    void synthTouchBegin(const QVariant& touches);
+    void synthTouchMove(const QVariant& touches);
+    void synthTouchEnd(const QVariant& touches);
+    void scrollTo(const QPointF& position);
 
 Q_SIGNALS:
     void viewInitialized();

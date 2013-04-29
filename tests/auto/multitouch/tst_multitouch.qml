@@ -12,10 +12,7 @@ ApplicationWindow {
             : ""
 
     property bool mozViewInitialized : false
-    property int scrollX : 0
-    property int scrollY : 0
-    property int clickX : 0
-    property int clickY : 0
+    property string testResult : ""
 
     QmlMozContext {
         id: mozContext
@@ -39,17 +36,25 @@ ApplicationWindow {
         Connections {
             target: webViewport.child
             onViewInitialized: {
+                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
                 appWindow.mozViewInitialized = true
+                webViewport.child.addMessageListener("testembed:elementinnervalue");
             }
             onHandleSingleTap: {
-                appWindow.clickX = point.x
-                appWindow.clickY = point.y
+                print("HandleSingleTap: [",point.x,",",point.y,"]");
             }
-            onViewAreaChanged: {
-                print("onViewAreaChanged: ", webViewport.child.scrollableOffset.x, webViewport.child.scrollableOffset.y);
-                var offset = webViewport.child.scrollableOffset
-                appWindow.scrollX = offset.x
-                appWindow.scrollY = offset.y
+            onRecvAsyncMessage: {
+                // print("onRecvAsyncMessage:" + message + ", data:" + data)
+                switch (message) {
+                case "testembed:elementinnervalue": {
+                    // print("testembed:elementpropvalue value:" + data.value);
+                    appWindow.testResult = data.value;
+                    break;
+                }
+                default:
+                    break;
+                }
+
             }
         }
     }
@@ -60,40 +65,33 @@ ApplicationWindow {
         when: windowShown
 
         function cleanup() {
-            mozContext.dumpTS("tst_scrolltest cleanup")
+            mozContext.dumpTS("tst_multitouch cleanup")
         }
 
-        function test_TestScrollPaintOperations()
+        function test_Test1MultiTouchPage()
         {
-            mozContext.dumpTS("test_TestScrollPaintOperations start")
+            mozContext.dumpTS("test_Test1MultiTouchPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.child.url = "data:text/html,<body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
+            webViewport.child.url = mozContext.getenv("QTTESTPATH") + "/auto/multitouch/touch.html";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.child.loadProgress, 100);
             while (!webViewport.child.painted) {
                 wait();
             }
-            wait(500)
-            MyScript.scrollBy(1, 401, 0, -400, 100, false);
-            MyScript.scrollBy(1, 401, 0, -400, 100, false);
-            while (appWindow.scrollY === 0) {
+            var params = [Qt.point(50,50), Qt.point(51,51), Qt.point(52,52)];
+            webViewport.child.synthTouchBegin(params);
+            params = [Qt.point(51,51), Qt.point(52,52), Qt.point(53,53)];
+            webViewport.child.synthTouchMove(params);
+            params = [Qt.point(52,52), Qt.point(53,53), Qt.point(54,54)];
+            webViewport.child.synthTouchEnd(params);
+            webViewport.child.sendAsyncMessage("embedtest:getelementinner", {
+                                                name: "result" })
+            while (appWindow.testResult == "") {
                 wait();
             }
-            verify(appWindow.scrollX === 0)
-            while (appWindow.clickX === 0) {
-                wait();
-            }
-            verify(appWindow.clickX === 1)
-            verify(appWindow.clickY === 1)
-            appWindow.clickX = 0
-            mouseClick(webViewport, 10, 20)
-            while (appWindow.clickX === 0) {
-                wait();
-            }
-            verify(appWindow.clickX === 10)
-            verify(appWindow.clickY === 20)
-            mozContext.dumpTS("test_TestScrollPaintOperations end");
+            compare(appWindow.testResult, "ok");
+            mozContext.dumpTS("test_Test1MultiTouchPage end");
         }
     }
 }
