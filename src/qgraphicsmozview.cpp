@@ -92,22 +92,6 @@ QGraphicsMozView::uniqueID() const
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QGraphicsMozView::EraseBackgroundGL(QPainter* painter, const QRect& r)
-{
-#ifdef GL_PROVIDER_EGL
-    glEnable(GL_SCISSOR_TEST);
-    glScissor(r.x(), r.y(), r.width(), r.height());
-    glClearColor((GLfloat)d->mBgColor.red() / 255.0,
-                 (GLfloat)d->mBgColor.green() / 255.0,
-                 (GLfloat)d->mBgColor.blue() / 255.0,
-                 (GLfloat)d->mBgColor.alpha() / 255.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    glDisable(GL_SCISSOR_TEST);
-#else
-    painter->fillRect(r, d->mBgColor);
-#endif
-}
-
 void
 QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, QWidget*)
 {
@@ -119,11 +103,6 @@ QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, 
             !QGLContext::currentContext()) {
             LOGT("Gecko is setup for GL rendering but no context available on paint, disable it");
             d->mContext->setIsAccelerated(false);
-        }
-        QGraphicsView* view = d->GetViewWidget();
-        if (view) {
-            connect(view, SIGNAL(displayEntered()), this, SLOT(onDisplayEntered()));
-            connect(view, SIGNAL(displayExited()), this, SLOT(onDisplayExited()));
         }
     }
 
@@ -140,15 +119,9 @@ QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, 
                 d->UpdateViewSize();
             }
             if (d->mLastIsGoodRotation) {
-                // FIXME need to find proper rect using proper transform chain
-                QRect eraseRect = painter->transform().isRotating() ? affine.mapRect(r) : r;
                 painter->beginNativePainting();
-                EraseBackgroundGL(painter, eraseRect);
-                bool retval = d->mView->RenderGL();
+                d->mView->RenderGL();
                 painter->endNativePainting();
-                if (!retval) {
-                    EraseBackgroundGL(painter, eraseRect);
-                }
             }
         } else {
             if (d->mTempBufferImage.isNull() || d->mTempBufferImage.width() != r.width() || d->mTempBufferImage.height() != r.height()) {
@@ -163,8 +136,6 @@ QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, 
                                     d->mTempBufferImage.depth());
             painter->drawImage(QPoint(0, 0), d->mTempBufferImage);
         }
-    } else {
-        painter->fillRect(r, Qt::white);
     }
 }
 
@@ -290,6 +261,11 @@ bool QGraphicsMozView::loading() const
     return d->mIsLoading;
 }
 
+QColor QGraphicsMozView::bgcolor() const
+{
+    return d->mBgColor;
+}
+
 void QGraphicsMozView::loadHtml(const QString& html, const QUrl& baseUrl)
 {
     LOGT();
@@ -352,7 +328,7 @@ bool QGraphicsMozView::event(QEvent* event)
     return QGraphicsWidget::event(event);
 }
 
-void QGraphicsMozView::onDisplayEntered()
+void QGraphicsMozView::suspendView()
 {
     if (!d->mView) {
         return;
@@ -361,7 +337,7 @@ void QGraphicsMozView::onDisplayEntered()
     d->mView->ResumeTimeouts();
 }
 
-void QGraphicsMozView::onDisplayExited()
+void QGraphicsMozView::resumeView()
 {
     if (!d->mView) {
         return;
