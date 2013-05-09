@@ -28,7 +28,7 @@ ApplicationWindow {
         }
         onRecvObserve: {
             if (message == "embed:download") {
-                // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg);
+                print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg);
                 if (data.msg == "dl-done") {
                     appWindow.promptReceived = true;
                 }
