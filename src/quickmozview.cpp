@@ -30,6 +30,12 @@ public:
     }
     virtual ~QuickMozViewPrivate() {}
 
+    virtual bool RequestCurrentGLContext()
+    {
+      // Need really check what is what and switch to common implementation
+      return true;
+    }
+
     void UpdateViewSize(bool updateSize = true)
     {
         if (mViewInitialized) {
@@ -67,6 +73,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 {
 //    setFlag(ItemHasContents, true);
     d->mContext = QMozContext::GetInstance();
+    QTimer::singleShot(0, QMozContext::GetInstance(), SLOT(runEmbedding()));
     if (!d->mContext->initialized()) {
         connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(onInitialized()));
     } else {
