@@ -6,13 +6,13 @@ Group:      Applications/Internet
 License:    Mozilla License
 URL:        https://github.com/tmeshkova/qtmozembed.git
 Source0:    %{name}-%{version}.tar.bz2
-BuildRequires:  pkgconfig(QtCore) >= 4.6.0
-BuildRequires:  pkgconfig(QtOpenGL)
-BuildRequires:  pkgconfig(QtGui)
-BuildRequires:  pkgconfig(QJson)
-BuildRequires:  pkgconfig(libxul-embedding)
+BuildRequires:  pkgconfig(Qt5Core)
+BuildRequires:  pkgconfig(Qt5Gui)
+BuildRequires:  pkgconfig(Qt5Network)
+BuildRequires:  pkgconfig(Qt5OpenGL)
+BuildRequires:  pkgconfig(Qt5Widgets)
+BuildRequires:  xulrunner-qt5-devel
 BuildRequires:  pkgconfig(nspr)
-BuildRequires:  pkgconfig(QtTest)
 BuildRequires:  qtest-qml-devel
 
 %description
