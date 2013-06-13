@@ -13,7 +13,7 @@ BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Widgets)
 BuildRequires:  xulrunner-qt5-devel
 BuildRequires:  pkgconfig(nspr)
-BuildRequires:  qtest-qml-devel
+BuildRequires:  qt5-default
 
 %description
 Qt embeddings for Gecko browser engine
