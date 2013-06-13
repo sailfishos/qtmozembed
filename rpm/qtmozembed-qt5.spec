@@ -62,5 +62,5 @@ qmake
 %defattr(-,root,root,-)
 # >> files tests
 # /opt/tests/qtmozembed/*
-%{_libdir}/qt5/bin/*
+#%{_libdir}/qt5/bin/*
 # << files tests
