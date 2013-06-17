@@ -8,7 +8,7 @@ include (../imports.pri)
 
 QTMOZEMBED_SOURCE_PATH = $$PWD/../../../src
 
-QT += dbus declarative script
+QT += declarative script
 CONFIG += mobility link_pkgconfig
 MOBILITY += qtmozembed
 
