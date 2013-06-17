@@ -12,11 +12,11 @@ BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Widgets)
 BuildRequires:  pkgconfig(Qt5Quick)
+BuildRequires:  pkgconfig(Qt5QuickTest)
 BuildRequires:  pkgconfig(Qt5Declarative)
 BuildRequires:  xulrunner-qt5-devel
 BuildRequires:  pkgconfig(nspr)
 BuildRequires:  qt5-default
-BuildRequires:  qt5-qtdeclarative-qtquick-devel
 
 %description
 Qt embeddings for Gecko browser engine
