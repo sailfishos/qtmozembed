@@ -17,8 +17,8 @@ HEADERS += qmozcontext.h \
            geckoworker.h
 
 !contains(QT_MAJOR_VERSION, 4) {
-SOURCES += quickmozview.cpp
-HEADERS += quickmozview.h
+  SOURCES += quickmozview.cpp
+  HEADERS += quickmozview.h
 }
 SOURCES += qdeclarativemozview.cpp
 HEADERS += qdeclarativemozview.h
@@ -30,16 +30,11 @@ CONFIG(opengl) {
      message(OpenGL support is not available.)
 }
 
-isEmpty(OBJ_DEB_DIR) {
-  OBJ_DEB_DIR=$$OBJ_BUILD_PATH
-}
-
-OBJECTS_DIR += ../$$OBJ_DEB_DIR
-DESTDIR = ../$$OBJ_DEB_DIR
-MOC_DIR += ../$$OBJ_DEB_DIR/tmp/moc/release_static
-RCC_DIR += ../$$OBJ_DEB_DIR/tmp/rcc/release_static
-
 include(qmozembed.pri)
+
+RELATIVE_PATH=..
+VDEPTH_PATH=src
+include($$RELATIVE_PATH/relative-objdir.pri)
 
 PREFIX = /usr
 

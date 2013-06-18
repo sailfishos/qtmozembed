@@ -12,8 +12,8 @@ BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Widgets)
 BuildRequires:  pkgconfig(Qt5Quick)
-BuildRequires:  pkgconfig(Qt5QuickTest)
 BuildRequires:  pkgconfig(Qt5Declarative)
+BuildRequires:  pkgconfig(Qt5QuickTest)
 BuildRequires:  xulrunner-qt5-devel
 BuildRequires:  pkgconfig(nspr)
 BuildRequires:  qt5-default
@@ -33,7 +33,7 @@ Development files for qtmozembed.
 Summary:    Unit tests for QtMozEmbed tests
 Group:      Applications/Internet
 Requires:   %{name} = %{version}-%{release}
-Requires:   embedlite-components-qt5 >= 1.0.10
+Requires:   embedlite-components-qt5 >= 1.0.0
 
 %description tests
 This package contains QML unit tests for QtMozEmbed library
@@ -53,6 +53,7 @@ qmake
 %files
 %defattr(-,root,root,-)
 %{_libdir}/*.so.*
+%{_libdir}/qt5/qml/Qt5Mozilla/*
 
 %files devel
 %defattr(-,root,root,-)
