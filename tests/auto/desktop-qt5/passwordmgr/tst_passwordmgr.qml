@@ -1,11 +1,10 @@
-import QtQuickTest 1.0
-import QtQuick 1.0
-import Sailfish.Silica 1.0
-import QtMozilla 1.0
+import QtTest 1.0
+import QtQuick 2.0
+import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
 import "../../shared/sharedTests.js" as SharedTests
 
-ApplicationWindow {
+Item {
     id: appWindow
 
     property bool mozViewInitialized : false
@@ -23,14 +22,6 @@ ApplicationWindow {
             mozContext.instance.setIsAccelerated(true);
             mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
         }
-        onRecvObserve: {
-            if (message == "embed:download") {
-                print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg);
-                if (data.msg == "dl-done") {
-                    appWindow.promptReceived = true;
-                }
-            }
-        }
     }
 
     QmlMozView {
@@ -41,17 +32,18 @@ ApplicationWindow {
         Connections {
             target: webViewport.child
             onViewInitialized: {
-                webViewport.child.addMessageListener("embed:filepicker");
+                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
                 appWindow.mozViewInitialized = true
+                webViewport.child.addMessageListener("embed:login");
             }
             onRecvAsyncMessage: {
                 // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:filepicker") {
-                    webViewport.child.sendAsyncMessage("filepickerresponse", {
-                                                     winid: data.winid,
-                                                     accepted: true,
-                                                     items: ["/tmp/tt.bin"]
-                                                 })
+                if (message == "embed:login") {
+                    webViewport.child.sendAsyncMessage("embedui:login", {
+                                                        buttonidx: 1,
+                                                        id: data.id
+                                                       })
+                    appWindow.promptReceived = true;
                 }
             }
         }
@@ -63,12 +55,12 @@ ApplicationWindow {
         when: windowShown
 
         function cleanup() {
-            mozContext.dumpTS("tst_downloadmgr cleanup")
+            mozContext.dumpTS("tst_passwordmgr cleanup")
         }
 
-        function test_TestDownloadMgrPage()
+        function test_TestLoginMgrPage()
         {
-            SharedTests.shared_TestDownloadMgrPage()
+            SharedTests.shared_TestLoginMgrPage()
         }
     }
 }

@@ -1,25 +1,14 @@
-import QtQuickTest 1.0
-import QtQuick 1.0
-import Sailfish.Silica 1.0
-import QtMozilla 1.0
+import QtTest 1.0
+import QtQuick 2.0
+import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
 import "../../shared/sharedTests.js" as SharedTests
 
-ApplicationWindow {
+Item {
     id: appWindow
 
     property bool mozViewInitialized : false
-    property string inputContent : ""
-    property int inputState : -1
-    property bool changed : false
-    property int focusChange : -1
-    property int cause : -1
-    property string inputType : ""
-
-    function isState(state, focus, cause)
-    {
-        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause;
-    }
+    property string testResult : ""
 
     QmlMozContext {
         id: mozContext
@@ -45,7 +34,7 @@ ApplicationWindow {
             onViewInitialized: {
                 webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
                 appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("testembed:elementpropvalue");
+                webViewport.child.addMessageListener("testembed:elementinnervalue");
             }
             onHandleSingleTap: {
                 print("HandleSingleTap: [",point.x,",",point.y,"]");
@@ -53,22 +42,15 @@ ApplicationWindow {
             onRecvAsyncMessage: {
                 // print("onRecvAsyncMessage:" + message + ", data:" + data)
                 switch (message) {
-                case "testembed:elementpropvalue": {
+                case "testembed:elementinnervalue": {
                     // print("testembed:elementpropvalue value:" + data.value);
-                    appWindow.inputContent = data.value;
+                    appWindow.testResult = data.value;
                     break;
                 }
                 default:
                     break;
                 }
-            }
-            onImeNotification: {
-                print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
-                appWindow.changed = true
-                appWindow.inputState = state
-                appWindow.cause = cause
-                appWindow.focusChange = focusChange
-                appWindow.inputType = type
+
             }
         }
     }
@@ -79,17 +61,12 @@ ApplicationWindow {
         when: windowShown
 
         function cleanup() {
-            mozContext.dumpTS("tst_inputtest cleanup")
+            mozContext.dumpTS("tst_multitouch cleanup")
         }
 
-        function test_Test1LoadInputPage()
+        function test_Test1MultiTouchPage()
         {
-            SharedTests.shared_Test1LoadInputPage()
-        }
-
-        function test_Test1LoadInputURLPage()
-        {
-            SharedTests.shared_Test1LoadInputURLPage()
+            SharedTests.shared_Test1MultiTouchPage()
         }
     }
 }

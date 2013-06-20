@@ -1,15 +1,17 @@
-import QtQuickTest 1.0
-import QtQuick 1.0
-import Sailfish.Silica 1.0
-import QtMozilla 1.0
+import QtTest 1.0
+import QtQuick 2.0
+import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
 import "../../shared/sharedTests.js" as SharedTests
 
-ApplicationWindow {
+Item {
     id: appWindow
 
     property bool mozViewInitialized : false
-    property variant promptReceived : null
+    property int scrollX : 0
+    property int scrollY : 0
+    property int clickX : 0
+    property int clickY : 0
 
     QmlMozContext {
         id: mozContext
@@ -33,19 +35,17 @@ ApplicationWindow {
         Connections {
             target: webViewport.child
             onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
                 appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("embed:login");
             }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:login") {
-                    webViewport.child.sendAsyncMessage("embedui:login", {
-                                                        buttonidx: 1,
-                                                        id: data.id
-                                                       })
-                    appWindow.promptReceived = true;
-                }
+            onHandleSingleTap: {
+                appWindow.clickX = point.x
+                appWindow.clickY = point.y
+            }
+            onViewAreaChanged: {
+                print("onViewAreaChanged: ", webViewport.child.scrollableOffset.x, webViewport.child.scrollableOffset.y);
+                var offset = webViewport.child.scrollableOffset
+                appWindow.scrollX = offset.x
+                appWindow.scrollY = offset.y
             }
         }
     }
@@ -56,12 +56,12 @@ ApplicationWindow {
         when: windowShown
 
         function cleanup() {
-            mozContext.dumpTS("tst_passwordmgr cleanup")
+            mozContext.dumpTS("tst_scrolltest cleanup")
         }
 
-        function test_TestLoginMgrPage()
+        function test_TestScrollPaintOperations()
         {
-            SharedTests.shared_TestLoginMgrPage()
+            SharedTests.shared_TestScrollPaintOperations()
         }
     }
 }
