@@ -7,73 +7,30 @@
 #ifndef qgraphicsmozview_h
 #define qgraphicsmozview_h
 
-#include <QGraphicsView>
 #include <QGraphicsWidget>
 #include <QUrl>
-#include <QColor>
+#include "qmozview_defined_wrapper.h"
 
 class QMozContext;
 class QSyncMessage;
 class QGraphicsMozViewPrivate;
 
-class QMozReturnValue : public QObject
-{
-    Q_OBJECT
-    Q_PROPERTY(QVariant message READ getMessage WRITE setMessage FINAL)
-
-public:
-    QMozReturnValue(QObject* parent = 0) : QObject(parent) {}
-    QMozReturnValue(const QMozReturnValue& aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; }
-    virtual ~QMozReturnValue() {}
-
-    QVariant getMessage() const { return mMessage; }
-    void setMessage(const QVariant& msg) { mMessage = msg; }
-
-private:
-    QVariant mMessage;
-};
-
-Q_DECLARE_METATYPE(QMozReturnValue)
+#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
+#undef Q_SIGNALS
+#define Q_SIGNALS public
+#endif
 
 class QGraphicsMozView : public QGraphicsWidget
 {
     Q_OBJECT
 
-    Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged)
-    Q_PROPERTY(QString title READ title NOTIFY titleChanged)
-    Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY navigationHistoryChanged FINAL)
-    Q_PROPERTY(bool canGoForward READ canGoForward NOTIFY navigationHistoryChanged FINAL)
-    Q_PROPERTY(int loadProgress READ loadProgress NOTIFY loadProgressChanged)
-    Q_PROPERTY(bool loading READ loading NOTIFY loadingChanged FINAL)
-    Q_PROPERTY(QRect contentRect READ contentRect NOTIFY viewAreaChanged FINAL)
-    Q_PROPERTY(QSize scrollableSize READ scrollableSize)
-    Q_PROPERTY(QPointF scrollableOffset READ scrollableOffset)
-    Q_PROPERTY(float resolution READ resolution)
-    Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL)
-    Q_PROPERTY(QColor bgcolor READ bgcolor NOTIFY bgColorChanged FINAL)
-    Q_PROPERTY(bool useQmlMouse READ getUseQmlMouse WRITE setUseQmlMouse)
+    Q_MOZ_VIEW_PRORERTIES
 
 public:
     QGraphicsMozView(QGraphicsItem* parent = 0);
-
     virtual ~QGraphicsMozView();
 
-    QUrl url() const;
-    void setUrl(const QUrl&);
-    QString title() const;
-    int loadProgress() const;
-    bool canGoBack() const;
-    bool canGoForward() const;
-    bool loading() const;
-    QRect contentRect() const;
-    QSize scrollableSize() const;
-    QPointF scrollableOffset() const;
-    float resolution() const;
-    bool isPainted() const;
-    QColor bgcolor() const;
-    bool getUseQmlMouse();
-    void setUseQmlMouse(bool value);
-    void forceActiveFocus();
+    Q_MOZ_VIEW_PUBLIC_METHODS
 
 public Q_SLOTS:
     void loadHtml(const QString& html, const QUrl& baseUrl = QUrl());
@@ -142,10 +99,14 @@ private Q_SLOTS:
 
 private:
     QGraphicsMozViewPrivate* d;
-    friend class QGraphicsMozViewPrivate;
     unsigned mParentID;
 
     bool mUseQmlMouse;
 };
+
+#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
+#undef Q_SIGNALS
+#define Q_SIGNALS protected
+#endif
 
 #endif /* qgraphicsmozview_h */
