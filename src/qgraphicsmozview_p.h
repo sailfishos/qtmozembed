@@ -13,6 +13,9 @@
 #include <QTime>
 #include <QString>
 #include <QPointF>
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+#include <QSGSimpleTextureNode>
+#endif
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "qmozview_templated_wrapper.h"
 #include "qmozview_defined_wrapper.h"
@@ -47,6 +50,7 @@ public:
     virtual void OnLoadRedirect(void);
     virtual void OnSecurityChanged(const char* aStatus, unsigned int aState);
     virtual void OnFirstPaint(int32_t aX, int32_t aY);
+    virtual void GetIMEStatus(int32_t* aIMEEnabled, int32_t* aIMEOpen, intptr_t* aNativeIMEContext);
     virtual void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange, const PRUnichar* inputType, const PRUnichar* inputMode);
 
     virtual void OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight);
@@ -70,6 +74,9 @@ public:
     bool mViewInitialized;
     QColor mBgColor;
     QImage mTempBufferImage;
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+    QSGTexture* mTempTexture;
+#endif
     QSize mSize;
     QTime mTouchTime;
     bool mPendingTouchEvent;
@@ -88,6 +95,7 @@ public:
     QPointF mScrollableOffset;
     float mContentResolution;
     bool mIsPainted;
+    Qt::InputMethodHints mInputMethodHints;
 };
 
 #endif /* qgraphicsmozview_p_h */

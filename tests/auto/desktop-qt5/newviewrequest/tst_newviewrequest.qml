@@ -6,6 +6,8 @@ import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
+    width: 480
+    height: 800
 
     property bool mozViewInitialized : false
     property variant mozView : null
@@ -28,7 +30,7 @@ Item {
             appWindow.oldMozView = appWindow.mozView;
             appWindow.mozView = null;
             appWindow.createParentID = parentId;
-            MyScript.createSpriteObjects();
+            MyScript.createSpriteObjectsQt5();
             while (appWindow.mozView === null) {
                 testcaseid.wait()
             }
@@ -41,6 +43,7 @@ Item {
         id: testcaseid
         name: "mozContextPage"
         when: windowShown
+        parent: appWindow
 
         function cleanup() {
             mozContext.dumpTS("tst_newviewrequest cleanup")

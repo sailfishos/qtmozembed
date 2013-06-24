@@ -32,6 +32,9 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(IMozQViewIface* aViewIface)
     , mView(NULL)
     , mViewInitialized(false)
     , mBgColor(Qt::white)
+#if (QT_VERSION >= QT_VERSION_CHECK(5, 0, 0))
+    , mTempTexture(NULL)
+#endif
     , mPendingTouchEvent(false)
     , mProgress(100)
     , mCanGoBack(false)
@@ -270,6 +273,15 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }
 
+void QGraphicsMozViewPrivate::GetIMEStatus(int32_t* aIMEEnabled, int32_t* aIMEOpen, intptr_t* aNativeIMEContext)
+{
+#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
+    *aNativeIMEContext = (intptr_t)qApp->inputContext();
+#else
+    *aNativeIMEContext = (intptr_t)qApp->inputMethod();
+#endif
+}
+
 void QGraphicsMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
 {
     LOGT();
@@ -349,7 +361,7 @@ void QGraphicsMozViewPrivate::touchEvent(QTouchEvent* event)
     mPendingTouchEvent = true;
     event->setAccepted(true);
     if (event->type() == QEvent::TouchBegin) {
-        mViewIface->forceActiveFocus();
+        mViewIface->forceViewActiveFocus();
         mTouchTime.restart();
     }
 

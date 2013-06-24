@@ -6,6 +6,8 @@ import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
+    width: 480
+    height: 800
 
     property bool mozViewInitialized : false
     property string selectedContent : ""
@@ -20,7 +22,6 @@ Item {
             // and qmlmoztestrunner does not build in GL mode
             // Let's put it here for now in SW mode always
             mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addObserver("clipboard:setdata");
         }
         onRecvObserve: {
             print("onRecvObserve: msg:", message, ", data:", data.data);
@@ -42,7 +43,7 @@ Item {
                 webViewport.child.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
             }
             onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
+                print("onRecvAsyncMessage:" + message + ", data:" + data)
             }
         }
     }
@@ -51,6 +52,7 @@ Item {
         id: testcaseid
         name: "mozContextPage"
         when: windowShown
+        parent: appWindow
 
         function cleanup() {
             mozContext.dumpTS("tst_inputtest cleanup")
