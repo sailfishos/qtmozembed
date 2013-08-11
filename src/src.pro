@@ -9,18 +9,20 @@ TEMPLATE = lib
 VERSION = 1.0.1
 
 SOURCES += qmozcontext.cpp \
+           qmessagepump.cpp \
            EmbedQtKeyUtils.cpp \
            qgraphicsmozview_p.cpp \
            geckoworker.cpp
 
 HEADERS += qmozcontext.h \
+           qmessagepump.h \
            EmbedQtKeyUtils.h \
            geckoworker.h \
            qmozview_defined_wrapper.h
 
 !contains(QT_MAJOR_VERSION, 4) {
-  SOURCES += quickmozview.cpp qmozviewsgnode.cpp
-  HEADERS += quickmozview.h qmozviewsgnode.h
+  SOURCES += quickmozview.cpp qmozviewsgnode.cpp qsgthreadobject.cpp qmcthreadobject.cpp
+  HEADERS += quickmozview.h qmozviewsgnode.h qsgthreadobject.h qmcthreadobject.h
 }
 contains(QT_MAJOR_VERSION, 4) {
   SOURCES += qdeclarativemozview.cpp qgraphicsmozview.cpp
@@ -56,6 +58,8 @@ contains(QT_MAJOR_VERSION, 4) {
     QT += declarative widgets opengl
   }
 }
+
+#DEFINES += Q_DEBUG_LOG
 
 target.path = $$PREFIX/lib
 

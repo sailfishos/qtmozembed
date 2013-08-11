@@ -6,11 +6,14 @@
 #ifndef QuickMozView_H
 #define QuickMozView_H
 
+#include <QMatrix>
 #include <QtQuick/QQuickItem>
 #include <QtGui/QOpenGLShaderProgram>
 #include "qmozview_defined_wrapper.h"
 
 class QGraphicsMozViewPrivate;
+class QSGThreadObject;
+class QMCThreadObject;
 
 class QuickMozView : public QQuickItem
 {
@@ -25,6 +28,7 @@ public:
     ~QuickMozView();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
+    void RenderToCurrentContext(QMatrix affine);
 
 private:
     QObject* getChild() { return this; }
@@ -32,9 +36,12 @@ private:
 public Q_SLOTS:
 
     Q_MOZ_VIEW_PUBLIC_SLOTS
+    void SetIsActive(bool aIsActive);
 
 Q_SIGNALS:
     void childChanged();
+    void setIsActive(bool);
+    void updateThreaded();
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -58,7 +65,7 @@ public Q_SLOTS:
     void sceneGraphInitialized();
     void cleanup();
     void setInputMethodHints(Qt::InputMethodHints hints);
-    void onRequestGLContext(bool& hasContext, QSize& viewPortSize);
+    void updateGLContextInfo(bool hasContext, QSize viewPortSize);
 
 private Q_SLOTS:
     void onInitialized();
@@ -68,6 +75,8 @@ private:
     friend class QGraphicsMozViewPrivate;
     unsigned mParentID;
     bool mUseQmlMouse;
+    QSGThreadObject* mSGRenderer;
+    QMCThreadObject* mMCRenderer;
 };
 
 #endif // QuickMozView_H

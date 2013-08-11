@@ -51,6 +51,8 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(IMozQViewIface* aViewIface)
     , mInputMethodHints(0)
     , mIsInputFieldFocused(false)
     , mViewIsFocused(false)
+    , mHasContext(false)
+    , mGLSurfaceSize(0,0)
 {
 }
 
@@ -59,15 +61,19 @@ QGraphicsMozViewPrivate::~QGraphicsMozViewPrivate()
     delete mViewIface;
 }
 
+void QGraphicsMozViewPrivate::CompositorCreated()
+{
+    mViewIface->createGeckoGLContext();
+}
+
 void QGraphicsMozViewPrivate::UpdateViewSize()
 {
     if (!mViewInitialized) {
         return;
     }
 
-    QSize viewPortSize;
-    if (mContext->GetApp()->IsAccelerated() && RequestCurrentGLContext(viewPortSize)) {
-        mView->SetGLViewPortSize(viewPortSize.width(), viewPortSize.height());
+    if (mContext->GetApp()->IsAccelerated() && mHasContext) {
+        mView->SetGLViewPortSize(mGLSurfaceSize.width(), mGLSurfaceSize.height());
     }
     mView->SetViewSize(mSize.width(), mSize.height());
 }

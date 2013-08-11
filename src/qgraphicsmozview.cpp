@@ -9,6 +9,7 @@
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QTimer>
+#include <QThread>
 #include <QtOpenGL/QGLContext>
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
 #include <QInputContext>
@@ -52,6 +53,7 @@ QGraphicsMozView::QGraphicsMozView(QGraphicsItem* parent)
     setInputMethodHints(Qt::ImhPreferLowercase);
 
     d->mContext = QMozContext::GetInstance();
+    connect(this, SIGNAL(updateThreaded()), this, SLOT(OnUpdateThreaded()));
     if (!d->mContext->initialized()) {
         connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(onInitialized()));
     } else {
@@ -106,6 +108,7 @@ QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, 
             LOGT("Gecko is setup for GL rendering but no context available on paint, disable it");
             d->mContext->setIsAccelerated(false);
         }
+        Q_EMIT requestGLContextQGV(d->mHasContext, d->mGLSurfaceSize);
     }
 
     QRect r = opt ? opt->exposedRect.toRect() : boundingRect().toRect();
@@ -141,6 +144,36 @@ QGraphicsMozView::paint(QPainter* painter, const QStyleOptionGraphicsItem* opt, 
     }
 }
 
+void
+QGraphicsMozView::Invalidate()
+{
+    if (QThread::currentThread() != thread()) {
+        Q_EMIT updateThreaded();
+    } else {
+        update();
+    }
+}
+
+void
+QGraphicsMozView::OnUpdateThreaded()
+{
+    update();
+}
+
+void
+QGraphicsMozView::createGeckoGLContext()
+{
+    Q_EMIT requestGLContextQGV(d->mHasContext, d->mGLSurfaceSize);
+}
+
+void
+QGraphicsMozView::requestGLContext(bool& hasContext, QSize& viewPortSize)
+{
+    Q_EMIT requestGLContextQGV(d->mHasContext, d->mGLSurfaceSize);
+    hasContext = d->mHasContext;
+    viewPortSize = d->mGLSurfaceSize;
+}
+
 /*! \reimp
 */
 QSizeF QGraphicsMozView::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const
@@ -159,6 +192,7 @@ void QGraphicsMozView::setGeometry(const QRectF& rect)
     // NOTE: call geometry() as setGeometry ensures that
     // the geometry is within legal bounds (minimumSize, maximumSize)
     d->mSize = geometry().size().toSize();
+    Q_EMIT requestGLContext(d->mHasContext, d->mGLSurfaceSize);
     d->UpdateViewSize();
 }
 

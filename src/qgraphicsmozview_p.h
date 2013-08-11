@@ -68,6 +68,7 @@ public:
     virtual bool HandleSingleTap(const nsIntPoint& aPoint);
     virtual bool HandleDoubleTap(const nsIntPoint& aPoint);
     virtual void SetIsFocused(bool aIsFocused);
+    virtual void CompositorCreated();
 
     IMozQViewIface* mViewIface;
     QMozContext* mContext;
@@ -99,6 +100,8 @@ public:
     Qt::InputMethodHints mInputMethodHints;
     bool mIsInputFieldFocused;
     bool mViewIsFocused;
+    bool mHasContext;
+    QSize mGLSurfaceSize;
 };
 
 #endif /* qgraphicsmozview_p_h */

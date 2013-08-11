@@ -69,7 +69,9 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     QColor bgcolor() const; \
     bool getUseQmlMouse(); \
     void setUseQmlMouse(bool value); \
-    void forceViewActiveFocus();
+    void forceViewActiveFocus(); \
+    void Invalidate(); \
+    void createGeckoGLContext();
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString& html, const QUrl& baseUrl = QUrl()); \
@@ -93,7 +95,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void resumeView(); \
     void recvMouseMove(int posX, int posY); \
     void recvMousePress(int posX, int posY); \
-    void recvMouseRelease(int posX, int posY);
+    void recvMouseRelease(int posX, int posY); \
+    void requestGLContext(bool& hasContext, QSize& viewPortSize);
 
 #define Q_MOZ_VIEW_SIGNALS \
     void viewInitialized(); \
@@ -115,7 +118,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void handleDoubleTap(QPoint point, QMozReturnValue* retval); \
     void imeNotification(int state, bool open, int cause, int focusChange, const QString& type); \
     void bgColorChanged(); \
-    void requestGLContext(bool& hasContext, QSize& viewPortSize); \
     void useQmlMouse(bool value);
 
 #endif /* qmozview_defined_wrapper_h */
