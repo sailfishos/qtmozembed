@@ -11,6 +11,7 @@
 #include "InputData.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedLiteApp.h"
+#include "mozilla/embedlite/EmbedLiteRenderTarget.h"
 
 #include <QTimer>
 #include <QThread>
@@ -26,6 +27,7 @@
 #include "qgraphicsmozview_p.h"
 #include "EmbedQtKeyUtils.h"
 #include "qmozviewsgnode.h"
+#include "qmozviewtexsgnode.h"
 #include "qsgthreadobject.h"
 #include "qmcthreadobject.h"
 #include "assert.h"
@@ -102,8 +104,7 @@ QuickMozView::onInitialized()
 void QuickMozView::createGeckoGLContext()
 {
     if (!mMCRenderer && mSGRenderer) {
-        mMCRenderer = new QMCThreadObject(this, mSGRenderer);
-        connect(mMCRenderer, SIGNAL(updateGLContextInfo(bool,QSize)), this, SLOT(updateGLContextInfo(bool,QSize)));
+        mMCRenderer = new QMCThreadObject(this, mSGRenderer, d->mGLSurfaceSize);
     }
 }
 
@@ -164,9 +165,13 @@ void QuickMozView::beforeRendering()
             d->mContext->setIsAccelerated(false);
         }
     }
+
+    if (mMCRenderer) {
+        mMCRenderer->prepareTexture();
+    }
 }
 
-void QuickMozView::RenderToCurrentContext(QMatrix affine)
+void QuickMozView::RenderToCurrentContext(QMatrix affine, EmbedLiteRenderTarget* renderTarget)
 {
     if (mMCRenderer->thread() != QThread::currentThread()) {
         mMCRenderer->RenderToCurrentContext(affine);
@@ -175,7 +180,13 @@ void QuickMozView::RenderToCurrentContext(QMatrix affine)
     gfxMatrix matr(affine.m11(), affine.m12(), affine.m21(), affine.m22(), affine.dx(), affine.dy());
     d->mView->SetGLViewTransform(matr);
     d->mView->SetViewClipping(0, 0, d->mSize.width(), d->mSize.height());
-    d->mView->RenderGL();
+    d->mView->RenderGL(renderTarget);
+}
+
+mozilla::embedlite::EmbedLiteRenderTarget*
+QuickMozView::CreateEmbedLiteRenderTarget(QSize size)
+{
+    return d->mView->CreateEmbedLiteRenderTarget(size.width(), size.height());
 }
 
 QSGNode*
@@ -210,18 +221,29 @@ QuickMozView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
         return n;
     }
 
-    QMozViewSGNode* node = static_cast<QMozViewSGNode*>(oldNode);
+    if (mMCRenderer->OffscreenSurface()) {
+        QMozViewTexSGNode *node = static_cast<QMozViewTexSGNode*>(oldNode);
+        assert(this->window());
 
-    const QWindow* window = this->window();
-    assert(window);
+        if (!node) {
+            node = new QMozViewTexSGNode(this);
+            mMCRenderer->setTexSGNode(node);
+        }
 
-    if (!node)
-        node = new QMozViewSGNode;
+        node->setRect(boundingRect());
+        node->markDirty(QSGNode::DirtyMaterial);
 
-    node->setRenderer(this);
-    node->markDirty(QSGNode::DirtyMaterial);
+        return node;
+    } else {
+        QMozViewSGNode* node = static_cast<QMozViewSGNode*>(oldNode);
 
-    return node;
+        if (!node)
+            node = new QMozViewSGNode;
+
+        node->setRenderer(this);
+        node->markDirty(QSGNode::DirtyMaterial);
+        return node;
+    }
 }
 
 void QuickMozView::cleanup()
@@ -230,7 +252,9 @@ void QuickMozView::cleanup()
 
 void QuickMozView::Invalidate()
 {
-    if (QThread::currentThread() != thread()) {
+    if (mMCRenderer->OffscreenSurface()) {
+        mMCRenderer->PostInvalidateToRenderThread();
+    } else if (QThread::currentThread() != thread()) {
         Q_EMIT updateThreaded();
     } else {
         update();
