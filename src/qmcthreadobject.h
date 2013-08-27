@@ -32,6 +32,7 @@ public:
     ~QMCThreadObject();
     void RenderToCurrentContext(QMatrix affine);
     void setSGNode(QMozViewSGNode* node);
+    void setView(QuickMozView* aView);
     void prepareTexture();
 
 Q_SIGNALS:
@@ -41,6 +42,8 @@ private Q_SLOTS:
     void ProcessRenderInGeckoCompositorThread();
 
 private:
+    static void doWorkInGeckoCompositorThread(void* self);
+
     QuickMozView* mView;
     QOpenGLContext* mGLContext;
     QSurface* mGLSurface;
@@ -51,6 +54,14 @@ private:
     QSize m_size;
     mozilla::embedlite::EmbedLiteRenderTarget* m_renderTarget;
     QMozViewSGNode* mSGnode;
+    mozilla::embedlite::EmbedLiteMessagePump* mLoop;
+    QMutex mutex;
+    QWaitCondition waitCondition;
+    QMutex destroyLock;
+    QWaitCondition destroyLockCondition;
+    void* mRenderTask;
+    bool mIsDestroying;
+    bool mIsRendering;
 };
 
 #endif // QMCThreadObject_H

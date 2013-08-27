@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <QSurface>
+#include <QThread>
 #include <QPainter>
 #include <QOpenGLFramebufferObject>
 #include <QOpenGLPaintDevice>
@@ -27,6 +28,10 @@ QMCThreadObject::QMCThreadObject(QuickMozView* aView, QSGThreadObject* sgThreadO
   , mOwnGLContext(false)
   , m_renderTarget(NULL)
   , mSGnode(NULL)
+  , mLoop(NULL)
+  , mRenderTask(NULL)
+  , mIsDestroying(false)
+  , mIsRendering(false)
 {
     m_size = aGLSize;
     if (sgThreadObj->thread() != thread()) {
@@ -37,7 +42,10 @@ QMCThreadObject::QMCThreadObject(QuickMozView* aView, QSGThreadObject* sgThreadO
         mGLSurface = mSGThreadObj->context()->surface();
         if (mGLContext->create()) {
             mSGThreadObj->context()->doneCurrent();
-            if (!mGLContext->makeCurrent(mGLSurface)) {
+#if defined(GL_PROVIDER_GLX)
+            if (!mGLContext->makeCurrent(mGLSurface))
+#endif
+            {
                 mOffGLSurface = new QOffscreenSurface;
                 mOffGLSurface->setFormat(mSGThreadObj->context()->format());
                 mOffGLSurface->create();
@@ -53,13 +61,14 @@ QMCThreadObject::QMCThreadObject(QuickMozView* aView, QSGThreadObject* sgThreadO
             }
         }
     }
-    if (aView->thread() == thread()) {
-        if (mOffGLSurface) {
-            connect(this, SIGNAL(workInGeckoCompositorThread()), this, SLOT(ProcessRenderInGeckoCompositorThread()));
-        } else {
-            connect(this, SIGNAL(workInGeckoCompositorThread()), this, SLOT(ProcessRenderInGeckoCompositorThread()), Qt::BlockingQueuedConnection);
-        }
+    if (aView->thread() != thread()) {
+        mLoop = QMozContext::GetInstance()->GetApp()->CreateEmbedLiteMessagePump(NULL);
     }
+}
+
+void QMCThreadObject::setView(QuickMozView* aView)
+{
+    mView = aView;
 }
 
 void QMCThreadObject::setSGNode(QMozViewSGNode* node)
@@ -69,24 +78,57 @@ void QMCThreadObject::setSGNode(QMozViewSGNode* node)
 
 QMCThreadObject::~QMCThreadObject()
 {
+    mIsDestroying = true;
+    if (mIsRendering) {
+        destroyLock.lock();
+        destroyLockCondition.wait(&destroyLock);
+        destroyLock.unlock();
+        mRenderTask = nullptr;
+    }
+    delete m_renderTarget;
     if (mOwnGLContext)
         delete mGLContext;
+    mGLContext = nullptr;
     delete mOffGLSurface;
-    delete m_renderTarget;
+    delete mLoop;
 }
 
 void QMCThreadObject::RenderToCurrentContext(QMatrix affine)
 {
+    if (mIsDestroying) {
+        return;
+    }
+
     mProcessingMatrix = affine;
-    Q_EMIT workInGeckoCompositorThread();
+    mutex.lock();
+    mIsRendering = true;
+    if (!mLoop) {
+        mRenderTask = QMozContext::GetInstance()->GetApp()->PostTask(&QMCThreadObject::doWorkInGeckoCompositorThread, this, 1);
+    } else {
+        mRenderTask = mLoop->PostTask(&QMCThreadObject::doWorkInGeckoCompositorThread, this, 1);
+    }
+    if (mIsRendering) {
+      waitCondition.wait(&mutex);
+    }
+    mIsRendering = false;
+
+    mutex.unlock();
+    destroyLockCondition.wakeOne();
+}
+
+void QMCThreadObject::doWorkInGeckoCompositorThread(void* self)
+{
+    QMCThreadObject* me = static_cast<QMCThreadObject*>(self);
+    me->ProcessRenderInGeckoCompositorThread();
+    me->mRenderTask = nullptr;
 }
 
 void QMCThreadObject::ProcessRenderInGeckoCompositorThread()
 {
-    if (!mOffGLSurface) {
+    if (!mOffGLSurface && mView && !mIsDestroying) {
         mGLContext->makeCurrent(mGLSurface);
         mView->RenderToCurrentContext(mProcessingMatrix);
-    } else {
+    } else if (mView && !mIsDestroying) {
         mGLContext->makeCurrent(mOffGLSurface);
         m_size = mGLSurface ? mGLSurface->size() : QSize();
         if (!m_renderTarget) {
@@ -100,8 +142,12 @@ void QMCThreadObject::ProcessRenderInGeckoCompositorThread()
 
         if (mSGnode) {
             mSGnode->newTexture(m_renderTarget->texture(), m_size);
+            mSGnode->prepareNode();
         }
     }
+    mRenderTask = nullptr;
+    mIsRendering = false;
+    waitCondition.wakeOne();
 }
 
 void QMCThreadObject::prepareTexture()
