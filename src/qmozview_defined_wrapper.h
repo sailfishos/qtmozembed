@@ -3,6 +3,9 @@
 
 #include <QVariant>
 
+class QMozVerticalScrollDecorator;
+class QMozHorizontalScrollDecorator;
+
 class QMozReturnValue : public QObject
 {
     Q_OBJECT
@@ -54,7 +57,13 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL) \
     Q_PROPERTY(QColor bgcolor READ bgcolor NOTIFY bgColorChanged FINAL) \
     Q_PROPERTY(bool useQmlMouse READ getUseQmlMouse WRITE setUseQmlMouse) \
-    Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL)
+    Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL) \
+    Q_PROPERTY(bool moving READ moving NOTIFY movingChanged FINAL) \
+    Q_PROPERTY(QMozVerticalScrollDecorator* verticalScrollDecorator READ verticalScrollDecorator FINAL) \
+    Q_PROPERTY(QMozHorizontalScrollDecorator* horizontalScrollDecorator READ horizontalScrollDecorator FINAL) \
+    Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
+    Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
+    Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL)
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -76,7 +85,16 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setUseQmlMouse(bool value); \
     void forceViewActiveFocus(); \
     void createGeckoGLContext(); \
-    bool dragging() const;
+    bool dragging() const; \
+    bool moving() const; \
+    QMozVerticalScrollDecorator* verticalScrollDecorator() const; \
+    QMozHorizontalScrollDecorator* horizontalScrollDecorator() const; \
+    bool chromeGestureEnabled() const; \
+    void setChromeGestureEnabled(bool value); \
+    bool chrome() const; \
+    void setChrome(bool value); \
+    qreal chromeGestureThreshold() const; \
+    void setChromeGestureThreshold(qreal value);
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString& html, const QUrl& baseUrl = QUrl()); \
@@ -127,7 +145,11 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void bgColorChanged(); \
     void useQmlMouse(bool value); \
     void draggingChanged(); \
+    void movingChanged(); \
     void contentWidthChanged(); \
-    void contentHeightChanged();
+    void contentHeightChanged(); \
+    void chromeGestureEnabledChanged(); \
+    void chromeChanged(); \
+    void chromeGestureThresholdChanged();
 
 #endif /* qmozview_defined_wrapper_h */

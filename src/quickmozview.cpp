@@ -26,6 +26,8 @@
 #include <QSGSimpleTextureNode>
 #include "qgraphicsmozview_p.h"
 #include "EmbedQtKeyUtils.h"
+#include "qmozhorizontalscrolldecorator.h"
+#include "qmozverticalscrolldecorator.h"
 #include "qmozviewsgnode.h"
 #include "qsgthreadobject.h"
 #include "qmcthreadobject.h"
@@ -34,6 +36,10 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
+#ifndef MOZVIEW_FLICK_STOP_TIMEOUT
+#define MOZVIEW_FLICK_STOP_TIMEOUT 500
+#endif
+
 QuickMozView::QuickMozView(QQuickItem *parent)
   : QQuickItem(parent)
   , d(new QGraphicsMozViewPrivate(new IMozQView<QuickMozView>(*this)))
@@ -41,6 +47,9 @@ QuickMozView::QuickMozView(QQuickItem *parent)
   , mUseQmlMouse(false)
   , mSGRenderer(NULL)
   , mMCRenderer(NULL)
+  , mTimerId(0)
+  , mOffsetX(0.0)
+  , mOffsetY(0.0)
 {
     static bool Initialized = false;
     if (!Initialized) {
@@ -59,6 +68,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     d->mContext = QMozContext::GetInstance();
     connect(this, SIGNAL(setIsActive(bool)), this, SLOT(SetIsActive(bool)));
     connect(this, SIGNAL(updateThreaded()), this, SLOT(update()));
+    connect(this, SIGNAL(enabledChanged()), this, SLOT(updateEnabled()));
+    updateEnabled();
     if (!d->mContext->initialized()) {
         connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(onInitialized()));
     } else {
@@ -103,6 +114,11 @@ QuickMozView::onInitialized()
     }
 }
 
+void QuickMozView::updateEnabled()
+{
+    d->mEnabled = QQuickItem::isEnabled();
+}
+
 void QuickMozView::createGeckoGLContext()
 {
     if (!mMCRenderer && mSGRenderer) {
@@ -139,7 +155,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    d->mSize = newGeometry.size().toSize();
+    d->mSize = newGeometry.size();
     d->UpdateViewSize();
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
@@ -189,6 +205,12 @@ mozilla::embedlite::EmbedLiteRenderTarget*
 QuickMozView::CreateEmbedLiteRenderTarget(QSize size)
 {
     return d->mView->CreateEmbedLiteRenderTarget(size.width(), size.height());
+}
+
+void QuickMozView::startMoveMonitoring()
+{
+    mTimerId = startTimer(MOZVIEW_FLICK_STOP_TIMEOUT);
+    d->mFlicking = true;
 }
 
 QSGNode*
@@ -448,6 +470,60 @@ bool QuickMozView::dragging() const
     return d->mDragging;
 }
 
+bool QuickMozView::moving() const
+{
+    return d->mMoving;
+}
+
+QMozVerticalScrollDecorator* QuickMozView::verticalScrollDecorator() const
+{
+    return &d->mVerticalScrollDecorator;
+}
+
+QMozHorizontalScrollDecorator* QuickMozView::horizontalScrollDecorator() const
+{
+    return &d->mHorizontalScrollDecorator;
+}
+
+bool QuickMozView::chromeGestureEnabled() const
+{
+    return d->mChromeGestureEnabled;
+}
+
+void QuickMozView::setChromeGestureEnabled(bool value)
+{
+    if (value != d->mChromeGestureEnabled) {
+        d->mChromeGestureEnabled = value;
+        Q_EMIT chromeGestureEnabledChanged();
+    }
+}
+
+qreal QuickMozView::chromeGestureThreshold() const
+{
+    return d->mChromeGestureThreshold;
+}
+
+void QuickMozView::setChromeGestureThreshold(qreal value)
+{
+    if (value != d->mChromeGestureThreshold) {
+        d->mChromeGestureThreshold = value;
+        Q_EMIT chromeGestureThresholdChanged();
+    }
+}
+
+bool QuickMozView::chrome() const
+{
+    return d->mChrome;
+}
+
+void QuickMozView::setChrome(bool value)
+{
+    if (value != d->mChrome) {
+        d->mChrome = value;
+        Q_EMIT chromeChanged();
+    }
+}
+
 qreal QuickMozView::contentWidth() const
 {
     return d->mScrollableSize.width();
@@ -690,5 +766,22 @@ void QuickMozView::touchEvent(QTouchEvent *event)
         d->touchEvent(event);
     } else {
         QQuickItem::touchEvent(event);
+    }
+}
+
+void QuickMozView::timerEvent(QTimerEvent *event)
+{
+    if (event->timerId() == mTimerId) {
+        qreal offsetY = d->mScrollableOffset.y();
+        qreal offsetX = d->mScrollableOffset.x();
+        if (offsetX == mOffsetX && offsetY == mOffsetY) {
+            d->mMoving = false;
+            d->mFlicking = false;
+            d->mViewIface->movingChanged();
+            killTimer(mTimerId);
+            mTimerId = 0;
+        }
+        mOffsetX = offsetX;
+        mOffsetY = offsetY;
     }
 }
