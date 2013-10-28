@@ -49,8 +49,8 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(IMozQViewIface* aViewIface)
     , mMoveDelta(0.0)
     , mDragStartY(0)
     , mMoving(false)
+    , mPinching(false)
     , mLastTimestamp(0)
-    , mElapsedTouchTime(0)
     , mLastStationaryTimestamp(0)
     , mCanFlick(false)
     , mPendingTouchEvent(false)
@@ -202,13 +202,16 @@ bool QGraphicsMozViewPrivate::Invalidate()
 
 void QGraphicsMozViewPrivate::OnLocationChanged(const char* aLocation, bool aCanGoBack, bool aCanGoForward)
 {
-    mLocation = QString(aLocation);
     if (mCanGoBack != aCanGoBack || mCanGoForward != aCanGoForward) {
         mCanGoBack = aCanGoBack;
         mCanGoForward = aCanGoForward;
         mViewIface->navigationHistoryChanged();
     }
-    mViewIface->urlChanged();
+
+    if (mLocation != aLocation) {
+        mLocation = QString(aLocation);
+        mViewIface->urlChanged();
+    }
 }
 
 void QGraphicsMozViewPrivate::OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal)
@@ -221,8 +224,13 @@ void QGraphicsMozViewPrivate::OnLoadProgress(int32_t aProgress, int32_t aCurTota
 
 void QGraphicsMozViewPrivate::OnLoadStarted(const char* aLocation)
 {
+    if (mIsPainted) {
+        mIsPainted = false;
+        mViewIface->firstPaint(-1, -1);
+    }
+
     if (mLocation != aLocation) {
-        mLocation = aLocation;
+        mLocation = QString(aLocation);
         mViewIface->urlChanged();
     }
     if (!mIsLoading) {
@@ -550,11 +558,15 @@ void QGraphicsMozViewPrivate::touchEvent(QTouchEvent* event)
     mPendingTouchEvent = true;
     event->setAccepted(true);
     bool draggingChanged = false;
+    bool pinchingChanged = false;
+    int touchPointsCount = event->touchPoints().size();
 
     if (event->type() == QEvent::TouchBegin) {
         mViewIface->forceViewActiveFocus();
-        mTouchTime.restart();
-        mElapsedTouchTime = mTouchTime.elapsed();
+        if (touchPointsCount > 1 && !mPinching) {
+            mPinching = true;
+            pinchingChanged = true;
+        }
     } else if (event->type() == QEvent::TouchUpdate) {
         if (!mDragging) {
             mDragging = true;
@@ -562,10 +574,23 @@ void QGraphicsMozViewPrivate::touchEvent(QTouchEvent* event)
             mMoveDelta = 0;
             draggingChanged = true;
         }
-        mElapsedTouchTime = mTouchTime.elapsed();
+
+        if (touchPointsCount > 1 && !mPinching) {
+            mPinching = true;
+            pinchingChanged = true;
+        }
     } else if (event->type() == QEvent::TouchEnd) {
         mDragging = false;
         draggingChanged = true;
+
+        // Currently change from 2> fingers to 1 finger does not
+        // allow moving content. Hence, keep pinching enabled
+        // also when there is one finger left when releasing
+        // fingers. You can continue pinching by adding second finger.
+        if (mPinching) {
+            mPinching = false;
+            pinchingChanged = true;
+        }
     }
 
     TestFlickingMode(event);
@@ -575,7 +600,7 @@ void QGraphicsMozViewPrivate::touchEvent(QTouchEvent* event)
     MultiTouchInput meventMove(MultiTouchInput::MULTITOUCH_MOVE, timeStamp);
     MultiTouchInput meventEnd(mCanFlick ? MultiTouchInput::MULTITOUCH_END :
                               MultiTouchInput::MULTITOUCH_CANCEL, timeStamp);
-    for (int i = 0; i < event->touchPoints().size(); ++i) {
+    for (int i = 0; i < touchPointsCount; ++i) {
         const QTouchEvent::TouchPoint& pt = event->touchPoints().at(i);
         mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
         switch (pt.state()) {
@@ -630,6 +655,10 @@ void QGraphicsMozViewPrivate::touchEvent(QTouchEvent* event)
 
     if (draggingChanged) {
         mViewIface->draggingChanged();
+    }
+
+    if (pinchingChanged) {
+        mViewIface->pinchingChanged();
     }
 
     if (mMoving != (mDragging || mCanFlick)) {
