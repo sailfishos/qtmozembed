@@ -1,0 +1,127 @@
+From 18aa6dfb106567ef6776329e8e265f3cad09c0d2 Mon Sep 17 00:00:00 2001
+From: Raine Makelainen <raine.makelainen@jollamobile.com>
+Date: Thu, 31 Oct 2013 13:59:29 +0200
+Subject: [PATCH] [qtmozembed] Add custom handling for youtube search
+
+This commit removes also preedit from "text" and "search" input types.
+
+Fixes youtube.com search.
+---
+ src/qgraphicsmozview_p.cpp | 21 ++++++++++++++++++++-
+ src/qgraphicsmozview_p.h   |  1 +
+ src/quickmozview.cpp       | 18 ++++++++++++++++++
+ 3 files changed, 39 insertions(+), 1 deletion(-)
+
+diff --git a/src/qgraphicsmozview_p.cpp b/src/qgraphicsmozview_p.cpp
+index 1bcbde8..18e07de 100644
+--- a/src/qgraphicsmozview_p.cpp
++++ b/src/qgraphicsmozview_p.cpp
+@@ -60,6 +60,7 @@
+     , mIsLoading(false)
+     , mLastIsGoodRotation(true)
+     , mIsPasswordField(false)
++    , mIsTextArea(false)
+     , mGraphicsViewAssigned(false)
+     , mContentRect(0.0, 0.0, 0.0, 0.0)
+     , mScrollableSize(0.0, 0.0)
+@@ -376,10 +377,28 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
+                                               const PRUnichar* inputType, const PRUnichar* inputMode)
+ {
+     Qt::InputMethodHints hints = Qt::ImhNone;
++    mIsPasswordField = false;
++    mIsTextArea = false;
+     hints = aIstate == 2 ? Qt::ImhHiddenText : Qt::ImhPreferLowercase;
+ 
+     QString imType((QChar*)inputType);
+-    if (imType.contains("number", Qt::CaseInsensitive)) {
++    // Handle "textarea" first so that "text" is fine as well.
++    if (imType.contains("textarea", Qt::CaseInsensitive)) {
++        hints = Qt::ImhNone;
++        mIsTextArea = true;
++    }
++    else if (imType.contains("text", Qt::CaseInsensitive) ||
++        imType.contains("search", Qt::CaseInsensitive)) {
++        hints |= Qt::ImhNoAutoUppercase | Qt::ImhNoPredictiveText;
++    }
++    else if (imType.contains("password", Qt::CaseInsensitive)) {
++        hints |= Qt::ImhHiddenText;
++        hints |= Qt::ImhNoAutoUppercase;
++        hints |= Qt::ImhNoPredictiveText;
++        hints |= Qt::ImhSensitiveData;
++        mIsPasswordField = true;
++    }
++    else if (imType.contains("number", Qt::CaseInsensitive)) {
+         //hints |= Qt::ImhDigitsOnly;
+         hints |= Qt::ImhFormattedNumbersOnly;
+     }
+diff --git a/src/qgraphicsmozview_p.h b/src/qgraphicsmozview_p.h
+index fa978f0..3156c95 100644
+--- a/src/qgraphicsmozview_p.h
++++ b/src/qgraphicsmozview_p.h
+@@ -111,6 +111,7 @@ class QGraphicsMozViewPrivate : public mozilla::embedlite::EmbedLiteViewListener
+     bool mIsLoading;
+     bool mLastIsGoodRotation;
+     bool mIsPasswordField;
++    bool mIsTextArea;
+     bool mGraphicsViewAssigned;
+     QRectF mContentRect;
+     QSizeF mScrollableSize;
+diff --git a/src/quickmozview.cpp b/src/quickmozview.cpp
+index 11cb708..3c3094f 100644
+--- a/src/quickmozview.cpp
++++ b/src/quickmozview.cpp
+@@ -316,6 +316,8 @@ void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
+ void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
+ {
+     LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
++
++    // FIXME: This maybe break if replacement exists.
+     if (d->mViewInitialized) {
+         d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+     }
+@@ -329,12 +331,20 @@ void QuickMozView::keyPressEvent(QKeyEvent* event)
+     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
+     int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
+     int32_t charCode = 0;
++
+     if (event->text().length() && event->text()[0].isPrint()) {
+         charCode = (int32_t)event->text()[0].unicode();
+         if (getenv("USE_TEXT_EVENTS")) {
+             return;
+         }
+     }
++
++    if (!d->mIsTextArea && !d->mIsPasswordField &&
++        (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
++        d->mLocation.contains("youtube.com", Qt::CaseInsensitive)) {
++        charCode = domKeyCode;
++    }
++
+     d->mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
+ }
+ 
+@@ -346,6 +356,7 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
+     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
+     int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
+     int32_t charCode = 0;
++
+     if (event->text().length() && event->text()[0].isPrint()) {
+         charCode = (int32_t)event->text()[0].unicode();
+         if (getenv("USE_TEXT_EVENTS")) {
+@@ -353,6 +364,13 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
+             return;
+         }
+     }
++
++    if (!d->mIsTextArea && !d->mIsPasswordField &&
++        (event->key() == Qt::Key_Return || event->key() == Qt::Key_Enter) &&
++        d->mLocation.contains("youtube.com", Qt::CaseInsensitive)) {
++        charCode = domKeyCode;
++    }
++
+     d->mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
+ }
+ 
+-- 
+1.8.4
+
