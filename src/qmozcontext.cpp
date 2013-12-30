@@ -46,8 +46,8 @@ public:
     , mThread(new QThread())
     , mEmbedStarted(false)
     , mQtPump(NULL)
-    , mViewCreator(NULL)
     , mAsyncContext(getenv("USE_ASYNC"))
+    , mViewCreator(NULL)
     {
         LOGT("Create new Context: %p, parent:%p", (void*)this, (void*)qq);
         setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
@@ -202,6 +202,12 @@ QMozContext::QMozContext(QObject* parent)
 void QMozContext::setCompositorInSeparateThread(bool aEnabled)
 {
     d->mApp->SetCompositorInSeparateThread(true);
+}
+
+mozilla::embedlite::EmbedLiteRenderTarget*
+QMozContext::createEmbedLiteRenderTarget()
+{
+    return d->mApp ? d->mApp->CreateEmbedLiteRenderTarget() : nullptr;
 }
 
 void QMozContext::setProfile(const QString profilePath)

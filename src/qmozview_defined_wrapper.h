@@ -121,7 +121,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void recvMouseMove(int posX, int posY); \
     void recvMousePress(int posX, int posY); \
     void recvMouseRelease(int posX, int posY); \
-    void Invalidate(); \
+    bool Invalidate(); \
+    void CompositingFinished(); \
     void requestGLContext(bool& hasContext, QSize& viewPortSize);
 
 #define Q_MOZ_VIEW_SIGNALS \

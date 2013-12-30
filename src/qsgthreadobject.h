@@ -10,24 +10,27 @@
 #include <QSize>
 #include <QtGui/QOpenGLContext>
 
+namespace mozilla {
+namespace embedlite {
+class EmbedLiteRenderTarget;
+}}
+
 class QSGThreadObject : public QObject
 {
     Q_OBJECT
 public:
     QSGThreadObject();
-    ~QSGThreadObject() {}
+    virtual ~QSGThreadObject() {}
 
 public Q_SLOTS:
-    void setupCurrentGLContext();
-    void makeContextCurrent();
-    QOpenGLContext* context() { return mGLContext; }
+    void onWrapRenderThreadGLContext();
+    mozilla::embedlite::EmbedLiteRenderTarget* GetTargetContextWrapper() { return mRenderTarget; }
 
 Q_SIGNALS:
-    void updateGLContextInfo(bool hasContext, QSize viewPortSize);
+    void onRenderThreadReady();
 
 private:
-    QOpenGLContext* mGLContext;
-    QSurface* mGLSurface;
+    mozilla::embedlite::EmbedLiteRenderTarget* mRenderTarget;
 };
 
 #endif // QSGThreadObject_H

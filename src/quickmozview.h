@@ -11,14 +11,8 @@
 #include <QtGui/QOpenGLShaderProgram>
 #include "qmozview_defined_wrapper.h"
 
-namespace mozilla {
-namespace embedlite {
-class EmbedLiteRenderTarget;
-}}
-
 class QGraphicsMozViewPrivate;
 class QSGThreadObject;
-class QMCThreadObject;
 
 class QuickMozView : public QQuickItem
 {
@@ -33,22 +27,24 @@ public:
     ~QuickMozView();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
-    void RenderToCurrentContext(QMatrix affine, mozilla::embedlite::EmbedLiteRenderTarget* renderTarget = 0);
-    mozilla::embedlite::EmbedLiteRenderTarget* CreateEmbedLiteRenderTarget(QSize size);
+    void RenderToCurrentContext();
     void startMoveMonitoring();
+    void RefreshNodeTexture();
 
 private:
     QObject* getChild() { return this; }
 
 public Q_SLOTS:
-
     Q_MOZ_VIEW_PUBLIC_SLOTS
     void SetIsActive(bool aIsActive);
+    void onRenderThreadReady();
 
 Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
-    void updateThreaded();
+    void wrapRenderThreadGLContext();
+    void dispatchItemUpdate();
+    void textureReady(int id, const QSize &size);
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -74,7 +70,7 @@ public Q_SLOTS:
     void sceneGraphInitialized();
     void cleanup();
     void setInputMethodHints(Qt::InputMethodHints hints);
-    void updateGLContextInfo(bool hasContext, QSize viewPortSize);
+    void updateGLContextInfo(QOpenGLContext*);
 
 private Q_SLOTS:
     void onInitialized();
@@ -86,10 +82,12 @@ private:
     unsigned mParentID;
     bool mUseQmlMouse;
     QSGThreadObject* mSGRenderer;
-    QMCThreadObject* mMCRenderer;
     int mTimerId;
     qreal mOffsetX;
     qreal mOffsetY;
+#ifndef NO_PRIVATE_API
+    bool mInThreadRendering;
+#endif
 };
 
 #endif // QuickMozView_H
