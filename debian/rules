@@ -60,6 +60,7 @@ clean:
 	-rm -rf $(CURDIR)/pkgconfig
 	-rm -f $(CURDIR)/configure-stamp
 	-rm -rf $(DEST_OBJ_DIR)
+	[ ! -f Makefile ] || $(MAKE) distclean
 	rm -f Makefile
 	dh_clean
 
@@ -93,6 +94,9 @@ binary-arch: build install
 	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
+ifneq (,$(findstring Maemo 5,$(shell cat /etc/issue)))
+	maemo-optify
+endif
 	dh_builddeb
 
 binary: binary-indep binary-arch
