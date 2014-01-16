@@ -1,22 +1,8 @@
-From 18aa6dfb106567ef6776329e8e265f3cad09c0d2 Mon Sep 17 00:00:00 2001
-From: Raine Makelainen <raine.makelainen@jollamobile.com>
-Date: Thu, 31 Oct 2013 13:59:29 +0200
-Subject: [PATCH] [qtmozembed] Add custom handling for youtube search
-
-This commit removes also preedit from "text" and "search" input types.
-
-Fixes youtube.com search.
----
- src/qgraphicsmozview_p.cpp | 21 ++++++++++++++++++++-
- src/qgraphicsmozview_p.h   |  1 +
- src/quickmozview.cpp       | 18 ++++++++++++++++++
- 3 files changed, 39 insertions(+), 1 deletion(-)
-
 diff --git a/src/qgraphicsmozview_p.cpp b/src/qgraphicsmozview_p.cpp
-index 1bcbde8..18e07de 100644
+index 988222d..5436db7 100644
 --- a/src/qgraphicsmozview_p.cpp
 +++ b/src/qgraphicsmozview_p.cpp
-@@ -60,6 +60,7 @@
+@@ -74,6 +74,7 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(IMozQViewIface* aViewIface)
      , mIsLoading(false)
      , mLastIsGoodRotation(true)
      , mIsPasswordField(false)
@@ -24,8 +10,8 @@ index 1bcbde8..18e07de 100644
      , mGraphicsViewAssigned(false)
      , mContentRect(0.0, 0.0, 0.0, 0.0)
      , mScrollableSize(0.0, 0.0)
-@@ -376,10 +377,28 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
-                                               const PRUnichar* inputType, const PRUnichar* inputMode)
+@@ -397,10 +398,28 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
+                                               const char16_t* inputType, const char16_t* inputMode)
  {
      Qt::InputMethodHints hints = Qt::ImhNone;
 +    mIsPasswordField = false;
@@ -55,10 +41,10 @@ index 1bcbde8..18e07de 100644
          hints |= Qt::ImhFormattedNumbersOnly;
      }
 diff --git a/src/qgraphicsmozview_p.h b/src/qgraphicsmozview_p.h
-index fa978f0..3156c95 100644
+index fa76366..7bd4e6c 100644
 --- a/src/qgraphicsmozview_p.h
 +++ b/src/qgraphicsmozview_p.h
-@@ -111,6 +111,7 @@ class QGraphicsMozViewPrivate : public mozilla::embedlite::EmbedLiteViewListener
+@@ -112,6 +112,7 @@ public:
      bool mIsLoading;
      bool mLastIsGoodRotation;
      bool mIsPasswordField;
@@ -67,19 +53,10 @@ index fa978f0..3156c95 100644
      QRectF mContentRect;
      QSizeF mScrollableSize;
 diff --git a/src/quickmozview.cpp b/src/quickmozview.cpp
-index 11cb708..3c3094f 100644
+index b0af47f..fa1bbf3 100644
 --- a/src/quickmozview.cpp
 +++ b/src/quickmozview.cpp
-@@ -316,6 +316,8 @@ void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
- void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
- {
-     LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
-+
-+    // FIXME: This maybe break if replacement exists.
-     if (d->mViewInitialized) {
-         d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-     }
-@@ -329,12 +331,20 @@ void QuickMozView::keyPressEvent(QKeyEvent* event)
+@@ -388,12 +388,20 @@ void QuickMozView::keyPressEvent(QKeyEvent* event)
      int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
      int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
      int32_t charCode = 0;
@@ -100,7 +77,7 @@ index 11cb708..3c3094f 100644
      d->mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
  }
  
-@@ -346,6 +356,7 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
+@@ -405,6 +413,7 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
      int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
      int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
      int32_t charCode = 0;
@@ -108,7 +85,7 @@ index 11cb708..3c3094f 100644
      if (event->text().length() && event->text()[0].isPrint()) {
          charCode = (int32_t)event->text()[0].unicode();
          if (getenv("USE_TEXT_EVENTS")) {
-@@ -353,6 +364,13 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
+@@ -412,6 +421,13 @@ void QuickMozView::keyReleaseEvent(QKeyEvent* event)
              return;
          }
      }
@@ -122,6 +99,3 @@ index 11cb708..3c3094f 100644
      d->mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
  }
  
--- 
-1.8.4
-
