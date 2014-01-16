@@ -55,6 +55,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 #ifndef NO_PRIVATE_API
   , mInThreadRendering(false)
 #endif
+  , mPreedit(false)
 {
     static bool Initialized = false;
     if (!Initialized) {
@@ -373,6 +374,7 @@ void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
 void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
 {
     LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
+    mPreedit = !event->preeditString().isEmpty();
     if (d->mViewInitialized) {
         d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
     }
@@ -650,7 +652,7 @@ void QuickMozView::sendAsyncMessage(const QString& name, const QVariant& variant
     QJsonDocument doc = QJsonDocument::fromVariant(variant);
     QByteArray array = doc.toJson();
 
-    d->mView->SendAsyncMessage((const PRUnichar*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    d->mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
 }
 
 void QuickMozView::addMessageListener(const QString& name)
@@ -668,7 +670,7 @@ void QuickMozView::addMessageListeners(const QStringList& messageNamesList)
 
     nsTArray<nsString> messages;
     for (int i = 0; i < messageNamesList.size(); i++) {
-        messages.AppendElement((PRUnichar*)messageNamesList.at(i).data());
+        messages.AppendElement((char16_t*)messageNamesList.at(i).data());
     }
     d->mView->AddMessageListeners(messages);
 }
@@ -827,6 +829,19 @@ void QuickMozView::recvMouseRelease(int posX, int posY)
 
 void QuickMozView::touchEvent(QTouchEvent *event)
 {
+    // QInputMethod sends the QInputMethodEvent. Thus, it will
+    // be handled before this touch event. Problem is that
+    // this also commits preedited text when moving web content.
+    // This should be committed just before moving cursor position to
+    // the old cursor position.
+    if (mPreedit) {
+        QInputMethod* inputContext = qGuiApp->inputMethod();
+        if (inputContext) {
+            inputContext->commit();
+        }
+        mPreedit = false;
+    }
+
     if (!mUseQmlMouse || event->touchPoints().count() > 1) {
         d->touchEvent(event);
     } else {
