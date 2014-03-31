@@ -6,13 +6,13 @@
 #ifndef qmoztexturenode_h
 #define qmoztexturenode_h
 
-#include <QtQuick/QSGSimpleTextureNode>
+#include <QtQuick/QSGGeometryNode>
 #include <QObject>
 #include <QMutex>
 
 class QuickMozView;
 
-class MozTextureNode : public QObject, public QSGSimpleTextureNode
+class MozTextureNode : public QObject, public QSGGeometryNode
 {
     Q_OBJECT
 public:
@@ -20,7 +20,6 @@ public:
 
     ~MozTextureNode()
     {
-        delete m_texture;
     }
 
 Q_SIGNALS:
@@ -32,15 +31,15 @@ public Q_SLOTS:
     // texture id and size and schedule an update on the window.
     void newTexture(int id, const QSize &size);
 
+    void setRect(const QRectF &rect);
+
     // Before the scene graph starts to render, we update to the pending texture
     void prepareNode();
 
 private:
 
     int m_id;
-    QSize m_size;
     QMutex m_mutex;
-    QSGTexture *m_texture;
     QuickMozView *m_view;
     bool mIsConnected;
 };
