@@ -1,0 +1,30 @@
+From 638e2737b6d3781da6e7869222c5148e0e98ac9c Mon Sep 17 00:00:00 2001
+From: Raine Makelainen <raine.makelainen@jollamobile.com>
+Date: Thu, 10 Apr 2014 17:37:13 +0300
+Subject: [PATCH] [qtmozembed] Fix invoker launching
+
+Both PWD and GRE_HOME were not set to env when launching from
+application grid through invoker. So, let's set GRE_HOME
+over here.
+
+Due to above XRE_GetEmbedLite() function was not found when
+launching through invoker.
+---
+ src/qmozcontext.cpp | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/qmozcontext.cpp b/src/qmozcontext.cpp
+index fe22e52..8dfb921 100644
+--- a/src/qmozcontext.cpp
++++ b/src/qmozcontext.cpp
+@@ -44,6 +44,7 @@ class QMozContextPrivate : public EmbedLiteAppListener {
+     {
+         LOGT("Create new Context: %p, parent:%p", (void*)this, (void*)qq);
+         setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
++        setenv("GRE_HOME", BUILD_GRE_HOME, 1);
+         LoadEmbedLite();
+         mApp = XRE_GetEmbedLite();
+         mApp->SetListener(this);
+-- 
+1.9.1
+
