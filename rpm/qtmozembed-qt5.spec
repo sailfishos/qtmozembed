@@ -7,7 +7,6 @@ License:    Mozilla License
 URL:        https://github.com/tmeshkova/qtmozembed.git
 Source0:    %{name}-%{version}.tar.bz2
 Patch0:     Add-custom-handling-for-youtube-search.patch
-Patch1:     set-gre-home.patch
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
 BuildRequires:  pkgconfig(Qt5Network)
@@ -46,7 +45,6 @@ This package contains QML unit tests for QtMozEmbed library
 %prep
 %setup -q -n %{name}-%{version}
 %patch0 -p1
-%patch1 -p1
 
 %build
 %qmake5 VERSION=%{version}
