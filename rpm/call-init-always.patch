@@ -1,0 +1,29 @@
+From d2f9ee0e63ec5cf8956218b7460cfd08838c3b25 Mon Sep 17 00:00:00 2001
+From: Raine Makelainen <raine.makelainen@jollamobile.com>
+Date: Thu, 17 Apr 2014 13:41:47 +0300
+Subject: [PATCH] [qtmozembed] Call init() always regardless of initialized
+ state of QMozContext
+
+---
+ src/quickmozview.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/quickmozview.cpp b/src/quickmozview.cpp
+index e2618b9..42a6b9d 100644
+--- a/src/quickmozview.cpp
++++ b/src/quickmozview.cpp
+@@ -919,10 +919,10 @@ void QuickMozView::componentComplete()
+     // TODO: Initialization steps could be improved futher e.g. by adding messageListeners
+     // property and adding them all them view initialized so that it would not be a need operation
+     // in viewInitilized signal handler.
++    init();
+     if (!d->mContext->initialized()) {
+         connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(onInitialized()));
+     } else {
+-        init();
+         onInitialized();
+     }
+ }
+-- 
+1.9.1
+
