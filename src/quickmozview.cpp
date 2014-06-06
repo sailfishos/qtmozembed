@@ -57,6 +57,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 #endif
   , mPreedit(false)
   , mActive(false)
+  , mHasPendingInvalidate(false)
 {
     static bool Initialized = false;
     if (!Initialized) {
@@ -93,7 +94,7 @@ QuickMozView::~QuickMozView()
 void
 QuickMozView::SetIsActive(bool aIsActive)
 {
-    if (QThread::currentThread() == thread()) {
+    if (QThread::currentThread() == thread() && d->mView) {
         d->mView->SetIsActive(aIsActive);
     } else {
         Q_EMIT setIsActive(aIsActive);
@@ -333,6 +334,11 @@ void QuickMozView::setActive(bool active)
             mActive = active;
             Q_EMIT activeChanged();
         }
+        // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
+        if (mInThreadRendering && mHasPendingInvalidate) {
+          RenderToCurrentContext();
+          mHasPendingInvalidate = false;
+        }
         SetIsActive(active);
     } else {
         // Will be processed once view is initialized.
@@ -345,6 +351,7 @@ bool QuickMozView::Invalidate()
 #ifndef NO_PRIVATE_API
     if (mInThreadRendering) {
         update();
+        mHasPendingInvalidate = true;
         return true;
     }
 #endif
