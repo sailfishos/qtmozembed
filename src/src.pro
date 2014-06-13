@@ -35,12 +35,6 @@ HEADERS += qmozcontext.h \
 
 SOURCES += quickmozview.cpp qmoztexturenode.cpp qsgthreadobject.cpp qmozextmaterialnode.cpp
 HEADERS += quickmozview.h qmoztexturenode.h qsgthreadobject.h qmozextmaterialnode.h
-!isEmpty(NO_PRIVATE_API) {
-  DEFINES += NO_PRIVATE_API
-} else {
-  SOURCES += qmozviewsgnode.cpp
-  HEADERS += qmozviewsgnode.h
-}
 
 !isEmpty(BUILD_QT5QUICK1) {
   SOURCES += qdeclarativemozview.cpp qgraphicsmozview.cpp
@@ -56,9 +50,7 @@ include($$RELATIVE_PATH/relative-objdir.pri)
 PREFIX = /usr
 
 QT += quick qml
-isEmpty(NO_PRIVATE_API) {
-  QT += quick-private
-}
+
 !isEmpty(BUILD_QT5QUICK1) {
   QT += declarative widgets opengl
 }
