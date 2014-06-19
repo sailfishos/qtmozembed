@@ -163,7 +163,7 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
         printf("ERROR: QuickMozView not supposed to work without GL context\n");
         return;
     }
-    d->mGLSurfaceSize = ctx->surface()->size();
+    updateGLContextInfo();
 }
 
 /**
