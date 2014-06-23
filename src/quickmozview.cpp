@@ -113,7 +113,7 @@ void QuickMozView::processViewInitialization()
     // This is connected to view initialization. View must be initialized
     // over here.
     Q_ASSERT(d->mViewInitialized);
-    setActive(mActive);
+    SetIsActive(mActive);
 }
 
 void QuickMozView::updateEnabled()
@@ -139,7 +139,7 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
         printf("ERROR: QuickMozView not supposed to work without GL context\n");
         return;
     }
-    d->mGLSurfaceSize = ctx->surface()->size();
+    updateGLContextInfo();
 }
 
 /**
@@ -280,10 +280,10 @@ void QuickMozView::setActive(bool active)
     if (d->mViewInitialized) {
         if (mActive != active) {
             mActive = active;
+            // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
+            SetIsActive(active);
             Q_EMIT activeChanged();
         }
-        // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
-        SetIsActive(active);
     } else {
         // Will be processed once view is initialized.
         mActive = active;
