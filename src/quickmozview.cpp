@@ -184,6 +184,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
         // All of these signals are emitted from scene graph rendering thread.
         connect(win, SIGNAL(beforeRendering()), this, SLOT(refreshNodeTexture()), Qt::DirectConnection);
         connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
+        connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
         win->setClearBeforeRendering(false);
     }
 }
@@ -212,8 +213,27 @@ void QuickMozView::createThreadRenderObject()
     updateGLContextInfo(QOpenGLContext::currentContext());
     if (!gSGRenderer) {
         gSGRenderer = new QSGThreadObject();
+        if (d->mView) {
+          d->mView->ResumeRendering();
+        }
     }
     disconnect(window(), SIGNAL(beforeSynchronizing()), this, 0);
+}
+
+void QuickMozView::clearThreadRenderObject()
+{
+    QOpenGLContext* ctx = QOpenGLContext::currentContext();
+    Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
+    if (gSGRenderer != NULL) {
+        if (d->mView) {
+            d->mView->SuspendRendering(gSGRenderer->getTargetContextWrapper());
+        }
+        delete gSGRenderer;
+        gSGRenderer = NULL;
+    }
+    QQuickWindow *win = window();
+    if (!win) return;
+    connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
 }
 
 void QuickMozView::createView()
@@ -222,22 +242,6 @@ void QuickMozView::createView()
         d->mView = d->mContext->GetApp()->CreateView(mParentID);
         d->mView->SetListener(d);
     }
-}
-
-void QuickMozView::RenderToCurrentContext()
-{
-    QMatrix affine;
-    gfxMatrix matr(affine.m11(), affine.m12(), affine.m21(), affine.m22(), affine.dx(), affine.dy());
-    d->mView->SetGLViewTransform(matr);
-    QRect clipRect(0, 0, d->mSize.width(), d->mSize.height());
-    if (parentItem() && parentItem()->clip()) {
-        QRect parentClipRect = parentItem()->clipRect().toRect();
-        if (clipRect.contains(parentClipRect)) {
-            clipRect = parentClipRect;
-        }
-    }
-    d->mView->SetViewClipping(clipRect.x(), clipRect.y(), clipRect.width(), clipRect.height());
-    d->mView->RenderGL();
 }
 
 QSGNode*
@@ -293,14 +297,6 @@ void QuickMozView::setActive(bool active)
         // Will be processed once view is initialized.
         mActive = active;
     }
-}
-
-bool QuickMozView::Invalidate()
-{
-    QMatrix affine;
-    gfxMatrix matr(affine.m11(), affine.m12(), affine.m21(), affine.m22(), affine.dx(), affine.dy());
-    d->mView->SetGLViewTransform(matr);
-    return false;
 }
 
 void QuickMozView::CompositingFinished()
