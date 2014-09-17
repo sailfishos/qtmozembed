@@ -49,11 +49,14 @@ QuickMozView::QuickMozView(QQuickItem *parent)
   , d(new QGraphicsMozViewPrivate(new IMozQView<QuickMozView>(*this)))
   , mParentID(0)
   , mUseQmlMouse(false)
-  , mTimerId(0)
+  , mMovingTimerId(0)
+  , mBackgroundTimerId(0)
   , mOffsetX(0.0)
   , mOffsetY(0.0)
   , mPreedit(false)
   , mActive(false)
+  , mBackground(false)
+  , mWindowVisible(false)
 {
     static bool Initialized = false;
     if (!Initialized) {
@@ -186,6 +189,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
         connect(win, SIGNAL(beforeRendering()), this, SLOT(refreshNodeTexture()), Qt::DirectConnection);
         connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
         connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
+        connect(win, SIGNAL(visibleChanged(bool)), this, SLOT(windowVisibleChanged(bool)));
         win->setClearBeforeRendering(false);
     }
 }
@@ -282,6 +286,14 @@ void QuickMozView::refreshNodeTexture()
     }
 }
 
+void QuickMozView::windowVisibleChanged(bool visible)
+{
+    mWindowVisible = visible;
+    if (mBackgroundTimerId == 0 && !mBackground) {
+        mBackgroundTimerId = startTimer(1000);
+    }
+}
+
 int QuickMozView::parentId() const
 {
     return mParentID;
@@ -307,6 +319,11 @@ void QuickMozView::setActive(bool active)
     }
 }
 
+bool QuickMozView::background() const
+{
+    return mBackground;
+}
+
 void QuickMozView::CompositingFinished()
 {
     Q_EMIT dispatchItemUpdate();
@@ -318,7 +335,7 @@ void QuickMozView::cleanup()
 
 void QuickMozView::startMoveMonitoring()
 {
-    mTimerId = startTimer(MOZVIEW_FLICK_STOP_TIMEOUT);
+    mMovingTimerId = startTimer(MOZVIEW_FLICK_STOP_TIMEOUT);
     d->mFlicking = true;
 }
 
@@ -386,7 +403,19 @@ void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
                 d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
             }
         } else {
-            d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+            if (event->commitString().isEmpty()) {
+                d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+            } else {
+                d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+                // After commiting pre-edit, we send "dummy" keypress.
+                // Workaround for sites that enable "submit" button based on keypress events like
+                // comment fields in FB, and m.linkedin.com
+                // Chrome on Android does the same, but it does it also after each pre-edit change
+                // We cannot do exectly the same here since sending keyevent with active pre-edit would commit gecko's
+                // internal Input Engine's pre-edit
+                d->mView->SendKeyPress(0, 0, 0);
+                d->mView->SendKeyRelease(0, 0, 0);
+            }
         }
     }
 }
@@ -862,16 +891,30 @@ void QuickMozView::touchEvent(QTouchEvent *event)
 
 void QuickMozView::timerEvent(QTimerEvent *event)
 {
-    if (event->timerId() == mTimerId) {
+    if (event->timerId() == mMovingTimerId) {
         qreal offsetY = d->mScrollableOffset.y();
         qreal offsetX = d->mScrollableOffset.x();
         if (offsetX == mOffsetX && offsetY == mOffsetY) {
             d->ResetState();
-            killTimer(mTimerId);
-            mTimerId = 0;
+            killTimer(mMovingTimerId);
+            mMovingTimerId = 0;
         }
         mOffsetX = offsetX;
         mOffsetY = offsetY;
+    } else if (event->timerId() == mBackgroundTimerId) {
+        if (window()) {
+            // Guard window visibility change was not cancelled after timer triggered.
+            bool windowVisible = window()->isVisible();
+            // mWindowVisible == mBackground visibility changed
+            if (windowVisible == mWindowVisible && mWindowVisible == mBackground) {
+                mBackground = !mWindowVisible;
+                Q_EMIT backgroundChanged();
+                if (mWindowVisible) {
+                    killTimer(mBackgroundTimerId);
+                    mBackgroundTimerId = 0;
+                }
+            }
+        }
     }
 }
 
