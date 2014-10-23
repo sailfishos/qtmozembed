@@ -17,7 +17,6 @@
 #include <QTimer>
 #include <QThread>
 #include <QMutexLocker>
-#include <QtOpenGL/QGLContext>
 #include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
