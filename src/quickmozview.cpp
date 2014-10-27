@@ -11,7 +11,6 @@
 #include "InputData.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/embedlite/EmbedLiteRenderTarget.h"
 #include "mozilla/TimeStamp.h"
 
 #include <QTimer>
@@ -33,7 +32,6 @@
 #include "qmozscrolldecorator.h"
 #include "qmoztexturenode.h"
 #include "qmozextmaterialnode.h"
-#include "qsgthreadobject.h"
 #include "assert.h"
 
 using namespace mozilla;
@@ -42,8 +40,6 @@ using namespace mozilla::embedlite;
 #ifndef MOZVIEW_FLICK_STOP_TIMEOUT
 #define MOZVIEW_FLICK_STOP_TIMEOUT 500
 #endif
-
-static QSGThreadObject* gSGRenderer = NULL;
 
 QuickMozView::QuickMozView(QQuickItem *parent)
   : QQuickItem(parent)
@@ -58,6 +54,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
   , mActive(false)
   , mBackground(false)
   , mWindowVisible(false)
+  , mLoaded(false)
 {
     static bool Initialized = false;
     if (!Initialized) {
@@ -78,6 +75,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
     connect(this, SIGNAL(enabledChanged()), this, SLOT(updateEnabled()));
     connect(this, SIGNAL(dispatchItemUpdate()), this, SLOT(update()));
+    connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
+    connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
 
     updateEnabled();
 }
@@ -105,6 +104,15 @@ QuickMozView::SetIsActive(bool aIsActive)
         }
     } else {
         Q_EMIT setIsActive(aIsActive);
+    }
+}
+
+void QuickMozView::updateLoaded()
+{
+    bool loaded = loadProgress() == 100 && !loading();
+    if (mLoaded != loaded) {
+        mLoaded = loaded;
+        Q_EMIT loadedChanged();
     }
 }
 
@@ -219,9 +227,6 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
 void QuickMozView::createThreadRenderObject()
 {
     updateGLContextInfo(QOpenGLContext::currentContext());
-    if (!gSGRenderer) {
-        gSGRenderer = new QSGThreadObject();
-    }
     disconnect(window(), SIGNAL(beforeSynchronizing()), this, 0);
 }
 
@@ -229,10 +234,6 @@ void QuickMozView::clearThreadRenderObject()
 {
     QOpenGLContext* ctx = QOpenGLContext::currentContext();
     Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
-    if (gSGRenderer != NULL) {
-        delete gSGRenderer;
-        gSGRenderer = NULL;
-    }
     QQuickWindow *win = window();
     if (!win) return;
     connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
@@ -278,12 +279,14 @@ void QuickMozView::refreshNodeTexture()
 
     if (d && d->mView)
     {
+#if defined(QT_OPENGL_ES_2)
         int width = 0, height = 0;
         static QOpenGLExtension_OES_EGL_image* extension = nullptr;
         if (!extension) {
             extension = new QOpenGLExtension_OES_EGL_image();
             extension->initializeOpenGLFunctions();
         }
+
         if (!mConsTex) {
           glGenTextures(1, &mConsTex);
         }
@@ -291,6 +294,9 @@ void QuickMozView::refreshNodeTexture()
         void* image = d->mView->GetPlatformImage(&width, &height);
         extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
         Q_EMIT textureReady(mConsTex, QSize(width, height));
+#else
+#warning "Implement me for non ES2 platform"
+#endif
     }
 }
 
@@ -330,6 +336,11 @@ void QuickMozView::setActive(bool active)
 bool QuickMozView::background() const
 {
     return mBackground;
+}
+
+bool QuickMozView::loaded() const
+{
+    return mLoaded;
 }
 
 void QuickMozView::CompositingFinished()
