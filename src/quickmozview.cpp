@@ -233,6 +233,14 @@ void QuickMozView::clearThreadRenderObject()
 {
     QOpenGLContext* ctx = QOpenGLContext::currentContext();
     Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
+
+#if defined(QT_OPENGL_ES_2)
+    if (mConsTex) {
+        glDeleteTextures(1, &mConsTex);
+        mConsTex = 0;
+    }
+#endif
+
     QQuickWindow *win = window();
     if (!win) return;
     connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
@@ -288,6 +296,8 @@ void QuickMozView::refreshNodeTexture()
 
         if (!mConsTex) {
           glGenTextures(1, &mConsTex);
+          // Call resumeRendering() from the main thread
+          QMetaObject::invokeMethod(this, "resumeRendering", Qt::QueuedConnection);
         }
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
         void* image = d->mView->GetPlatformImage(&width, &height);
@@ -324,6 +334,9 @@ void QuickMozView::setActive(bool active)
             mActive = active;
             // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
             SetIsActive(active);
+            if (active) {
+                resumeRendering();
+            }
             Q_EMIT activeChanged();
         }
     } else {
@@ -828,6 +841,7 @@ void QuickMozView::suspendView()
     }
     setActive(false);
     d->mView->SuspendTimeouts();
+    d->mView->SuspendRendering();
 }
 
 void QuickMozView::resumeView()
@@ -945,4 +959,9 @@ void QuickMozView::componentComplete()
     } else {
         createView();
     }
+}
+
+void QuickMozView::resumeRendering()
+{
+    d->mView->ResumeRendering();
 }
