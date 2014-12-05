@@ -8,22 +8,16 @@
 
 #include <QtQuick/QSGGeometryNode>
 #include <QObject>
-#include <QMutex>
-
-class QuickMozView;
 
 class MozExtMaterialNode : public QObject, public QSGGeometryNode
 {
     Q_OBJECT
 public:
-    MozExtMaterialNode(QuickMozView* aView);
+    MozExtMaterialNode();
 
-    ~MozExtMaterialNode()
-    {
-    }
+    ~MozExtMaterialNode() {}
 
-Q_SIGNALS:
-    void pendingNewTexture();
+    void update(const QSize &size);
 
 public Q_SLOTS:
 
@@ -33,14 +27,12 @@ public Q_SLOTS:
 
     // Before the scene graph starts to render, we update to the pending texture
     void prepareNode();
-    void update();
 
 private:
+    void updateGeometry(const QSize &size);
 
     int m_id;
     QSize m_size;
-    QMutex m_mutex;
-    QuickMozView* m_view;
 };
 
 #endif /* qMozExtMaterialNode_h */
