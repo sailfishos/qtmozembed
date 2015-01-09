@@ -47,13 +47,11 @@ QuickMozView::QuickMozView(QQuickItem *parent)
   , mPrivateMode(false)
   , mUseQmlMouse(false)
   , mMovingTimerId(0)
-  , mBackgroundTimerId(0)
   , mOffsetX(0.0)
   , mOffsetY(0.0)
   , mPreedit(false)
   , mActive(false)
   , mBackground(false)
-  , mWindowVisible(false)
   , mLoaded(false)
 {
     static bool Initialized = false;
@@ -312,9 +310,9 @@ void QuickMozView::refreshNodeTexture()
 
 void QuickMozView::windowVisibleChanged(bool visible)
 {
-    mWindowVisible = visible;
-    if (mBackgroundTimerId == 0 && !mBackground) {
-        mBackgroundTimerId = startTimer(1000);
+    if (visible == mBackground) {
+        mBackground = !visible;
+        Q_EMIT backgroundChanged();
     }
 }
 
@@ -684,6 +682,8 @@ void QuickMozView::goBack()
 {
     if (!d->mViewInitialized)
         return;
+
+    d->ResetPainted();
     d->mView->GoBack();
 }
 
@@ -691,6 +691,8 @@ void QuickMozView::goForward()
 {
     if (!d->mViewInitialized)
         return;
+
+    d->ResetPainted();
     d->mView->GoForward();
 }
 
@@ -705,6 +707,8 @@ void QuickMozView::reload()
 {
     if (!d->mViewInitialized)
         return;
+
+    d->ResetPainted();
     d->mView->Reload(false);
 }
 
@@ -718,6 +722,7 @@ void QuickMozView::load(const QString& url)
     }
     LOGT("url: %s", url.toUtf8().data());
     d->mProgress = 0;
+    d->ResetPainted();
     d->mView->LoadURL(url.toUtf8().data());
 }
 
@@ -953,20 +958,6 @@ void QuickMozView::timerEvent(QTimerEvent *event)
         }
         mOffsetX = offsetX;
         mOffsetY = offsetY;
-    } else if (event->timerId() == mBackgroundTimerId) {
-        if (window()) {
-            // Guard window visibility change was not cancelled after timer triggered.
-            bool windowVisible = window()->isVisible();
-            // mWindowVisible == mBackground visibility changed
-            if (windowVisible == mWindowVisible && mWindowVisible == mBackground) {
-                mBackground = !mWindowVisible;
-                Q_EMIT backgroundChanged();
-                if (mWindowVisible) {
-                    killTimer(mBackgroundTimerId);
-                    mBackgroundTimerId = 0;
-                }
-            }
-        }
     }
 }
 
