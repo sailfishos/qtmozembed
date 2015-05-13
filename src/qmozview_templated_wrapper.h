@@ -16,11 +16,12 @@ public:
     virtual ~IMozQViewIface() {}
     // Methods
     virtual void CompositingFinished() = 0;
+    virtual bool Invalidate() = 0;
     virtual void setInputMethodHints(Qt::InputMethodHints hints) = 0;
     virtual void forceViewActiveFocus() = 0;
     virtual void createGeckoGLContext() = 0;
     virtual void requestGLContext(bool& hasContext, QSize& viewPortSize) = 0;
-    virtual void startMoveMonitoring() = 0;
+    virtual void drawUnderlay() = 0;
     // Signals
     virtual void viewInitialized() = 0;
     virtual void urlChanged() = 0;
@@ -63,6 +64,11 @@ public:
         view.CompositingFinished();
     }
 
+    bool Invalidate()
+    {
+        return view.Invalidate();
+    }
+
     void setInputMethodHints(Qt::InputMethodHints hints)
     {
         view.setInputMethodHints(hints);
@@ -75,9 +81,6 @@ public:
     void createGeckoGLContext()
     {
         view.createGeckoGLContext();
-    }
-    void startMoveMonitoring() {
-        view.startMoveMonitoring();
     }
     void viewInitialized()
     {
@@ -171,6 +174,11 @@ public:
     {
         view.requestGLContext(hasContext, viewPortSize);
     }
+    void drawUnderlay()
+    {
+        view.drawUnderlay();
+    }
+
     void useQmlMouse(bool value)
     {
         Q_EMIT view.useQmlMouse(value);

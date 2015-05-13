@@ -13,6 +13,7 @@
 #include <QTime>
 #include <QString>
 #include <QPointF>
+#include <QMutex>
 #include <QMap>
 #include <QSGSimpleTextureNode>
 #include "qmozscrolldecorator.h"
@@ -27,7 +28,7 @@ class QMozContext;
 class QGraphicsMozViewPrivate : public mozilla::embedlite::EmbedLiteViewListener
 {
 public:
-    QGraphicsMozViewPrivate(IMozQViewIface* aViewIface);
+    QGraphicsMozViewPrivate(IMozQViewIface* aViewIface, QObject* publicPtr);
     virtual ~QGraphicsMozViewPrivate();
 
     void ReceiveInputEvent(const mozilla::InputData& event);
@@ -37,6 +38,9 @@ public:
     virtual bool RequestCurrentGLContext();
     virtual void ViewInitialized();
     virtual void SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    virtual QColor GetBackgroundColor() const;
+
+    virtual bool Invalidate();
     virtual void CompositingFinished();
     virtual void OnLocationChanged(const char* aLocation, bool aCanGoBack, bool aCanGoForward);
     virtual void OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal);
@@ -70,6 +74,9 @@ public:
     virtual void SetIsFocused(bool aIsFocused);
     virtual void CompositorCreated();
 
+    // Called always from the compositor thread.
+    virtual void DrawUnderlay();
+
     void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void TestFlickingMode(QTouchEvent *event);
     void HandleTouchEnd(bool& draggingChanged, bool& pinchingChanged);
@@ -77,11 +84,27 @@ public:
     void UpdateMoving(bool moving);
     void ResetPainted();
 
+    void load(const QString &url);
+    void loadFrameScript(const QString &frameScript);
+    void addMessageListener(const QString &name);
+    void addMessageListeners(const QStringList &messageNamesList);
+
+    void startMoveMonitor();
+    void timerEvent(QTimerEvent *event);
+    QVariant inputMethodQuery(Qt::InputMethodQuery property) const;
+    void inputMethodEvent(QInputMethodEvent *event);
+    void keyPressEvent(QKeyEvent *event);
+    void keyReleaseEvent(QKeyEvent *event);
+
+    void sendAsyncMessage(const QString& name, const QVariant& variant);
+
     IMozQViewIface* mViewIface;
+    QScopedPointer<QObject> q;
     QMozContext* mContext;
     mozilla::embedlite::EmbedLiteView* mView;
     bool mViewInitialized;
     QColor mBgColor;
+    mutable QMutex mBgColorMutex;
     QImage mTempBufferImage;
     QSGTexture* mTempTexture;
     bool mEnabled;
@@ -119,12 +142,23 @@ public:
     bool mIsPainted;
     Qt::InputMethodHints mInputMethodHints;
     bool mIsInputFieldFocused;
+    bool mPreedit;
     bool mViewIsFocused;
     bool mHasContext;
     QSize mGLSurfaceSize;
+    Qt::ScreenOrientation mOrientation;
+    bool mOrientationDirty;
     bool mPressed;
     bool mDragging;
     bool mFlicking;
+    // Moving monitoring
+    int mMovingTimerId;
+    qreal mOffsetX;
+    qreal mOffsetY;
+
+    QString mPendingUrl;
+    QStringList mPendingMessageListeners;
+    QStringList mPendingFrameScripts;
 };
 
 qint64 current_timestamp(QTouchEvent*);

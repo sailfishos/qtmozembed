@@ -15,9 +15,6 @@
 
 #include <QThread>
 #include <QMutexLocker>
-#include <QGuiApplication>
-#include <QJsonDocument>
-#include <QJsonParseError>
 #include <QtQuick/qquickwindow.h>
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QOpenGLContext>
@@ -27,7 +24,6 @@
 #include <QQmlInfo>
 
 #include "qgraphicsmozview_p.h"
-#include "EmbedQtKeyUtils.h"
 #include "qmozscrolldecorator.h"
 #include "qmoztexturenode.h"
 #include "qmozextmaterialnode.h"
@@ -36,33 +32,18 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
-#ifndef MOZVIEW_FLICK_STOP_TIMEOUT
-#define MOZVIEW_FLICK_STOP_TIMEOUT 500
-#endif
-
 QuickMozView::QuickMozView(QQuickItem *parent)
   : QQuickItem(parent)
-  , d(new QGraphicsMozViewPrivate(new IMozQView<QuickMozView>(*this)))
+  , d(new QGraphicsMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
   , mParentID(0)
   , mPrivateMode(false)
   , mUseQmlMouse(false)
-  , mMovingTimerId(0)
-  , mOffsetX(0.0)
-  , mOffsetY(0.0)
-  , mPreedit(false)
   , mActive(false)
   , mBackground(false)
   , mLoaded(false)
   , mConsTex(0)
 {
-    static bool Initialized = false;
-    if (!Initialized) {
-        qmlRegisterType<QMozReturnValue>("QtMozilla", 1, 0, "QMozReturnValue");
-        Initialized = true;
-    }
-
     setFlag(ItemHasContents, true);
-
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
     setFlag(ItemClipsChildrenToShape, true);
     setFlag(ItemIsFocusScope, true);
@@ -120,7 +101,6 @@ void
 QuickMozView::contextInitialized()
 {
     LOGT("QuickMozView");
-    d->mContext->setCompositorInSeparateThread(true);
     // We really don't care about SW rendering on Qt5 anymore
     d->mContext->GetApp()->SetIsAccelerated(true);
     createView();
@@ -146,8 +126,13 @@ void QuickMozView::createGeckoGLContext()
 
 void QuickMozView::requestGLContext(bool& hasContext, QSize& viewPortSize)
 {
-    hasContext = false;
+    hasContext = true;
     viewPortSize = d->mGLSurfaceSize;
+}
+
+void QuickMozView::drawUnderlay()
+{
+    // Do nothing
 }
 
 void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
@@ -365,14 +350,13 @@ void QuickMozView::CompositingFinished()
     Q_EMIT dispatchItemUpdate();
 }
 
-void QuickMozView::cleanup()
+bool QuickMozView::Invalidate()
 {
+    return false;
 }
 
-void QuickMozView::startMoveMonitoring()
+void QuickMozView::cleanup()
 {
-    mMovingTimerId = startTimer(MOZVIEW_FLICK_STOP_TIMEOUT);
-    d->mFlicking = true;
 }
 
 void QuickMozView::mouseMoveEvent(QMouseEvent* e)
@@ -418,90 +402,22 @@ void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
 
 void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
 {
-    LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
-    mPreedit = !event->preeditString().isEmpty();
-    if (d->mViewInitialized) {
-        if (d->mInputMethodHints & Qt::ImhFormattedNumbersOnly || d->mInputMethodHints & Qt::ImhDialableCharactersOnly) {
-            bool ok;
-            int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
-
-            if (ok) {
-                int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
-                int32_t charCode = 0;
-
-                if (event->commitString().length() && event->commitString()[0].isPrint()) {
-                    charCode = (int32_t)event->commitString()[0].unicode();
-                }
-                d->mView->SendKeyPress(domKeyCode, 0, charCode);
-                d->mView->SendKeyRelease(domKeyCode, 0, charCode);
-                qGuiApp->inputMethod()->reset();
-            } else {
-                d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-            }
-        } else {
-            if (event->commitString().isEmpty()) {
-                d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-            } else {
-                d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-                // After commiting pre-edit, we send "dummy" keypress.
-                // Workaround for sites that enable "submit" button based on keypress events like
-                // comment fields in FB, and m.linkedin.com
-                // Chrome on Android does the same, but it does it also after each pre-edit change
-                // We cannot do exectly the same here since sending keyevent with active pre-edit would commit gecko's
-                // internal Input Engine's pre-edit
-                d->mView->SendKeyPress(0, 0, 0);
-                d->mView->SendKeyRelease(0, 0, 0);
-            }
-        }
-    }
+    d->inputMethodEvent(event);
 }
 
 void QuickMozView::keyPressEvent(QKeyEvent* event)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
-    int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
-    int32_t charCode = 0;
-    if (event->text().length() && event->text()[0].isPrint()) {
-        charCode = (int32_t)event->text()[0].unicode();
-        if (getenv("USE_TEXT_EVENTS")) {
-            return;
-        }
-    }
-    d->mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
+    d->keyPressEvent(event);
 }
 
 void QuickMozView::keyReleaseEvent(QKeyEvent* event)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
-    int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
-    int32_t charCode = 0;
-    if (event->text().length() && event->text()[0].isPrint()) {
-        charCode = (int32_t)event->text()[0].unicode();
-        if (getenv("USE_TEXT_EVENTS")) {
-            d->mView->SendTextEvent(event->text().toUtf8().data(), "");
-            return;
-        }
-    }
-    d->mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
+    d->keyReleaseEvent(event);
 }
 
-QVariant
-QuickMozView::inputMethodQuery(Qt::InputMethodQuery property) const
+QVariant QuickMozView::inputMethodQuery(Qt::InputMethodQuery property) const
 {
-    switch (property) {
-    case Qt::ImEnabled:
-        return QVariant((bool) d->mIsInputFieldFocused);
-    case Qt::ImHints:
-        return QVariant((int) d->mInputMethodHints);
-    default:
-        return QVariant();
-    }
+    return d->inputMethodQuery(property);
 }
 
 void QuickMozView::focusInEvent(QFocusEvent* event)
@@ -715,52 +631,27 @@ void QuickMozView::reload()
 
 void QuickMozView::load(const QString& url)
 {
-    if (url.isEmpty())
-        return;
-
-    if (!d->mViewInitialized) {
-        return;
-    }
-    LOGT("url: %s", url.toUtf8().data());
-    d->mProgress = 0;
-    d->ResetPainted();
-    d->mView->LoadURL(url.toUtf8().data());
+    d->load(url);
 }
 
 void QuickMozView::sendAsyncMessage(const QString& name, const QVariant& variant)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    QJsonDocument doc = QJsonDocument::fromVariant(variant);
-    QByteArray array = doc.toJson();
-
-    d->mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    d->sendAsyncMessage(name, variant);
 }
 
 void QuickMozView::addMessageListener(const QString& name)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    d->mView->AddMessageListener(name.toUtf8().data());
+    d->addMessageListener(name);
 }
 
 void QuickMozView::addMessageListeners(const QStringList& messageNamesList)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    nsTArray<nsString> messages;
-    for (int i = 0; i < messageNamesList.size(); i++) {
-        messages.AppendElement((char16_t*)messageNamesList.at(i).data());
-    }
-    d->mView->AddMessageListeners(messages);
+    d->addMessageListeners(messageNamesList);
 }
 
 void QuickMozView::loadFrameScript(const QString& name)
 {
-    d->mView->LoadFrameScript(name.toUtf8().data());
+    d->loadFrameScript(name);
 }
 
 void QuickMozView::newWindow(const QString& url)
@@ -857,7 +748,7 @@ void QuickMozView::synthTouchEnd(const QVariant& touches)
 
 void QuickMozView::suspendView()
 {
-    if (!d->mView) {
+    if (!d->mViewInitialized) {
         return;
     }
     setActive(false);
@@ -867,7 +758,7 @@ void QuickMozView::suspendView()
 
 void QuickMozView::resumeView()
 {
-    if (!d->mView) {
+    if (!d->mViewInitialized) {
         return;
     }
     setActive(true);
@@ -922,19 +813,6 @@ void QuickMozView::recvMouseRelease(int posX, int posY)
 
 void QuickMozView::touchEvent(QTouchEvent *event)
 {
-    // QInputMethod sends the QInputMethodEvent. Thus, it will
-    // be handled before this touch event. Problem is that
-    // this also commits preedited text when moving web content.
-    // This should be committed just before moving cursor position to
-    // the old cursor position.
-    if (mPreedit) {
-        QInputMethod* inputContext = qGuiApp->inputMethod();
-        if (inputContext) {
-            inputContext->commit();
-        }
-        mPreedit = false;
-    }
-
     if (!mUseQmlMouse || event->touchPoints().count() > 1) {
         d->touchEvent(event);
     } else {
@@ -944,16 +822,9 @@ void QuickMozView::touchEvent(QTouchEvent *event)
 
 void QuickMozView::timerEvent(QTimerEvent *event)
 {
-    if (event->timerId() == mMovingTimerId) {
-        qreal offsetY = d->mScrollableOffset.y();
-        qreal offsetX = d->mScrollableOffset.x();
-        if (offsetX == mOffsetX && offsetY == mOffsetY) {
-            d->ResetState();
-            killTimer(mMovingTimerId);
-            mMovingTimerId = 0;
-        }
-        mOffsetX = offsetX;
-        mOffsetY = offsetY;
+    d->timerEvent(event);
+    if (!event->isAccepted()) {
+        QQuickItem::timerEvent(event);
     }
 }
 

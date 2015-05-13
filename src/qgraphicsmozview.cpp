@@ -9,11 +9,9 @@
 #include <QStyleOptionGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QTimer>
+#include <QTimerEvent>
 #include <QThread>
 #include <QtOpenGL/QGLContext>
-#include <QJsonDocument>
-#include <QJsonParseError>
-#include "EmbedQtKeyUtils.h"
 
 #include "qgraphicsmozview.h"
 #include "qmozcontext.h"
@@ -28,7 +26,7 @@ using namespace mozilla::embedlite;
 
 QGraphicsMozView::QGraphicsMozView(QGraphicsItem* parent)
     : QGraphicsWidget(parent)
-    , d(new QGraphicsMozViewPrivate(new IMozQView<QGraphicsMozView>(*this)))
+    , d(new QGraphicsMozViewPrivate(new IMozQView<QGraphicsMozView>(*this), this))
     , mParentID(0)
     , mUseQmlMouse(false)
 {
@@ -74,13 +72,6 @@ QGraphicsMozView::~QGraphicsMozView()
     delete d;
 }
 
-void QGraphicsMozView::startMoveMonitoring()
-{
-    // TODO : Add implementation for monitoring moving property.
-    // See QuickMozView startMoveMonitoring and timerEvent(QTimerEvent *event)
-    LOGT("NOT IMPLEMENTED");
-}
-
 void
 QGraphicsMozView::onInitialized()
 {
@@ -108,6 +99,12 @@ QGraphicsMozView::CompositingFinished()
 {
 }
 
+bool
+QGraphicsMozView::Invalidate()
+{
+    return false;
+}
+
 void
 QGraphicsMozView::OnUpdateThreaded()
 {
@@ -126,6 +123,11 @@ QGraphicsMozView::requestGLContext(bool& hasContext, QSize& viewPortSize)
     Q_EMIT requestGLContextQGV(d->mHasContext, d->mGLSurfaceSize);
     hasContext = d->mHasContext;
     viewPortSize = d->mGLSurfaceSize;
+}
+
+void QGraphicsMozView::drawUnderlay()
+{
+    // Do nothing
 }
 
 /*! \reimp
@@ -202,13 +204,7 @@ void QGraphicsMozView::addMessageListeners(const QStringList& messageNamesList)
 
 void QGraphicsMozView::sendAsyncMessage(const QString& name, const QVariant& variant)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    QJsonDocument doc = QJsonDocument::fromVariant(variant);
-    QByteArray array = doc.toJson();
-
-    d->mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    d->sendAsyncMessage(name, variant);
 }
 
 QPointF QGraphicsMozView::scrollableOffset() const
@@ -337,7 +333,7 @@ bool QGraphicsMozView::event(QEvent* event)
 
 void QGraphicsMozView::suspendView()
 {
-    if (!d->mView) {
+    if (!d->mViewInitialized) {
         return;
     }
     d->mView->SetIsActive(false);
@@ -346,7 +342,7 @@ void QGraphicsMozView::suspendView()
 
 void QGraphicsMozView::resumeView()
 {
-    if (!d->mView) {
+    if (!d->mViewInitialized) {
         return;
     }
     d->mView->SetIsActive(true);
@@ -433,6 +429,14 @@ void QGraphicsMozView::focusOutEvent(QFocusEvent* event)
     QGraphicsWidget::focusOutEvent(event);
 }
 
+void QGraphicsMozView::timerEvent(QTimerEvent *event)
+{
+    d->timerEvent(event);
+    if (!event->isAccepted()) {
+        QGraphicsView::timerEvent(event);
+    }
+}
+
 
 void QGraphicsMozView::mouseMoveEvent(QGraphicsSceneMouseEvent* e)
 {
@@ -485,45 +489,17 @@ void QGraphicsMozView::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 
 void QGraphicsMozView::inputMethodEvent(QInputMethodEvent* event)
 {
-    LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
-    if (d->mViewInitialized) {
-        d->mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-    }
+    d->inputMethodEvent(event);
 }
 
 void QGraphicsMozView::keyPressEvent(QKeyEvent* event)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
-    int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
-    int32_t charCode = 0;
-    if (event->text().length() && event->text()[0].isPrint()) {
-        charCode = (int32_t)event->text()[0].unicode();
-        if (getenv("USE_TEXT_EVENTS")) {
-            return;
-        }
-    }
-    d->mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
+    d->keyPressEvent(event);
 }
 
 void QGraphicsMozView::keyReleaseEvent(QKeyEvent* event)
 {
-    if (!d->mViewInitialized)
-        return;
-
-    int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
-    int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
-    int32_t charCode = 0;
-    if (event->text().length() && event->text()[0].isPrint()) {
-        charCode = (int32_t)event->text()[0].unicode();
-        if (getenv("USE_TEXT_EVENTS")) {
-            d->mView->SendTextEvent(event->text().toUtf8().data(), "");
-            return;
-        }
-    }
-    d->mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
+    d->keyReleaseEvent(event);
 }
 
 QVariant
