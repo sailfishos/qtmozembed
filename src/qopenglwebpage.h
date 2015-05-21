@@ -15,6 +15,7 @@
 #include <QKeyEvent>
 #include <QFocusEvent>
 #include <QTouchEvent>
+#include <QMutex>
 
 #include "qmozview_defined_wrapper.h"
 
@@ -96,7 +97,6 @@ public Q_SLOTS:
     void updateContentOrientation(Qt::ScreenOrientation orientation);
 
 Q_SIGNALS:
-    void setIsActive(bool);
     void parentIdChanged();
     void privateModeChanged();
     void completedChanged();
@@ -115,7 +115,6 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void processViewInitialization();
-    void SetIsActive(bool aIsActive);
     void updateLoaded();
     void createView();
 
@@ -132,6 +131,10 @@ private:
     bool mLoaded;
     bool mCompleted;
     QWindow *mWindow;
+    QList<QWeakPointer<QMozGrabResult> > mGrabResultList;
+    QMutex mGrabResultListLock;
+
+    Q_DISABLE_COPY(QOpenGLWebPage)
 };
 
 QML_DECLARE_TYPE(QOpenGLWebPage)
