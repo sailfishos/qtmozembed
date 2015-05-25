@@ -39,7 +39,6 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
   , mParentID(0)
   , mPrivateMode(false)
   , mActive(false)
-  , mBackground(false)
   , mLoaded(false)
   , mCompleted(false)
   , mWindow(0)
@@ -310,21 +309,6 @@ void QOpenGLWebPage::setSize(const QSizeF &size)
     Q_EMIT sizeChanged();
 }
 
-bool QOpenGLWebPage::background() const
-{
-    return mBackground;
-}
-
-void QOpenGLWebPage::setBackground(bool background)
-{
-    if (mBackground == background) {
-        return;
-    }
-
-    mBackground = background;
-    Q_EMIT backgroundChanged();
-}
-
 bool QOpenGLWebPage::loaded() const
 {
     return mLoaded;
@@ -405,9 +389,12 @@ void QOpenGLWebPage::update()
 
 void QOpenGLWebPage::forceActiveFocus()
 {
-    Q_ASSERT(d->mViewInitialized);
+    if (!d->mViewInitialized) {
+        return;
+    }
+
     setActive(true);
-    d->mView->SetIsFocused(true);
+    d->SetIsFocused(true);
 }
 
 void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
