@@ -15,12 +15,14 @@
 #include <QKeyEvent>
 #include <QFocusEvent>
 #include <QTouchEvent>
+#include <QPointer>
 #include <QMutex>
 
 #include "qmozview_defined_wrapper.h"
 
 class QGraphicsMozViewPrivate;
 class QMozGrabResult;
+class QMozWindow;
 
 class QOpenGLWebPage : public QObject
 {
@@ -35,14 +37,13 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(qreal height READ height WRITE setHeight NOTIFY heightChanged FINAL)
     Q_PROPERTY(QSizeF size READ size WRITE setSize NOTIFY sizeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
-    Q_PROPERTY(QWindow *window READ window WRITE setWindow NOTIFY windowChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
     Q_PROPERTY(bool readyToPaint READ readyToPaint WRITE setReadyToPaint NOTIFY readyToPaintChanged FINAL)
 
     Q_MOZ_VIEW_PRORERTIES
 
 public:
-    QOpenGLWebPage(QObject *parent = 0);
+    explicit QOpenGLWebPage(QObject *parent = nullptr);
     ~QOpenGLWebPage();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
@@ -70,8 +71,8 @@ public:
 
     bool loaded() const;
 
-    QWindow *window() const;
-    void setWindow(QWindow *window);
+    QMozWindow *mozWindow() const;
+    void setMozWindow(QMozWindow *window);
 
     bool throttlePainting() const;
     void setThrottlePainting(bool);
@@ -112,9 +113,6 @@ Q_SIGNALS:
     void heightChanged();
     void sizeChanged();
     void loadedChanged();
-    void windowChanged();
-    void requestGLContext();
-    void afterRendering(const QRect &rect);
     void throttlePaintingChanged();
     void readyToPaintChanged();
 
@@ -138,7 +136,7 @@ private:
     bool mActive;
     bool mLoaded;
     bool mCompleted;
-    QWindow *mWindow;
+    QPointer<QMozWindow> mMozWindow;
     QList<QWeakPointer<QMozGrabResult> > mGrabResultList;
     QMutex mGrabResultListLock;
     bool mSizeUpdateScheduled;
