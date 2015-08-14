@@ -602,6 +602,15 @@ qreal QuickMozView::contentHeight() const
     return d->mScrollableSize.height();
 }
 
+QMargins QuickMozView::margins() const
+{
+    return d->mMargins;
+}
+
+void QuickMozView::setMargins(QMargins margins)
+{
+    d->SetMargins(margins);
+}
 
 void QuickMozView::loadHtml(const QString& html, const QUrl& baseUrl)
 {

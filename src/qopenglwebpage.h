@@ -33,9 +33,6 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(bool completed READ completed NOTIFY completedChanged FINAL)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged FINAL)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
-    Q_PROPERTY(qreal width READ width WRITE setWidth NOTIFY widthChanged FINAL)
-    Q_PROPERTY(qreal height READ height WRITE setHeight NOTIFY heightChanged FINAL)
-    Q_PROPERTY(QSizeF size READ size WRITE setSize NOTIFY sizeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
     Q_PROPERTY(bool readyToPaint READ readyToPaint WRITE setReadyToPaint NOTIFY readyToPaintChanged FINAL)
@@ -59,15 +56,6 @@ public:
 
     bool active() const;
     void setActive(bool active);
-
-    qreal width() const;
-    void setWidth(qreal width);
-
-    qreal height() const;
-    void setHeight(qreal height);
-
-    QSizeF size() const;
-    void setSize(const QSizeF &size);
 
     bool loaded() const;
 
@@ -119,11 +107,8 @@ private Q_SLOTS:
     void processViewInitialization();
     void updateLoaded();
     void createView();
-    void updateSize();
 
 private:
-    void scheduleSizeUpdate();
-
     QGraphicsMozViewPrivate* d;
     friend class QGraphicsMozViewPrivate;
 
@@ -132,7 +117,6 @@ private:
     bool mActive;
     bool mLoaded;
     bool mCompleted;
-    QPointer<QMozWindow> mMozWindow;
     QList<QWeakPointer<QMozGrabResult> > mGrabResultList;
     QMutex mGrabResultListLock;
     bool mSizeUpdateScheduled;
