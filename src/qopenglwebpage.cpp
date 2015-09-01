@@ -98,20 +98,7 @@ void QOpenGLWebPage::processViewInitialization()
     Q_EMIT completedChanged();
 }
 
-void QOpenGLWebPage::createGeckoGLContext()
-{
-}
-
-void QOpenGLWebPage::requestGLContext(bool& hasContext, QSize& viewPortSize)
-{
-    Q_ASSERT(false); // TODO: Remove
-}
-
-void QOpenGLWebPage::drawUnderlay()
-{
-   Q_ASSERT(false); // TODO: Remove
-}
-
+#if 0
 /*!
     \fn void QOpenGLWebPage::afterRendering(const QRect &rect)
 
@@ -147,6 +134,7 @@ void QOpenGLWebPage::drawOverlay(const QRect &rect)
     }
     mGrabResultList.clear();
 }
+#endif
 
 int QOpenGLWebPage::parentId() const
 {
@@ -217,7 +205,7 @@ QMozWindow *QOpenGLWebPage::mozWindow() const
 
 void QOpenGLWebPage::setMozWindow(QMozWindow* window)
 {
-    d->mMozWindow = window;
+    d->setMozWindow(window);
 }
 
 bool QOpenGLWebPage::throttlePainting() const
@@ -309,8 +297,10 @@ bool QOpenGLWebPage::Invalidate()
     return true;
 }
 
-void QOpenGLWebPage::CompositingFinished()
+bool QOpenGLWebPage::preRender()
 {
+    QMutexLocker lock(&mReadyToPaintMutex);
+    return mReadyToPaint;
 }
 
 bool QOpenGLWebPage::completed() const
@@ -324,7 +314,7 @@ void QOpenGLWebPage::update()
         return;
     }
 
-    d->mView->ScheduleUpdate();
+    d->mMozWindow->scheduleUpdate();
 }
 
 void QOpenGLWebPage::forceActiveFocus()
