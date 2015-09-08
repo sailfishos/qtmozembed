@@ -79,6 +79,7 @@ public:
     // Called always from the compositor thread.
     virtual void DrawUnderlay();
     virtual void DrawOverlay(const nsIntRect& aRect);
+    virtual bool PreRender();
 
     void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void TestFlickingMode(QTouchEvent *event);

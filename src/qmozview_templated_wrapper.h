@@ -24,6 +24,7 @@ public:
     virtual void requestGLContext(bool& hasContext, QSize& viewPortSize) = 0;
     virtual void drawUnderlay() = 0;
     virtual void drawOverlay(const QRect &rect) = 0;
+    virtual bool preRender() = 0;
 
     // Signals
     virtual void viewInitialized() = 0;
@@ -190,6 +191,11 @@ public:
     void drawOverlay(const QRect &rect)
     {
         view.drawOverlay(rect);
+    }
+
+    bool preRender()
+    {
+        return view.preRender();
     }
 
     void useQmlMouse(bool value)

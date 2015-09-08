@@ -131,7 +131,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool Invalidate(); \
     void requestGLContext(bool& hasContext, QSize& viewPortSize); \
     void drawUnderlay(); \
-    void drawOverlay(const QRect &rect);
+    void drawOverlay(const QRect &rect); \
+    bool preRender();
 
 #define Q_MOZ_VIEW_SIGNALS \
     void viewInitialized(); \
