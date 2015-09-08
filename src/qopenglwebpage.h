@@ -37,6 +37,7 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
     Q_PROPERTY(QWindow *window READ window WRITE setWindow NOTIFY windowChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
+    Q_PROPERTY(bool readyToPaint READ readyToPaint WRITE setReadyToPaint NOTIFY readyToPaintChanged FINAL)
 
     Q_MOZ_VIEW_PRORERTIES
 
@@ -75,6 +76,9 @@ public:
     bool throttlePainting() const;
     void setThrottlePainting(bool);
 
+    bool readyToPaint() const;
+    void setReadyToPaint(bool);
+
     void initialize();
 
     virtual bool event(QEvent *event);
@@ -112,6 +116,7 @@ Q_SIGNALS:
     void requestGLContext();
     void afterRendering(const QRect &rect);
     void throttlePaintingChanged();
+    void readyToPaintChanged();
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -138,6 +143,8 @@ private:
     QMutex mGrabResultListLock;
     bool mSizeUpdateScheduled;
     bool mThrottlePainting;
+    mutable QMutex mReadyToPaintMutex;
+    bool mReadyToPaint;
 
     Q_DISABLE_COPY(QOpenGLWebPage)
 };

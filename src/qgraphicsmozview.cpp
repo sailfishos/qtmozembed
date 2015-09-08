@@ -135,6 +135,11 @@ void QGraphicsMozView::drawOverlay(const QRect &rect) {
     // Do nothing;
 }
 
+bool QGraphicsMozView::preRender()
+{
+    return true;
+}
+
 /*! \reimp
 */
 QSizeF QGraphicsMozView::sizeHint(Qt::SizeHint which, const QSizeF& constraint) const

@@ -44,6 +44,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
   , mWindow(0)
   , mSizeUpdateScheduled(false)
   , mThrottlePainting(false)
+  , mReadyToPaint(true)
 {
     d->mContext = QMozContext::GetInstance();
     d->mHasContext = true;
@@ -153,6 +154,12 @@ void QOpenGLWebPage::drawUnderlay()
         funcs->glClearColor(bgColor.redF(), bgColor.greenF(), bgColor.blueF(), 0.0);
         funcs->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     }
+}
+
+bool QOpenGLWebPage::preRender()
+{
+    QMutexLocker lock(&mReadyToPaintMutex);
+    return mReadyToPaint;
 }
 
 /*!
@@ -342,6 +349,22 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
     if (mThrottlePainting != throttle) {
         mThrottlePainting = throttle;
         d->SetThrottlePainting(throttle);
+        Q_EMIT throttlePaintingChanged();
+    }
+}
+
+bool QOpenGLWebPage::readyToPaint() const
+{
+    QMutexLocker lock(&mReadyToPaintMutex);
+    return mReadyToPaint;
+}
+
+void QOpenGLWebPage::setReadyToPaint(bool ready)
+{
+    QMutexLocker lock(&mReadyToPaintMutex);
+    if (mReadyToPaint != ready) {
+        mReadyToPaint = ready;
+        Q_EMIT readyToPaintChanged();
     }
 }
 

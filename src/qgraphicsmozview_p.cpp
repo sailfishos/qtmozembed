@@ -111,6 +111,11 @@ void QGraphicsMozViewPrivate::DrawUnderlay()
     mViewIface->drawUnderlay();
 }
 
+bool QGraphicsMozViewPrivate::PreRender()
+{
+    return mViewIface->preRender();
+}
+
 void QGraphicsMozViewPrivate::DrawOverlay(const nsIntRect& aRect)
 {
     QRect rect(aRect.x, aRect.y, aRect.width, aRect.height);
