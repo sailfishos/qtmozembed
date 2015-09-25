@@ -128,7 +128,6 @@ private Q_SLOTS:
 
 private:
     void scheduleSizeUpdate();
-    void setSurfaceSize(const QSize &surfaceSize, Qt::ScreenOrientation orientation);
 
     QGraphicsMozViewPrivate* d;
     friend class QGraphicsMozViewPrivate;

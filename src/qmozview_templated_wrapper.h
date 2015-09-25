@@ -56,6 +56,7 @@ public:
     virtual void draggingChanged() = 0;
     virtual void movingChanged() = 0;
     virtual void pinchingChanged() = 0;
+    virtual void rotatingChanged() = 0;
 };
 
 template<class TMozQView>
@@ -196,6 +197,11 @@ public:
     bool preRender()
     {
         return view.preRender();
+    }
+
+    void rotatingChanged()
+    {
+        Q_EMIT view.rotatingChanged();
     }
 
     void useQmlMouse(bool value)

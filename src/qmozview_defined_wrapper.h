@@ -71,7 +71,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(QMozScrollDecorator* horizontalScrollDecorator READ horizontalScrollDecorator NOTIFY horizontalScrollDecoratorChanged FINAL) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
-    Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL)
+    Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
+    Q_PROPERTY(bool rotating READ rotating NOTIFY rotatingChanged FINAL)
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -103,7 +104,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool chrome() const; \
     void setChrome(bool value); \
     qreal chromeGestureThreshold() const; \
-    void setChromeGestureThreshold(qreal value);
+    void setChromeGestureThreshold(qreal value); \
+    bool rotating() const;
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString& html, const QUrl& baseUrl = QUrl()); \
@@ -167,6 +169,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void horizontalScrollDecoratorChanged(); \
     void chromeGestureEnabledChanged(); \
     void chromeChanged(); \
-    void chromeGestureThresholdChanged();
+    void chromeGestureThresholdChanged(); \
+    void rotatingChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

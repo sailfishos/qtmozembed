@@ -35,6 +35,35 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
+namespace {
+
+mozilla::ScreenRotation toMozillaRotation(Qt::ScreenOrientation orientation)
+{
+    ScreenRotation rotation = ROTATION_0;
+    switch (orientation) {
+    case Qt::LandscapeOrientation:
+        rotation = mozilla::ROTATION_90;
+        break;
+    case Qt::InvertedLandscapeOrientation:
+        rotation = mozilla::ROTATION_270;
+        break;
+    case Qt::InvertedPortraitOrientation:
+        rotation = mozilla::ROTATION_180;
+        break;
+    default:
+        break;
+    }
+    return rotation;
+}
+
+bool IsLandscape(Qt::ScreenOrientation orientation)
+{
+    return orientation == Qt::LandscapeOrientation ||
+           orientation == Qt::InvertedLandscapeOrientation;
+}
+
+}
+
 qint64 current_timestamp(QTouchEvent* aEvent)
 {
     if (aEvent) {
@@ -93,6 +122,7 @@ QGraphicsMozViewPrivate::QGraphicsMozViewPrivate(IMozQViewIface* aViewIface, QOb
     , mMovingTimerId(0)
     , mOffsetX(0.0)
     , mOffsetY(0.0)
+    , mRotating(false)
 {
 }
 
@@ -114,6 +144,22 @@ void QGraphicsMozViewPrivate::DrawUnderlay()
 bool QGraphicsMozViewPrivate::PreRender()
 {
     return mViewIface->preRender();
+}
+
+void QGraphicsMozViewPrivate::ContentRotationStarted()
+{
+    if (!mRotating) {
+        mRotating = true;
+        mViewIface->rotatingChanged();
+    }
+}
+
+void QGraphicsMozViewPrivate::ContentRotationFinished()
+{
+    if (mRotating) {
+        mRotating = false;
+        mViewIface->rotatingChanged();
+    }
 }
 
 void QGraphicsMozViewPrivate::DrawOverlay(const nsIntRect& aRect)
@@ -447,28 +493,20 @@ void QGraphicsMozViewPrivate::UpdateViewSize()
         return;
     }
 
-    if (mContext->GetApp()->IsAccelerated() && mHasContext) {
+    if (mContext->GetApp()->IsAccelerated() && mHasContext && !mGLSurfaceSize.isEmpty()) {
         mView->SetGLViewPortSize(mGLSurfaceSize.width(), mGLSurfaceSize.height());
     }
-    mView->SetViewSize(mSize.width(), mSize.height());
+    if (!mSize.isEmpty()) {
+        mView->SetViewSize(mSize.width(), mSize.height(), toMozillaRotation(mOrientation));
+    }
+}
 
-    if (mOrientationDirty) {
-        ScreenRotation rotation = ROTATION_0;
-        switch (mOrientation) {
-        case Qt::LandscapeOrientation:
-            rotation = mozilla::ROTATION_90;
-            break;
-        case Qt::InvertedLandscapeOrientation:
-            rotation = mozilla::ROTATION_270;
-            break;
-        case Qt::InvertedPortraitOrientation:
-            rotation = mozilla::ROTATION_180;
-            break;
-        default:
-            break;
-        }
-        mView->SetScreenRotation(rotation);
-        mOrientationDirty = false;
+void QGraphicsMozViewPrivate::SetContentOrientation(Qt::ScreenOrientation orientation)
+{
+    if (mOrientation != orientation) {
+        mOrientation = orientation;
+        mSize = IsLandscape(mOrientation) ? mGLSurfaceSize.transposed() : mGLSurfaceSize;
+        UpdateViewSize();
     }
 }
 

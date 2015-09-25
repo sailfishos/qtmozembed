@@ -35,6 +35,7 @@ public:
     void ReceiveInputEvent(const mozilla::InputData& event);
     void touchEvent(QTouchEvent* event);
     void UpdateViewSize();
+    void SetContentOrientation(Qt::ScreenOrientation orientation);
     bool RequestCurrentGLContext(QSize&);
     virtual bool RequestCurrentGLContext();
     virtual void ViewInitialized();
@@ -80,6 +81,8 @@ public:
     virtual void DrawUnderlay();
     virtual void DrawOverlay(const nsIntRect& aRect);
     virtual bool PreRender();
+    virtual void ContentRotationStarted() override;
+    virtual void ContentRotationFinished() override;
 
     void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void TestFlickingMode(QTouchEvent *event);
@@ -159,6 +162,7 @@ public:
     int mMovingTimerId;
     qreal mOffsetX;
     qreal mOffsetY;
+    bool mRotating;
 
     QString mPendingUrl;
     QStringList mPendingMessageListeners;
