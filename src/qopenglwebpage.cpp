@@ -361,9 +361,14 @@ bool QOpenGLWebPage::readyToPaint() const
 
 void QOpenGLWebPage::setReadyToPaint(bool ready)
 {
-    QMutexLocker lock(&mReadyToPaintMutex);
-    if (mReadyToPaint != ready) {
+    bool oldValue = false;
+    {
+        QMutexLocker lock(&mReadyToPaintMutex);
+        oldValue = mReadyToPaint;
         mReadyToPaint = ready;
+    }
+
+    if (oldValue != ready) {
         Q_EMIT readyToPaintChanged();
     }
 }
