@@ -690,9 +690,8 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
     else if (imType.contains("url", Qt::CaseInsensitive)) {
         hints |= Qt::ImhUrlCharactersOnly;
     }
-
     mViewIface->setInputMethodHints(hints);
-    if (aFocusChange) {
+    if (aFocusChange || aIstate) {
         mIsInputFieldFocused = aIstate;
         if (mViewIsFocused) {
 #ifndef QT_NO_IM
@@ -702,7 +701,7 @@ void QGraphicsMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCaus
                 return;
             }
             inputContext->update(Qt::ImEnabled);
-            if (aIstate) {
+            if (mIsInputFieldFocused) {
                 inputContext->show();
             } else {
                 inputContext->hide();
