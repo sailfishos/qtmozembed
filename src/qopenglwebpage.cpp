@@ -94,8 +94,6 @@ void QOpenGLWebPage::createView()
 {
     LOGT("QOpenGLWebPage");
     if (!d->mView) {
-        // We really don't care about SW rendering on Qt5 anymore
-        d->mContext->GetApp()->SetIsAccelerated(true);
         EmbedLiteWindow* win = d->mMozWindow->d->mWindow;
         d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode);
         d->mView->SetListener(d);
