@@ -3,7 +3,7 @@ Summary:    Qt embeddings for Gecko
 Version:    1.12.32
 Release:    1
 Group:      Applications/Internet
-License:    Mozilla License
+License:    MPLv2
 URL:        https://github.com/tmeshkova/qtmozembed.git
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
@@ -22,7 +22,6 @@ Requires:       xulrunner-qt5 >= 31.8.0.6
 Qt embeddings for Gecko browser engine
 
 %package devel
-Group:      Applications/Internet
 Requires:   %{name} = %{version}-%{release}
 Summary:    Headers for qtmozembed
 
@@ -31,7 +30,6 @@ Development files for qtmozembed.
 
 %package tests
 Summary:    Unit tests for QtMozEmbed tests
-Group:      Applications/Internet
 Requires:   %{name} = %{version}-%{release}
 Requires:   embedlite-components-qt5 >= 1.0.0
 Requires:   qt5-qtdeclarative-import-qttest
