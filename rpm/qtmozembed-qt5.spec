@@ -33,7 +33,7 @@ Summary:    Unit tests for QtMozEmbed tests
 Requires:   %{name} = %{version}-%{release}
 Requires:   embedlite-components-qt5 >= 1.0.0
 Requires:   qt5-qtdeclarative-import-qttest
-Requires:   mce-tools
+Requires:   nemo-test-tools
 
 %description tests
 This package contains QML unit tests for QtMozEmbed library
