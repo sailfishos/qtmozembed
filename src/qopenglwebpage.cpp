@@ -220,26 +220,6 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
     }
 }
 
-bool QOpenGLWebPage::readyToPaint() const
-{
-    QMutexLocker lock(&mReadyToPaintMutex);
-    return mReadyToPaint;
-}
-
-void QOpenGLWebPage::setReadyToPaint(bool ready)
-{
-    bool oldValue = false;
-    {
-        QMutexLocker lock(&mReadyToPaintMutex);
-        oldValue = mReadyToPaint;
-        mReadyToPaint = ready;
-    }
-
-    if (oldValue != ready) {
-        Q_EMIT readyToPaintChanged();
-    }
-}
-
 /*!
     \fn void QOpenGLWebPage::initialize()
 
