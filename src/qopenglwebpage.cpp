@@ -601,6 +601,14 @@ void QOpenGLWebPage::resumeView()
         return;
     }
     setActive(true);
+
+    // Setting view as active, will reset RefreshDriver()->SetThrottled at
+    // PresShell::SetIsActive (nsPresShell). Thus, keep on throttling
+    // if should keep on throttling.
+    if (mThrottlePainting) {
+        d->SetThrottlePainting(true);
+    }
+
     d->mView->ResumeTimeouts();
 }
 
