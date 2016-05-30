@@ -1,5 +1,7 @@
 #!/bin/sh
 
+QTVER=5
+
 # Create a temporary DBus session to isolate us from the normal environment.
 export `dbus-launch`
 if [ "$QTMOZEMBEDOBJDIR" != "" ]; then
