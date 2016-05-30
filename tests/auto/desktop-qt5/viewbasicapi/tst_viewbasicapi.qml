@@ -43,7 +43,7 @@ Item {
         {
             mozContext.dumpTS("test_2viewInitBasic start")
             testcaseid.verify(mozContext.instance.initialized())
-            MyScript.createSpriteObjectsQt5();
+            MyScript.createSpriteObjects();
             while (mozView == null) {
                 testcaseid.wait(500)
             }

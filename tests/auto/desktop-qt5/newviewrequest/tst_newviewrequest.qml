@@ -25,7 +25,7 @@ Item {
             appWindow.oldMozView = appWindow.mozView;
             appWindow.mozView = null;
             appWindow.createParentID = parentId;
-            MyScript.createSpriteObjectsQt5();
+            MyScript.createSpriteObjects();
             while (appWindow.mozView === null) {
                 testcaseid.wait()
             }
@@ -59,7 +59,7 @@ Item {
         }
         function test_2newviewInit()
         {
-            SharedTests.shared_2newviewInit(true)
+            SharedTests.shared_2newviewInit()
         }
         function test_viewTestNewWindowAPI()
         {

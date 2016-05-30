@@ -42,7 +42,7 @@ Item {
         }
         function test_2viewInit()
         {
-            SharedTests.shared_2viewInit(true)
+            SharedTests.shared_2viewInit()
         }
         function test_3viewLoadURL()
         {

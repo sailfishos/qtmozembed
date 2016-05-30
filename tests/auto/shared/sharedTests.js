@@ -130,16 +130,13 @@ function shared_1contextPrepareViewContext()
     mozContext.dumpTS("test_1contextPrepareViewContext end")
 }
 
-function shared_2viewInit(isQt5)
+function shared_2viewInit()
 {
     mozContext.dumpTS("test_2viewInit start")
     testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
     testcaseid.verify(mozContext.instance.initialized())
     appWindow.createParentID = 0;
-    if (isQt5)
-        MyScript.createSpriteObjectsQt5();
-    else
-        MyScript.createSpriteObjects();
+    MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === undefined); }))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }))
     testcaseid.verify(mozView !== undefined)
@@ -223,15 +220,12 @@ function shared_1newcontextPrepareViewContext()
     testcaseid.verify(mozContext.instance.initialized())
     mozContext.dumpTS("test_1newcontextPrepareViewContext end")
 }
-function shared_2newviewInit(isQt5)
+function shared_2newviewInit()
 {
     mozContext.dumpTS("test_2newviewInit start")
     testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
     testcaseid.verify(mozContext.instance.initialized())
-    if (isQt5)
-        MyScript.createSpriteObjectsQt5();
-    else
-        MyScript.createSpriteObjects();
+    MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === null); }, 10, 500))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }, 10, 500))
     testcaseid.verify(mozView !== undefined)
