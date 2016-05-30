@@ -9,13 +9,13 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property string inputContent : ""
-    property int inputState : -1
-    property bool changed : false
-    property int focusChange : -1
-    property int cause : -1
-    property string inputType : ""
+    property bool mozViewInitialized
+    property string inputContent
+    property int inputState: -1
+    property bool changed
+    property int focusChange: -1
+    property int cause: -1
+    property string inputType
 
     function isState(state, focus, cause)
     {

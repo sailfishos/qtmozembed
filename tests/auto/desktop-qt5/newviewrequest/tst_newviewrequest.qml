@@ -10,10 +10,10 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
-    property variant oldMozView : null
-    property variant createParentID : 0
+    property bool mozViewInitialized
+    property var mozView
+    property var oldMozView
+    property int createParentID
 
     QmlMozContext {
         id: mozContext

@@ -9,8 +9,8 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant favicon : null
+    property bool mozViewInitialized
+    property string favicon
 
     QmlMozContext {
         id: mozContext

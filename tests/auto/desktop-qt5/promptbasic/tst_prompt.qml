@@ -9,10 +9,10 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant promptReceived : null
-    property variant testResult : null
-    property variant testCaseNum : 0
+    property bool mozViewInitialized
+    property bool promptReceived
+    property var testResult
+    property int testCaseNum
 
     QmlMozContext {
         id: mozContext

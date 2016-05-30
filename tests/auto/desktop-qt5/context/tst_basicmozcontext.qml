@@ -9,9 +9,9 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
-    property variant lastObserveMessage
+    property bool mozViewInitialized
+    property var mozView
+    property var lastObserveMessage
 
     QmlMozContext {
         id: mozContext

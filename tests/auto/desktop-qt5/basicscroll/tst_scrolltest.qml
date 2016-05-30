@@ -10,9 +10,9 @@ Item {
     height: 800
     focus: true
 
-    property bool mozViewInitialized : false
-    property int scrollX : 0
-    property int scrollY : 0
+    property bool mozViewInitialized
+    property int scrollX
+    property int scrollY
 
     QmlMozContext {
         id: mozContext

@@ -164,7 +164,7 @@ function shared_TestDownloadMgrPage()
     mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
     mozContext.instance.addObserver("embed:download");
     testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     webViewport.url = "about:mozilla";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
@@ -256,7 +256,7 @@ function shared_TestLoginMgrPage()
     mozContext.dumpTS("test_TestLoginMgrPage start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
@@ -271,7 +271,7 @@ function shared_TestPromptPage()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 0
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
     webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
@@ -291,7 +291,7 @@ function shared_TestPromptWithBadResponse()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 1
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
     webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
@@ -311,7 +311,7 @@ function shared_TestPromptWithoutResponse()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 2
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
     webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
