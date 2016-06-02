@@ -11,8 +11,6 @@ ApplicationWindow {
     property bool mozViewInitialized : false
     property int scrollX : 0
     property int scrollY : 0
-    property int clickX : 0
-    property int clickY : 0
 
     QmlMozContext {
         id: mozContext
@@ -37,10 +35,6 @@ ApplicationWindow {
             target: webViewport.child
             onViewInitialized: {
                 appWindow.mozViewInitialized = true
-            }
-            onHandleSingleTap: {
-                appWindow.clickX = point.x
-                appWindow.clickY = point.y
             }
             onViewAreaChanged: {
                 print("onViewAreaChanged: ", webViewport.child.scrollableOffset.x, webViewport.child.scrollableOffset.y);

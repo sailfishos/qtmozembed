@@ -22,6 +22,7 @@ Item {
             // and qmlmoztestrunner does not build in GL mode
             // Let's put it here for now in SW mode always
             mozContext.instance.setIsAccelerated(true);
+            mozContext.instance.setPref("browser.search.defaultenginename", "QMOZTest");
             mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
             mozContext.instance.setPref("browser.search.log", true);
             mozContext.instance.addObserver("browser-search-engine-modified");
@@ -36,7 +37,9 @@ Item {
                         break;
                     }
                     case "pluginslist": {
-                        print("Received: search:" + message, ", msg: ", data.msg, data.list[0].name, data.list[0].isDefault, data.list[0].isCurrent);
+                        for (var i = 0; i < data.list.length; ++i) {
+                            print("Received: search:" + message, ", msg: ", data.msg, data.list[i].name, data.list[i].isDefault, data.list[i].isCurrent);
+                        }
                         appWindow.testResult = data.list;
                         break;
                     }
@@ -56,14 +59,11 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-            }
+        onViewInitialized: {
+            appWindow.mozViewInitialized = true
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
         }
     }
 

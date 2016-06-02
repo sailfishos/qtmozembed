@@ -30,11 +30,8 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-            }
+        onViewInitialized: {
+            appWindow.mozViewInitialized = true
         }
     }
 
