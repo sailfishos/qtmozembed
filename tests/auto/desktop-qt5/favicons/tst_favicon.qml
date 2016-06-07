@@ -28,17 +28,14 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("chrome:linkadded");
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "chrome:linkadded" && data.get == "image/x-icon") {
-                    appWindow.favicon = data.href;
-                }
+        onViewInitialized: {
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListener("chrome:linkadded");
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "chrome:linkadded" && data.get == "image/x-icon") {
+                appWindow.favicon = data.href;
             }
         }
     }

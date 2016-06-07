@@ -29,17 +29,14 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-                webViewport.child.loadFrameScript("chrome://embedlite/content/SelectHelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-            }
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
         }
     }
 

@@ -36,21 +36,18 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.addMessageListener("embed:filepicker");
-                appWindow.mozViewInitialized = true
-            }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:filepicker") {
-                    webViewport.child.sendAsyncMessage("filepickerresponse", {
-                                                     winid: data.winid,
-                                                     accepted: true,
-                                                     items: ["/tmp/tt.bin"]
-                                                 })
-                }
+        onViewInitialized: {
+            webViewport.addMessageListener("embed:filepicker");
+            appWindow.mozViewInitialized = true
+        }
+        onRecvAsyncMessage: {
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "embed:filepicker") {
+                webViewport.sendAsyncMessage("filepickerresponse", {
+                                                 winid: data.winid,
+                                                 accepted: true,
+                                                 items: ["/tmp/tt.bin"]
+                                             })
             }
         }
     }

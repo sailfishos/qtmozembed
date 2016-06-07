@@ -28,23 +28,20 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
-                webViewport.child.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("embed:login");
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:login") {
-                    webViewport.child.sendAsyncMessage("embedui:login", {
-                                                        buttonidx: 1,
-                                                        id: data.id
-                                                       })
-                    appWindow.promptReceived = true;
-                }
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js");
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js");
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListener("embed:login");
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "embed:login") {
+                webViewport.sendAsyncMessage("embedui:login", {
+                                                       buttonidx: 1,
+                                                       id: data.id
+                                                   })
+                appWindow.promptReceived = true;
             }
         }
     }

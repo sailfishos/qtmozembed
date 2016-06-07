@@ -40,36 +40,33 @@ Item {
         active: true
 
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("testembed:elementpropvalue");
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js");
+            webViewport.addMessageListener("testembed:elementpropvalue");
+            appWindow.mozViewInitialized = true
+        }
+        onHandleSingleTap: {
+            print("HandleSingleTap: [",point.x,",",point.y,"]");
+        }
+        onRecvAsyncMessage: {
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            switch (message) {
+            case "testembed:elementpropvalue": {
+                // print("testembed:elementpropvalue value:" + data.value);
+                appWindow.inputContent = data.value;
+                break;
             }
-            onHandleSingleTap: {
-                print("HandleSingleTap: [",point.x,",",point.y,"]");
+            default:
+                break;
             }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                switch (message) {
-                case "testembed:elementpropvalue": {
-                    // print("testembed:elementpropvalue value:" + data.value);
-                    appWindow.inputContent = data.value;
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
-            onImeNotification: {
-                print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
-                appWindow.changed = true
-                appWindow.inputState = state
-                appWindow.cause = cause
-                appWindow.focusChange = focusChange
-                appWindow.inputType = type
-            }
+        }
+        onImeNotification: {
+            print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
+            appWindow.changed = true
+            appWindow.inputState = state
+            appWindow.cause = cause
+            appWindow.focusChange = focusChange
+            appWindow.inputType = type
         }
     }
 
