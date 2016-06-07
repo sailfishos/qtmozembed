@@ -52,6 +52,7 @@ Item {
 
         function cleanup() {
             mozContext.dumpTS("tst_scrolltest cleanup")
+            testcaseid.wait(500);
         }
 
         function test_TestScrollPaintOperations()

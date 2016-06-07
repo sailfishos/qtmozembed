@@ -51,6 +51,7 @@ Item {
 
         function cleanup() {
             mozContext.dumpTS("tst_multitouch cleanup")
+            wait(500)
         }
 
         function test_TestFaviconPage()
