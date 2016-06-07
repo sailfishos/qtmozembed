@@ -21,9 +21,7 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        onViewInitialized: {
-            appWindow.mozViewInitialized = true
-        }
+        onViewInitialized: appWindow.mozViewInitialized = true
     }
 
     resources: TestCase {

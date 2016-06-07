@@ -18,7 +18,7 @@ Item {
     Connections {
         target: mozContext.instance
         onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data);
+            print("onRecvObserve: msg:", message, ", data:", data.data)
             appWindow.selectedContent = data.data
         }
     }

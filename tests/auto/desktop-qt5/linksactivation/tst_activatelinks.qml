@@ -17,7 +17,7 @@ Item {
     Connections {
         target: mozContext.instance
         onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data);
+            print("onRecvObserve: msg:", message, ", data:", data.data)
         }
     }
 
@@ -28,9 +28,9 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js");
-            webViewport.useQmlMouse = true;
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
+            webViewport.useQmlMouse = true
             appWindow.mozViewInitialized = true
         }
     }
@@ -55,8 +55,8 @@ Item {
 
         function test_ActiveHyperLink()
         {
-            SharedTests.shared_ActiveHyperLink();
-            webViewport.useQmlMouse = false;
+            SharedTests.shared_ActiveHyperLink()
+            webViewport.useQmlMouse = false
         }
     }
 }

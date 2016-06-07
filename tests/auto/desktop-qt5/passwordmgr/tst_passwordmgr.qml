@@ -18,7 +18,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -29,10 +29,10 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://tests/content/testHelper.js");
-            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js");
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
             appWindow.mozViewInitialized = true
-            webViewport.addMessageListener("embed:login");
+            webViewport.addMessageListener("embed:login")
         }
         onRecvAsyncMessage: {
             print("onRecvAsyncMessage:" + message + ", data:" + data)
@@ -41,7 +41,7 @@ Item {
                                                        buttonidx: 1,
                                                        id: data.id
                                                    })
-                appWindow.promptReceived = true;
+                appWindow.promptReceived = true
             }
         }
     }

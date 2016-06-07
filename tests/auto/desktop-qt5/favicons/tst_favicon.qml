@@ -18,7 +18,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -30,12 +30,12 @@ Item {
         anchors.fill: parent
         onViewInitialized: {
             appWindow.mozViewInitialized = true
-            webViewport.addMessageListener("chrome:linkadded");
+            webViewport.addMessageListener("chrome:linkadded")
         }
         onRecvAsyncMessage: {
             print("onRecvAsyncMessage:" + message + ", data:" + data)
             if (message == "chrome:linkadded" && data.get == "image/x-icon") {
-                appWindow.favicon = data.href;
+                appWindow.favicon = data.href
             }
         }
     }

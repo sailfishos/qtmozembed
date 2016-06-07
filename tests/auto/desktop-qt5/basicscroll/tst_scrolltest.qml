@@ -20,7 +20,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -37,7 +37,7 @@ Item {
             appWindow.clickY = point.y
         }
         onViewAreaChanged: {
-            print("onViewAreaChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y);
+            print("onViewAreaChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y)
             var offset = webViewport.scrollableOffset
             appWindow.scrollX = offset.x
             appWindow.scrollY = offset.y
@@ -52,7 +52,7 @@ Item {
 
         function cleanup() {
             mozContext.dumpTS("tst_scrolltest cleanup")
-            testcaseid.wait(500);
+            testcaseid.wait(500)
         }
 
         function test_TestScrollPaintOperations()

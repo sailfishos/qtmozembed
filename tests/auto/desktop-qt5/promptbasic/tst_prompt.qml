@@ -20,7 +20,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -45,10 +45,10 @@ Item {
                 switch(appWindow.testCaseNum) {
                 case 0:
                     responsePrompt = "expectedPromptResult"
-                    break;
+                    break
                 case 1:
                     responsePrompt = "unexpectedPromptResult"
-                    break;
+                    break
                 }
                 if (responsePrompt) {
                     webViewport.sendAsyncMessage("promptresponse", {

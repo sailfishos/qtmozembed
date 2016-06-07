@@ -21,11 +21,11 @@ Item {
 
     WebViewCreator {
         onNewWindowRequested: {
-            print("New Window Requested: url: ", url, ", parentID:", parentId);
-            appWindow.oldMozView = appWindow.mozView;
-            appWindow.mozView = null;
-            appWindow.createParentID = parentId;
-            MyScript.createSpriteObjects();
+            print("New Window Requested: url: ", url, ", parentID:", parentId)
+            appWindow.oldMozView = appWindow.mozView
+            appWindow.mozView = null
+            appWindow.createParentID = parentId
+            MyScript.createSpriteObjects()
             while (appWindow.mozView === null) {
                 testcaseid.wait()
             }

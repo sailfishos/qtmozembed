@@ -19,7 +19,7 @@ Item {
 
     function isState(state, focus, cause)
     {
-        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause;
+        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause
     }
 
     QmlMozContext {
@@ -28,7 +28,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -41,23 +41,23 @@ Item {
 
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://tests/content/testHelper.js");
-            webViewport.addMessageListener("testembed:elementpropvalue");
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.addMessageListener("testembed:elementpropvalue")
             appWindow.mozViewInitialized = true
         }
         onHandleSingleTap: {
-            print("HandleSingleTap: [",point.x,",",point.y,"]");
+            print("HandleSingleTap: [",point.x,",",point.y,"]")
         }
         onRecvAsyncMessage: {
             // print("onRecvAsyncMessage:" + message + ", data:" + data)
             switch (message) {
             case "testembed:elementpropvalue": {
-                // print("testembed:elementpropvalue value:" + data.value);
-                appWindow.inputContent = data.value;
-                break;
+                // print("testembed:elementpropvalue value:" + data.value)
+                appWindow.inputContent = data.value
+                break
             }
             default:
-                break;
+                break
             }
         }
         onImeNotification: {

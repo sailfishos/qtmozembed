@@ -18,13 +18,13 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
         onRecvObserve: {
             if (message == "embed:download") {
-                // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg);
+                // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg)
                 if (data.msg == "dl-done") {
-                    appWindow.promptReceived = true;
+                    appWindow.promptReceived = true
                 }
             }
         }
@@ -37,7 +37,7 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.addMessageListener("embed:filepicker");
+            webViewport.addMessageListener("embed:filepicker")
             appWindow.mozViewInitialized = true
         }
         onRecvAsyncMessage: {
