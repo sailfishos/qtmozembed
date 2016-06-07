@@ -37,12 +37,16 @@ mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
 
 } // namespace
 
-QMozWindow::QMozWindow(QObject* parent)
+QMozWindow::QMozWindow(const QSize &size, QObject* parent)
     : QObject(parent)
-    , d(new QMozWindowPrivate(*this))
+    , d(new QMozWindowPrivate(*this, size))
     , mOrientation(Qt::PrimaryOrientation)
 {
-    d->mWindow = QMozContext::GetInstance()->GetApp()->CreateWindow();
+    Q_ASSERT_X(!size.isEmpty(),
+               "QMozWindow::QMozWindow",
+               QString("Window size is empty, width = %1 and height = %2").arg(size.width(), size.height()).toUtf8().constData());
+
+    d->mWindow = QMozContext::GetInstance()->GetApp()->CreateWindow(size.width(), size.height());
     d->mWindow->SetListener(d.data());
 }
 
@@ -53,12 +57,14 @@ QMozWindow::~QMozWindow()
     d->mWindow = nullptr;
 }
 
-void QMozWindow::setSize(QSize size)
+void QMozWindow::setSize(const QSize &size)
 {
-    if (size != mSize) {
-        mSize = size;
-        d->mWindow->SetSize(size.width(), size.height());
-    }
+    d->setSize(size);
+}
+
+QSize QMozWindow::size() const
+{
+    return d->mSize;
 }
 
 void QMozWindow::setContentOrientation(Qt::ScreenOrientation orientation)

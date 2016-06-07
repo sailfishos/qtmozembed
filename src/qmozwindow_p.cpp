@@ -22,15 +22,26 @@ GLXContext (*_glxGetCurrentContext)(void) = nullptr;
 GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
 #endif
 
-QMozWindowPrivate::QMozWindowPrivate(QMozWindow& window)
+QMozWindowPrivate::QMozWindowPrivate(QMozWindow& window, const QSize &size)
     : q(window)
     , mWindow(nullptr)
     , mReadyToPaint(true)
+    , mSize(size)
 {
 }
 
 QMozWindowPrivate::~QMozWindowPrivate()
 {
+}
+
+void QMozWindowPrivate::setSize(const QSize &size)
+{
+    if (size.isEmpty()) {
+        qDebug() << "Trying to set empty size: " << size;
+    } else if (size != mSize) {
+        mSize = size;
+        mWindow->SetSize(size.width(), size.height());
+    }
 }
 
 bool QMozWindowPrivate::RequestGLContext(void*& context, void*& surface)

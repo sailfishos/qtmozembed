@@ -182,10 +182,7 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
                                                                  oldGeometry.size().height());
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
     if (newGeometry.size() != d->mSize) {
-        d->mSize = newGeometry.size();
-        if (d->mMozWindow) {
-            d->mMozWindow->setSize(d->mSize.toSize());
-        }
+        d->setSize(newGeometry.size());
         if (mActive) {
             updateGLContextInfo();
         }
@@ -219,7 +216,7 @@ void QuickMozView::createView()
 {
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
-        mozWindow = new QMozWindow;
+        mozWindow = new QMozWindow(d->mSize.toSize());
         d->mContext->registerWindow(mozWindow);
     }
     d->setMozWindow(mozWindow);
