@@ -26,13 +26,6 @@ function shared_context1Init()
     testcaseid.verify(mozContext.instance.initialized())
     mozContext.dumpTS("test_context1Init end")
 }
-function shared_context2AcceleratedAPI()
-{
-    mozContext.dumpTS("test_context2AcceleratedAPI start")
-    mozContext.instance.setIsAccelerated(true);
-    testcaseid.verify(mozContext.instance.isAccelerated() === true)
-    mozContext.dumpTS("test_context2AcceleratedAPI end")
-}
 function shared_context3PrefAPI()
 {
     mozContext.dumpTS("test_context3PrefAPI start")

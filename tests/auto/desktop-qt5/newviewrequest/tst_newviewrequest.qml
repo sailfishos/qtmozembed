@@ -33,16 +33,6 @@ Item {
         }
     }
 
-    Connections {
-        target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
-    }
-
     resources: TestCase {
         id: testcaseid
         name: "mozContextPage"
