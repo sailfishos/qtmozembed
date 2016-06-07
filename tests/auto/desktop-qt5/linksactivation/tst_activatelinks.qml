@@ -38,15 +38,9 @@ Item {
     MouseArea {
         id: viewportMouse
         anchors.fill: parent
-        onPressed: {
-            webViewport.child.recvMousePress(mouseX, mouseY)
-        }
-        onReleased: {
-            webViewport.child.recvMouseRelease(mouseX, mouseY)
-        }
-        onPositionChanged: {
-            webViewport.child.recvMouseMove(mouseX, mouseY)
-        }
+        onPressed: webViewport.recvMousePress(mouseX, mouseY)
+        onReleased: webViewport.recvMouseRelease(mouseX, mouseY)
+        onPositionChanged: webViewport.recvMouseMove(mouseX, mouseY)
     }
 
     resources: TestCase {
@@ -62,7 +56,7 @@ Item {
         function test_ActiveHyperLink()
         {
             SharedTests.shared_ActiveHyperLink();
-            webViewport.child.useQmlMouse = false;
+            webViewport.useQmlMouse = false;
         }
     }
 }

@@ -52,11 +52,11 @@ function waitMozView() {
 }
 
 function waitLoadFinished(view) {
-    if (!view.child.loading && view.child.loadProgress !== 0) {
+    if (!view.loading && view.loadProgress !== 0) {
         return true;
     }
     var ticks = 0;
-    while ((view.child.loading || view.child.loadProgress === 0) && ticks++ < load_finish_wait_timeout) {
+    while ((view.loading || view.loadProgress === 0) && ticks++ < load_finish_wait_timeout) {
         testcaseid.wait();
     }
     return ticks < load_finish_wait_timeout;
