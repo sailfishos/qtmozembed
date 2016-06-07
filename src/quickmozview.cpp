@@ -104,9 +104,6 @@ QuickMozView::contextInitialized()
     LOGT("QuickMozView");
     // We really don't care about SW rendering on Qt5 anymore
     d->mContext->GetApp()->SetIsAccelerated(true);
-    d->setMozWindow(new QMozWindow);
-    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
-            this, &QuickMozView::compositingFinished);
     createView();
 }
 
@@ -220,10 +217,16 @@ void QuickMozView::clearThreadRenderObject()
 
 void QuickMozView::createView()
 {
-    if (!d->mView) {
-        d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
-        d->mView->SetListener(d);
+    QMozWindow *mozWindow = d->mContext->registeredWindow();
+    if (!mozWindow) {
+        mozWindow = new QMozWindow;
+        d->mContext->registerWindow(mozWindow);
     }
+    d->setMozWindow(mozWindow);
+    d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
+    d->mView->SetListener(d);
+    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
+            this, &QuickMozView::compositingFinished);
 }
 
 QSGNode*
