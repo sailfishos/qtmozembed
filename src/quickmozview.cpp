@@ -262,8 +262,7 @@ void QuickMozView::refreshNodeTexture()
         return;
     }
 
-    if (d && d->mView)
-    {
+    if (d && d->mView) {
 #if defined(QT_OPENGL_ES_2)
         int width = 0, height = 0;
         static QOpenGLExtension_OES_EGL_image* extension = nullptr;
