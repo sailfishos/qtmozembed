@@ -257,8 +257,10 @@ void QuickMozView::refreshNodeTexture()
 {
     QMutexLocker locker(&mRenderMutex);
 
-    if (!d->mViewInitialized || !d->mHasCompositor || !mActive)
+    if (!d->mViewInitialized || !d->mHasCompositor
+            || !mActive || !d->mContext->registeredWindow() || !d->mMozWindow) {
         return;
+    }
 
     if (d && d->mView)
     {
@@ -278,9 +280,10 @@ void QuickMozView::refreshNodeTexture()
         }
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
         void* image = d->mMozWindow->getPlatformImage(&width, &height);
-        Q_ASSERT(image);
-        extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-        Q_EMIT textureReady(mConsTex, QSize(width, height));
+        if (image) {
+            extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
+            Q_EMIT textureReady(mConsTex, QSize(width, height));
+        }
 #else
 #warning "Implement me for non ES2 platform"
         Q_ASSERT(false);
