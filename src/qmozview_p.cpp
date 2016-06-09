@@ -12,6 +12,7 @@
 #include <QTouchEvent>
 
 #include "qmozview_p.h"
+#include "qmozwindow_p.h"
 #include "qmozcontext.h"
 #include "EmbedQtKeyUtils.h"
 #include "InputData.h"
@@ -94,6 +95,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface* aViewIface, QObject *publicPtr)
     , mOffsetX(0.0)
     , mOffsetY(0.0)
     , mHasCompositor(false)
+    , mSizeDirty(false)
 {
 }
 
@@ -240,6 +242,17 @@ void QMozViewPrivate::ResetPainted()
     if (mIsPainted) {
         mIsPainted = false;
         mViewIface->firstPaint(-1, -1);
+    }
+}
+
+void QMozViewPrivate::setSize(const QSizeF &size)
+{
+    mSize = size;
+
+    if (mViewInitialized && mMozWindow) {
+        mMozWindow->setSize(mSize.toSize());
+    } else {
+        mSizeDirty = true;
     }
 }
 
@@ -422,9 +435,7 @@ void QMozViewPrivate::setMozWindow(QMozWindow* window)
 {
     mMozWindow = window;
     if (mMozWindow) {
-        if (!mSize.isEmpty()) {
-            mMozWindow->setSize(mSize.toSize());
-        }
+        mMozWindow->setSize(mSize.toSize());
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
     }
@@ -461,11 +472,17 @@ void QMozViewPrivate::ViewInitialized()
         mPendingUrl.clear();
     }
 
-    UpdateViewSize();
     // This is currently part of official API, so let's subscribe to these messages by default
     mViewIface->viewInitialized();
     mViewIface->canGoBackChanged();
     mViewIface->canGoForwardChanged();
+
+    if (mSizeDirty) {
+        setSize(mSize);
+    } else {
+        UpdateViewSize();
+    }
+    mSizeDirty = false;
 }
 
 void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)

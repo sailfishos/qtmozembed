@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QSize>
 
 #include "mozilla/embedlite/EmbedLiteWindow.h"
 
@@ -16,8 +17,10 @@ class QMozWindow;
 class QMozWindowPrivate : public mozilla::embedlite::EmbedLiteWindowListener
 {
 public:
-    QMozWindowPrivate(QMozWindow&);
+    QMozWindowPrivate(QMozWindow&, const QSize &size);
     virtual ~QMozWindowPrivate();
+
+    void setSize(const QSize &size);
 
 protected:
     // EmbedLiteWindowListener:
@@ -44,6 +47,7 @@ private:
     mozilla::embedlite::EmbedLiteWindow* mWindow;
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
+    QSize mSize;
 
     Q_DISABLE_COPY(QMozWindowPrivate)
 };

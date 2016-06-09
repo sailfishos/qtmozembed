@@ -10,11 +10,9 @@ Item {
     height: 800
     focus: true
 
-    property bool mozViewInitialized : false
-    property int scrollX : 0
-    property int scrollY : 0
-    property int clickX : 0
-    property int clickY : 0
+    property bool mozViewInitialized
+    property int scrollX
+    property int scrollY
 
     QmlMozContext {
         id: mozContext
@@ -22,11 +20,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -37,21 +31,16 @@ Item {
         active: true
         anchors.fill: parent
 
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-            }
-            onHandleSingleTap: {
-                appWindow.clickX = point.x
-                appWindow.clickY = point.y
-            }
-            onViewAreaChanged: {
-                print("onViewAreaChanged: ", webViewport.child.scrollableOffset.x, webViewport.child.scrollableOffset.y);
-                var offset = webViewport.child.scrollableOffset
-                appWindow.scrollX = offset.x
-                appWindow.scrollY = offset.y
-            }
+        onViewInitialized: appWindow.mozViewInitialized = true
+        onHandleSingleTap: {
+            appWindow.clickX = point.x
+            appWindow.clickY = point.y
+        }
+        onViewAreaChanged: {
+            print("onViewAreaChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y)
+            var offset = webViewport.scrollableOffset
+            appWindow.scrollX = offset.x
+            appWindow.scrollY = offset.y
         }
     }
 
@@ -63,6 +52,7 @@ Item {
 
         function cleanup() {
             mozContext.dumpTS("tst_scrolltest cleanup")
+            testcaseid.wait(500)
         }
 
         function test_TestScrollPaintOperations()

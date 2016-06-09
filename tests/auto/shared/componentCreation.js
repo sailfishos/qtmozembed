@@ -13,16 +13,6 @@ function createSpriteObjects() {
     }
 }
 
-function createSpriteObjectsQt5() {
-    component = Qt.createComponent(mozContext.getenv("QTTESTSROOT") + "/auto/shared/ViewComponentQt5.qml");
-    if (component.status == Component.Ready) {
-        finishCreation();
-    }
-    else {
-        component.statusChanged.connect(finishCreation);
-    }
-}
-
 function finishCreation() {
     if (component.status == Component.Ready) {
         appWindow.mozView = component.createObject(appWindow, {"x": 0, "y": 0, "active": true});
@@ -62,11 +52,11 @@ function waitMozView() {
 }
 
 function waitLoadFinished(view) {
-    if (!view.child.loading && view.child.loadProgress !== 0) {
+    if (!view.loading && view.loadProgress !== 0) {
         return true;
     }
     var ticks = 0;
-    while ((view.child.loading || view.child.loadProgress === 0) && ticks++ < load_finish_wait_timeout) {
+    while ((view.loading || view.loadProgress === 0) && ticks++ < load_finish_wait_timeout) {
         testcaseid.wait();
     }
     return ticks < load_finish_wait_timeout;

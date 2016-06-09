@@ -9,8 +9,8 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant promptReceived : null
+    property bool mozViewInitialized
+    property bool promptReceived
 
     QmlMozContext {
         id: mozContext
@@ -18,17 +18,13 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
         onRecvObserve: {
             if (message == "embed:download") {
-                // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg);
+                // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg)
                 if (data.msg == "dl-done") {
-                    appWindow.promptReceived = true;
+                    appWindow.promptReceived = true
                 }
             }
         }
@@ -40,21 +36,18 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.addMessageListener("embed:filepicker");
-                appWindow.mozViewInitialized = true
-            }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:filepicker") {
-                    webViewport.child.sendAsyncMessage("filepickerresponse", {
-                                                     winid: data.winid,
-                                                     accepted: true,
-                                                     items: ["/tmp/tt.bin"]
-                                                 })
-                }
+        onViewInitialized: {
+            webViewport.addMessageListener("embed:filepicker")
+            appWindow.mozViewInitialized = true
+        }
+        onRecvAsyncMessage: {
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "embed:filepicker") {
+                webViewport.sendAsyncMessage("filepickerresponse", {
+                                                 winid: data.winid,
+                                                 accepted: true,
+                                                 items: ["/tmp/tt.bin"]
+                                             })
             }
         }
     }

@@ -104,9 +104,6 @@ QuickMozView::contextInitialized()
     LOGT("QuickMozView");
     // We really don't care about SW rendering on Qt5 anymore
     d->mContext->GetApp()->SetIsAccelerated(true);
-    d->setMozWindow(new QMozWindow);
-    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
-            this, &QuickMozView::compositingFinished);
     createView();
 }
 
@@ -185,10 +182,7 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
                                                                  oldGeometry.size().height());
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
     if (newGeometry.size() != d->mSize) {
-        d->mSize = newGeometry.size();
-        if (d->mMozWindow) {
-            d->mMozWindow->setSize(d->mSize.toSize());
-        }
+        d->setSize(newGeometry.size());
         if (mActive) {
             updateGLContextInfo();
         }
@@ -220,10 +214,16 @@ void QuickMozView::clearThreadRenderObject()
 
 void QuickMozView::createView()
 {
-    if (!d->mView) {
-        d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
-        d->mView->SetListener(d);
+    QMozWindow *mozWindow = d->mContext->registeredWindow();
+    if (!mozWindow) {
+        mozWindow = new QMozWindow(d->mSize.toSize());
+        d->mContext->registerWindow(mozWindow);
     }
+    d->setMozWindow(mozWindow);
+    d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
+    d->mView->SetListener(d);
+    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
+            this, &QuickMozView::compositingFinished);
 }
 
 QSGNode*
@@ -257,11 +257,12 @@ void QuickMozView::refreshNodeTexture()
 {
     QMutexLocker locker(&mRenderMutex);
 
-    if (!d->mViewInitialized || !d->mHasCompositor || !mActive)
+    if (!d->mViewInitialized || !d->mHasCompositor
+            || !mActive || !d->mContext->registeredWindow() || !d->mMozWindow) {
         return;
+    }
 
-    if (d && d->mView)
-    {
+    if (d && d->mView) {
 #if defined(QT_OPENGL_ES_2)
         int width = 0, height = 0;
         static QOpenGLExtension_OES_EGL_image* extension = nullptr;
@@ -278,9 +279,10 @@ void QuickMozView::refreshNodeTexture()
         }
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
         void* image = d->mMozWindow->getPlatformImage(&width, &height);
-        Q_ASSERT(image);
-        extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-        Q_EMIT textureReady(mConsTex, QSize(width, height));
+        if (image) {
+            extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
+            Q_EMIT textureReady(mConsTex, QSize(width, height));
+        }
 #else
 #warning "Implement me for non ES2 platform"
         Q_ASSERT(false);

@@ -9,21 +9,12 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
-    property variant createParentID : 0
+    property bool mozViewInitialized
+    property var mozView
+    property int createParentID
 
     QmlMozContext {
         id: mozContext
-    }
-    Connections {
-        target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
     }
 
     resources: TestCase {
@@ -42,7 +33,7 @@ Item {
         }
         function test_2viewInit()
         {
-            SharedTests.shared_2viewInit(true)
+            SharedTests.shared_2viewInit()
         }
         function test_3viewLoadURL()
         {

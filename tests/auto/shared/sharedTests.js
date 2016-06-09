@@ -26,13 +26,6 @@ function shared_context1Init()
     testcaseid.verify(mozContext.instance.initialized())
     mozContext.dumpTS("test_context1Init end")
 }
-function shared_context2AcceleratedAPI()
-{
-    mozContext.dumpTS("test_context2AcceleratedAPI start")
-    mozContext.instance.setIsAccelerated(true);
-    testcaseid.verify(mozContext.instance.isAccelerated() === true)
-    mozContext.dumpTS("test_context2AcceleratedAPI end")
-}
 function shared_context3PrefAPI()
 {
     mozContext.dumpTS("test_context3PrefAPI start")
@@ -56,10 +49,10 @@ function shared_Test1LoadInputPage()
     mozContext.dumpTS("test_Test1LoadInputPage start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input id=myelem value=''>";
+    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input id=myelem value=''>";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 10)
     testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 3)); }))
     appWindow.inputState = false;
@@ -67,7 +60,7 @@ function shared_Test1LoadInputPage()
     testcaseid.keyClick(Qt.Key_O);
     testcaseid.keyClick(Qt.Key_R);
     testcaseid.keyClick(Qt.Key_P);
-    webViewport.child.sendAsyncMessage("embedtest:getelementprop", {
+    webViewport.sendAsyncMessage("embedtest:getelementprop", {
                                         name: "myelem",
                                         property: "value"
                                        })
@@ -83,10 +76,10 @@ function shared_Test1LoadInputURLPage()
     testcaseid.verify(MyScript.waitMozView())
     appWindow.inputContent = ""
     appWindow.inputType = ""
-    webViewport.child.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input type=number id=myelem value=''>";
+    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input type=number id=myelem value=''>";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 10)
     testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 3)); }))
     appWindow.inputState = false;
@@ -94,7 +87,7 @@ function shared_Test1LoadInputURLPage()
     testcaseid.keyClick(Qt.Key_2);
     testcaseid.keyClick(Qt.Key_3);
     testcaseid.keyClick(Qt.Key_4);
-    webViewport.child.sendAsyncMessage("embedtest:getelementprop", {
+    webViewport.sendAsyncMessage("embedtest:getelementprop", {
                                         name: "myelem",
                                         property: "value"
                                        })
@@ -109,26 +102,15 @@ function shared_TestScrollPaintOperations()
     mozContext.dumpTS("test_TestScrollPaintOperations start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
+    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     while (appWindow.scrollY === 0) {
         MyScript.scrollBy(100, 301, 0, -200, 100, false);
         testcaseid.wait(100);
     }
     testcaseid.verify(appWindow.scrollX === 0)
-    while (appWindow.clickX === 0) {
-        testcaseid.wait();
-    }
-    testcaseid.verify(appWindow.clickX === 100)
-    testcaseid.verify(wrtWait(function() {appWindow.clickY !== 101}))
-    testcaseid.wait(1000);
-    appWindow.clickX = 0
-    testcaseid.mouseClick(webViewport, 10, 20)
-    testcaseid.verify(wrtWait(function() { return (appWindow.clickX === 0); }))
-    testcaseid.verify(appWindow.clickX === 10)
-    testcaseid.verify(appWindow.clickY === 20)
     mozContext.dumpTS("test_TestScrollPaintOperations end");
 }
 
@@ -141,29 +123,26 @@ function shared_1contextPrepareViewContext()
     mozContext.dumpTS("test_1contextPrepareViewContext end")
 }
 
-function shared_2viewInit(isQt5)
+function shared_2viewInit()
 {
     mozContext.dumpTS("test_2viewInit start")
     testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
     testcaseid.verify(mozContext.instance.initialized())
     appWindow.createParentID = 0;
-    if (isQt5)
-        MyScript.createSpriteObjectsQt5();
-    else
-        MyScript.createSpriteObjects();
+    MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === undefined); }))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }))
-    testcaseid.verify(mozView.child !== undefined)
+    testcaseid.verify(mozView !== undefined)
     mozContext.dumpTS("test_2viewInit end")
 }
 function shared_3viewLoadURL()
 {
     mozContext.dumpTS("test_3viewLoadURL start")
-    testcaseid.verify(mozView.child !== undefined)
-    mozView.child.url = "about:mozilla";
+    testcaseid.verify(mozView !== undefined)
+    mozView.url = "about:mozilla";
     testcaseid.verify(MyScript.waitLoadFinished(mozView))
-    testcaseid.verify(wrtWait(function() { return (mozView.child.url === "about:mozilla"); }))    
-    testcaseid.verify(wrtWait(function() { return (!mozView.child.painted); }))
+    testcaseid.verify(wrtWait(function() { return (mozView.url === "about:mozilla"); }))
+    testcaseid.verify(wrtWait(function() { return (!mozView.painted); }))
     mozContext.dumpTS("test_3viewLoadURL end")
 }
 
@@ -178,14 +157,14 @@ function shared_TestDownloadMgrPage()
     mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
     mozContext.instance.addObserver("embed:download");
     testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = null
-    webViewport.child.url = "about:mozilla";
+    appWindow.promptReceived = false
+    webViewport.url = "about:mozilla";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
+    testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
     mozContext.dumpTS("test_TestDownloadMgrPage end");
 }
@@ -195,10 +174,10 @@ function shared_TestFaviconPage()
     mozContext.dumpTS("test_TestFaviconPage start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/favicons/favicon.html";
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/favicons/favicon.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.verify(wrtWait(function() { return (!appWindow.favicon); }))
     testcaseid.compare(appWindow.favicon, "data:image/x-icon;base64,AAABAAEAEBAAAAAAAABoBQAAFgAAACgAAAAQAAAAIAAAAAEACAAAAAAAAAEAAAAAAAAAAAAAAAEAAAAAAAAAAAAADPH1AAwM9QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQEBAQAAAAAAAAAAAAAAAQICAgEAAAAAAAAAAAAAAQECAgIBAAAAAAAAAAAAAQICAgICAQAAAAAAAAAAAAEBAgIBAQEAAAAAAAAAAAEBAQICAQAAAAAAAAAAAAABAgIBAQEAAAAAAAAAAAAAAAEBAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAP/gAAD/4AAA58AAAPuAAAC9gAAA/QMAAL0DAAD9jwAA+/8AAOf/AAD//wAAqIAAAKuqAACJqgAAq6oAAKioAAA=");
     mozContext.dumpTS("test_TestFaviconPage");
@@ -209,17 +188,17 @@ function shared_Test1MultiTouchPage()
     mozContext.dumpTS("test_Test1MultiTouchPage start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/multitouch/touch.html";
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/multitouch/touch.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     var params = [Qt.point(50,50), Qt.point(51,51), Qt.point(52,52)];
-    webViewport.child.synthTouchBegin(params);
+    webViewport.synthTouchBegin(params);
     params = [Qt.point(51,51), Qt.point(52,52), Qt.point(53,53)];
-    webViewport.child.synthTouchMove(params);
+    webViewport.synthTouchMove(params);
     params = [Qt.point(52,52), Qt.point(53,53), Qt.point(54,54)];
-    webViewport.child.synthTouchEnd(params);
-    webViewport.child.sendAsyncMessage("embedtest:getelementinner", {
+    webViewport.synthTouchEnd(params);
+    webViewport.sendAsyncMessage("embedtest:getelementinner", {
                                         name: "result" })
     testcaseid.verify(wrtWait(function() { return (appWindow.testResult == ""); }))
     testcaseid.compare(appWindow.testResult, "ok");
@@ -234,37 +213,34 @@ function shared_1newcontextPrepareViewContext()
     testcaseid.verify(mozContext.instance.initialized())
     mozContext.dumpTS("test_1newcontextPrepareViewContext end")
 }
-function shared_2newviewInit(isQt5)
+function shared_2newviewInit()
 {
     mozContext.dumpTS("test_2newviewInit start")
     testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
     testcaseid.verify(mozContext.instance.initialized())
-    if (isQt5)
-        MyScript.createSpriteObjectsQt5();
-    else
-        MyScript.createSpriteObjects();
+    MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === null); }, 10, 500))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }, 10, 500))
-    testcaseid.verify(mozView.child !== undefined)
+    testcaseid.verify(mozView !== undefined)
     mozContext.dumpTS("test_2newviewInit end")
 }
 function shared_viewTestNewWindowAPI()
 {
     mozContext.dumpTS("test_viewTestNewWindowAPI start")
-    testcaseid.verify(wrtWait(function() { return (mozView.child === undefined); }, 100, 500))
-    testcaseid.verify(mozView.child !== undefined)
-    mozView.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/newviewrequest/newwin.html";
+    testcaseid.verify(wrtWait(function() { return (mozView === undefined); }, 100, 500))
+    testcaseid.verify(mozView !== undefined)
+    mozView.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/newviewrequest/newwin.html";
     testcaseid.verify(MyScript.waitLoadFinished(mozView))
-    testcaseid.compare(mozView.child.title, "NewWinExample")
-    testcaseid.verify(wrtWait(function() { return (!mozView.child.painted); }))
+    testcaseid.compare(mozView.title, "NewWinExample")
+    testcaseid.verify(wrtWait(function() { return (!mozView.painted); }))
     mozViewInitialized = false;
     testcaseid.mouseClick(mozView, 10, 10)
     testcaseid.verify(wrtWait(function() { return (!mozView || !oldMozView); }))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }))
-    testcaseid.verify(mozView.child !== undefined)
+    testcaseid.verify(mozView !== undefined)
     testcaseid.verify(MyScript.waitLoadFinished(mozView))
-    testcaseid.verify(wrtWait(function() { return (!mozView.child.painted); }))
-    testcaseid.compare(mozView.child.url, "about:mozilla")
+    testcaseid.verify(wrtWait(function() { return (!mozView.painted); }))
+    testcaseid.compare(mozView.url, "about:mozilla")
     mozContext.dumpTS("test_viewTestNewWindowAPI end")
 }
 
@@ -273,11 +249,11 @@ function shared_TestLoginMgrPage()
     mozContext.dumpTS("test_TestLoginMgrPage start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = null
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
+    appWindow.promptReceived = false
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
     mozContext.dumpTS("test_TestLoginMgrPage end");
 }
@@ -288,14 +264,14 @@ function shared_TestPromptPage()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 0
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
-    webViewport.child.sendAsyncMessage("embedtest:getelementinner", {
+    webViewport.sendAsyncMessage("embedtest:getelementinner", {
                                         name: "result" })
     testcaseid.verify(wrtWait(function() { return (!appWindow.testResult); }))
     testcaseid.compare(appWindow.testResult, "ok");
@@ -308,14 +284,14 @@ function shared_TestPromptWithBadResponse()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 1
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
-    webViewport.child.sendAsyncMessage("embedtest:getelementinner", {
+    webViewport.sendAsyncMessage("embedtest:getelementinner", {
                                         name: "result" })
     testcaseid.verify(wrtWait(function() { return (!appWindow.testResult); }))
     testcaseid.compare(appWindow.testResult, "failed");
@@ -328,14 +304,14 @@ function shared_TestPromptWithoutResponse()
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
     appWindow.testCaseNum = 2
-    appWindow.promptReceived = null
+    appWindow.promptReceived = false
     appWindow.testResult = null
-    webViewport.child.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
-    webViewport.child.sendAsyncMessage("embedtest:getelementinner", {
+    webViewport.sendAsyncMessage("embedtest:getelementinner", {
                                         name: "result" })
     testcaseid.verify(wrtWait(function() { return (!appWindow.testResult); }))
     testcaseid.compare(appWindow.testResult, "unknown");
@@ -372,12 +348,11 @@ function shared_TestCheckDefaultSearch()
     testcaseid.verify(wrtWait(function() { return (appWindow.testResult !== "loaded"); }))
     mozContext.instance.sendObserve("embedui:search", {msg:"getlist"})
     testcaseid.verify(wrtWait(engineExistsPredicate));
-    mozContext.instance.setPref("browser.search.defaultenginename", "QMOZTest");
-    webViewport.child.load("linux home");
+    webViewport.load("linux home");
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
-    testcaseid.compare(webViewport.child.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
+    testcaseid.compare(webViewport.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
     mozContext.dumpTS("TestCheckDefaultSearch end");
 }
 
@@ -387,18 +362,18 @@ function shared_SelectionInit()
     testcaseid.verify(MyScript.waitMozContext())
     mozContext.instance.addObserver("clipboard:setdata");
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = "data:text/html,hello test selection";
+    webViewport.url = "data:text/html,hello test selection";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
-    webViewport.child.sendAsyncMessage("Browser:SelectionStart", {
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
+    webViewport.sendAsyncMessage("Browser:SelectionStart", {
                                         xPos: 56,
                                         yPos: 16
                                       })
-    webViewport.child.sendAsyncMessage("Browser:SelectionMoveStart", {
+    webViewport.sendAsyncMessage("Browser:SelectionMoveStart", {
                                         change: "start"
                                       })
-    webViewport.child.sendAsyncMessage("Browser:SelectionCopy", {
+    webViewport.sendAsyncMessage("Browser:SelectionCopy", {
                                         xPos: 56,
                                         yPos: 16
                                       })
@@ -412,19 +387,19 @@ function shared_Test1LoadSimpleBlank()
     mozContext.dumpTS("test_Test1LoadSimpleBlank start")
     testcaseid.verify(MyScript.waitMozContext())
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = "about:blank";
+    webViewport.url = "about:blank";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100)
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100)
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     mozContext.dumpTS("test_Test1LoadSimpleBlank end")
 }
 function shared_Test2LoadAboutMozillaCheckTitle()
 {
     mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle start")
-    webViewport.child.url = "about:mozilla";
+    webViewport.url = "about:mozilla";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.title, "The Book of Mozilla, 15:1")
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.title, "The Book of Mozilla, 15:1")
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle end")
 }
 
@@ -446,17 +421,17 @@ function shared_ActiveHyperLink()
         { n: "browser.ui.touch.weight.visited", v: 120}
     ]});
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.child.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:mozilla>ActiveLink</a>";
+    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:mozilla>ActiveLink</a>";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 20)
     testcaseid.verify(wrtWait(function() {
-        return webViewport.child.url != "about:mozilla";
+        return webViewport.url != "about:mozilla";
     }))
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.child.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.child.painted); }))
+    testcaseid.compare(webViewport.loadProgress, 100);
+    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     mozContext.instance.sendObserve("embedui:setprefs", { prefs :
     [
         { n: "embedlite.azpc.handle.singletap", v: true},

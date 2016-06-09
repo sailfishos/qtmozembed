@@ -9,19 +9,10 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
+    property bool mozViewInitialized
 
     QmlMozContext {
         id: mozContext
-    }
-    Connections {
-        target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
     }
 
     QmlMozView {
@@ -30,12 +21,7 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-            }
-        }
+        onViewInitialized: appWindow.mozViewInitialized = true
     }
 
     resources: TestCase {

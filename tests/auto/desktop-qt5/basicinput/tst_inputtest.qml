@@ -9,17 +9,17 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property string inputContent : ""
-    property int inputState : -1
-    property bool changed : false
-    property int focusChange : -1
-    property int cause : -1
-    property string inputType : ""
+    property bool mozViewInitialized
+    property string inputContent
+    property int inputState: -1
+    property bool changed
+    property int focusChange: -1
+    property int cause: -1
+    property string inputType
 
     function isState(state, focus, cause)
     {
-        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause;
+        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause
     }
 
     QmlMozContext {
@@ -28,11 +28,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -44,36 +40,33 @@ Item {
         active: true
 
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("testembed:elementpropvalue");
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.addMessageListener("testembed:elementpropvalue")
+            appWindow.mozViewInitialized = true
+        }
+        onHandleSingleTap: {
+            print("HandleSingleTap: [",point.x,",",point.y,"]")
+        }
+        onRecvAsyncMessage: {
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            switch (message) {
+            case "testembed:elementpropvalue": {
+                // print("testembed:elementpropvalue value:" + data.value)
+                appWindow.inputContent = data.value
+                break
             }
-            onHandleSingleTap: {
-                print("HandleSingleTap: [",point.x,",",point.y,"]");
+            default:
+                break
             }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                switch (message) {
-                case "testembed:elementpropvalue": {
-                    // print("testembed:elementpropvalue value:" + data.value);
-                    appWindow.inputContent = data.value;
-                    break;
-                }
-                default:
-                    break;
-                }
-            }
-            onImeNotification: {
-                print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
-                appWindow.changed = true
-                appWindow.inputState = state
-                appWindow.cause = cause
-                appWindow.focusChange = focusChange
-                appWindow.inputType = type
-            }
+        }
+        onImeNotification: {
+            print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
+            appWindow.changed = true
+            appWindow.inputState = state
+            appWindow.cause = cause
+            appWindow.focusChange = focusChange
+            appWindow.inputType = type
         }
     }
 

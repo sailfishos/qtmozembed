@@ -19,11 +19,11 @@ class QMozWindow: public QObject
     Q_OBJECT
 
 public:
-    explicit QMozWindow(QObject* parent = nullptr);
+    explicit QMozWindow(const QSize &size, QObject* parent = nullptr);
     ~QMozWindow();
 
-    void setSize(QSize);
-    QSize size() const { return mSize; }
+    void setSize(const QSize &size);
+    QSize size() const;
     void setContentOrientation(Qt::ScreenOrientation);
     Qt::ScreenOrientation contentOrientation() const;
     void* getPlatformImage(int* width, int* height);
@@ -48,7 +48,6 @@ private:
 
     QScopedPointer<QMozWindowPrivate> d;
 
-    QSize mSize;
     Qt::ScreenOrientation mOrientation;
 
     Q_DISABLE_COPY(QMozWindow)

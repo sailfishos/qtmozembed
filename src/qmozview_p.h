@@ -72,6 +72,8 @@ public:
     void UpdateViewSize();
     void ReceiveInputEvent(const mozilla::InputData& event);
 
+    void setSize(const QSizeF &size);
+
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const QString &name);
@@ -161,6 +163,9 @@ protected:
     qreal mOffsetX;
     qreal mOffsetY;
     bool mHasCompositor;
+
+    // Add enum flags for dirty if more similar flags needed
+    bool mSizeDirty;
 
     QString mPendingUrl;
     QStringList mPendingMessageListeners;

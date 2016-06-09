@@ -9,20 +9,11 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
+    property bool mozViewInitialized
+    property var mozView
 
     QmlMozContext {
         id: mozContext
-    }
-    Connections {
-        target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
     }
 
     resources: TestCase {
@@ -43,7 +34,7 @@ Item {
         {
             mozContext.dumpTS("test_2viewInitBasic start")
             testcaseid.verify(mozContext.instance.initialized())
-            MyScript.createSpriteObjectsQt5();
+            MyScript.createSpriteObjects()
             while (mozView == null) {
                 testcaseid.wait(500)
             }

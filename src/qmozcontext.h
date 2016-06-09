@@ -18,6 +18,7 @@ namespace embedlite {
 class EmbedLiteApp;
 }}
 class QMozViewCreator;
+class QMozWindow;
 
 class QMozContext : public QObject
 {
@@ -33,6 +34,9 @@ public:
     float pixelRatio() const;
     Q_INVOKABLE bool initialized() const;
     Q_INVOKABLE bool isAccelerated() const;
+
+    void registerWindow(QMozWindow* window);
+    QMozWindow *registeredWindow() const;
 
     static QMozContext* GetInstance();
 

@@ -18,6 +18,7 @@
 #include "geckoworker.h"
 #include "qmessagepump.h"
 #include "qmozviewcreator.h"
+#include "qmozwindow.h"
 
 #include "nsDebug.h"
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
@@ -41,6 +42,7 @@ public:
     , mQtPump(NULL)
     , mAsyncContext(getenv("USE_ASYNC"))
     , mViewCreator(NULL)
+    , mMozWindow(NULL)
     {
         LOGT("Create new Context: %p, parent:%p", (void*)this, (void*)qq);
         setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
@@ -185,6 +187,7 @@ private:
     MessagePumpQt* mQtPump;
     bool mAsyncContext;
     QMozViewCreator *mViewCreator;
+    QScopedPointer<QMozWindow> mMozWindow;
 };
 
 QMozContext::QMozContext(QObject* parent)
@@ -331,7 +334,12 @@ float QMozContext::pixelRatio() const
 
 void QMozContext::stopEmbedding()
 {
-    GetApp()->Stop();
+    if (registeredWindow()) {
+        connect(this, &QMozContext::lastWindowDestroyed, this, &QMozContext::stopEmbedding);
+        d->mMozWindow.reset();
+    } else {
+        GetApp()->Stop();
+    }
 }
 
 quint32
@@ -355,6 +363,16 @@ QMozContext::isAccelerated() const
     if (!d->mApp)
         return false;
     return d->mApp->IsAccelerated();
+}
+
+void QMozContext::registerWindow(QMozWindow *window)
+{
+    d->mMozWindow.reset(window);
+}
+
+QMozWindow *QMozContext::registeredWindow() const
+{
+    return d->mMozWindow.data();
 }
 
 void
