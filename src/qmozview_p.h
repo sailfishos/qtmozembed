@@ -153,8 +153,6 @@ protected:
     bool mPreedit;
     bool mViewIsFocused;
     bool mHasContext;
-    Qt::ScreenOrientation mOrientation;
-    bool mOrientationDirty;
     bool mPressed;
     bool mDragging;
     bool mFlicking;
