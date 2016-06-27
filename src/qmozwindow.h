@@ -26,6 +26,7 @@ public:
     QSize size() const;
     void setContentOrientation(Qt::ScreenOrientation);
     Qt::ScreenOrientation contentOrientation() const;
+    Qt::ScreenOrientation pendingOrientation() const;
     void* getPlatformImage(int* width, int* height);
     void suspendRendering();
     void resumeRendering();
@@ -34,6 +35,8 @@ public:
     bool readyToPaint() const;
 
 Q_SIGNALS:
+    void pendingOrientationChanged(Qt::ScreenOrientation orientation);
+    void orientationChangeFiltered(Qt::ScreenOrientation orientation);
     void requestGLContext();
     void initialized();
     void drawOverlay(QRect);
@@ -41,14 +44,15 @@ Q_SIGNALS:
     void compositorCreated();
     void compositingFinished();
 
+protected:
+    void timerEvent(QTimerEvent *event);
+
 private:
     friend class QOpenGLWebPage;
     friend class QuickMozView;
     friend class QMozWindowPrivate;
 
     QScopedPointer<QMozWindowPrivate> d;
-
-    Qt::ScreenOrientation mOrientation;
 
     Q_DISABLE_COPY(QMozWindow)
 };
