@@ -73,7 +73,7 @@ public:
             worker->moveToThread(mThread);
 
             mThread->setObjectName("GeckoWorkerThread");
-            mThread->start(QThread::LowPriority);
+            mThread->start(QThread::NormalPriority);
             return true;
         }
         return false;

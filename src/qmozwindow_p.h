@@ -21,6 +21,9 @@ public:
     virtual ~QMozWindowPrivate();
 
     void setSize(const QSize &size);
+    void setContentOrientation(Qt::ScreenOrientation);
+
+    void timerEvent(QTimerEvent *event);
 
 protected:
     // EmbedLiteWindowListener:
@@ -48,6 +51,9 @@ private:
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
     QSize mSize;
+    Qt::ScreenOrientation mOrientation;
+    Qt::ScreenOrientation mPendingOrientation;
+    int mOrientationFilterTimer;
 
     Q_DISABLE_COPY(QMozWindowPrivate)
 };

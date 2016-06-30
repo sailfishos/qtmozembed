@@ -15,32 +15,9 @@
 
 using namespace mozilla::embedlite;
 
-namespace {
-
-mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
-{
-    switch (orientation) {
-    case Qt::PrimaryOrientation:
-    case Qt::PortraitOrientation:
-        return mozilla::ROTATION_0;
-    case Qt::LandscapeOrientation:
-        return mozilla::ROTATION_90;
-    case Qt::InvertedLandscapeOrientation:
-        return mozilla::ROTATION_270;
-    case Qt::InvertedPortraitOrientation:
-        return mozilla::ROTATION_180;
-    default:
-        Q_UNREACHABLE();
-        return mozilla::ROTATION_0;
-    }
-}
-
-} // namespace
-
 QMozWindow::QMozWindow(const QSize &size, QObject* parent)
     : QObject(parent)
     , d(new QMozWindowPrivate(*this, size))
-    , mOrientation(Qt::PrimaryOrientation)
 {
     Q_ASSERT_X(!size.isEmpty(),
                "QMozWindow::QMozWindow",
@@ -69,15 +46,17 @@ QSize QMozWindow::size() const
 
 void QMozWindow::setContentOrientation(Qt::ScreenOrientation orientation)
 {
-    if (orientation != mOrientation) {
-        mOrientation = orientation;
-        d->mWindow->SetContentOrientation(QtToMozillaRotation(orientation));
-    }
+    d->setContentOrientation(orientation);
 }
 
 Qt::ScreenOrientation QMozWindow::contentOrientation() const
 {
-    return mOrientation;
+    return d->mOrientation;
+}
+
+Qt::ScreenOrientation QMozWindow::pendingOrientation() const
+{
+    return d->mPendingOrientation;
 }
 
 void* QMozWindow::getPlatformImage(int* width, int* height)
@@ -108,4 +87,9 @@ bool QMozWindow::setReadyToPaint(bool ready)
 bool QMozWindow::readyToPaint() const
 {
     return d->PreRender();
+}
+
+void QMozWindow::timerEvent(QTimerEvent *event)
+{
+    d->timerEvent(event);
 }

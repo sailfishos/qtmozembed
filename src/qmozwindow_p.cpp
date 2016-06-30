@@ -15,6 +15,8 @@
 #include <GL/glx.h>
 #endif
 
+#include <mozilla/embedlite/EmbedLiteWindow.h>
+
 EGLContext (EGLAPIENTRY * _eglGetCurrentContext)(void) = nullptr;
 EGLSurface (EGLAPIENTRY * _eglGetCurrentSurface)(EGLint readdraw) = nullptr;
 #if defined(ENABLE_GLX)
@@ -22,11 +24,40 @@ GLXContext (*_glxGetCurrentContext)(void) = nullptr;
 GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
 #endif
 
+#ifndef MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT
+#define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 500
+#endif
+
+namespace {
+
+mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
+{
+    switch (orientation) {
+    case Qt::PrimaryOrientation:
+    case Qt::PortraitOrientation:
+        return mozilla::ROTATION_0;
+    case Qt::LandscapeOrientation:
+        return mozilla::ROTATION_90;
+    case Qt::InvertedLandscapeOrientation:
+        return mozilla::ROTATION_270;
+    case Qt::InvertedPortraitOrientation:
+        return mozilla::ROTATION_180;
+    default:
+        Q_UNREACHABLE();
+        return mozilla::ROTATION_0;
+    }
+}
+
+} // namespace
+
 QMozWindowPrivate::QMozWindowPrivate(QMozWindow& window, const QSize &size)
     : q(window)
     , mWindow(nullptr)
     , mReadyToPaint(true)
     , mSize(size)
+    , mOrientation(Qt::PrimaryOrientation)
+    , mPendingOrientation(Qt::PrimaryOrientation)
+    , mOrientationFilterTimer(0)
 {
 }
 
@@ -41,6 +72,37 @@ void QMozWindowPrivate::setSize(const QSize &size)
     } else if (size != mSize) {
         mSize = size;
         mWindow->SetSize(size.width(), size.height());
+    }
+}
+
+void QMozWindowPrivate::setContentOrientation(Qt::ScreenOrientation orientation)
+{
+    if (mOrientationFilterTimer > 0) {
+        q.killTimer(mOrientationFilterTimer);
+        mOrientationFilterTimer = 0;
+    }
+
+    if (mPendingOrientation != orientation) {
+        mPendingOrientation = orientation;
+        q.pendingOrientationChanged(mPendingOrientation);
+    }
+    mOrientationFilterTimer = q.startTimer(MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT);
+}
+
+void QMozWindowPrivate::timerEvent(QTimerEvent *event)
+{
+    if (event->timerId() == mOrientationFilterTimer) {
+        q.killTimer(mOrientationFilterTimer);
+        mOrientationFilterTimer = 0;
+        if (mWindow) {
+            if (mOrientation != mPendingOrientation) {
+                mWindow->SetContentOrientation(QtToMozillaRotation(mPendingOrientation));
+                mOrientation = mPendingOrientation;
+            } else {
+                q.orientationChangeFiltered(mOrientation);
+            }
+        }
+        event->accept();
     }
 }
 
