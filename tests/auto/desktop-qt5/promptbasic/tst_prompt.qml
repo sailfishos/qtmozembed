@@ -9,10 +9,10 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant promptReceived : null
-    property variant testResult : null
-    property variant testCaseNum : 0
+    property bool mozViewInitialized
+    property bool promptReceived
+    property var testResult
+    property int testCaseNum
 
     QmlMozContext {
         id: mozContext
@@ -20,11 +20,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -34,40 +30,37 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("testembed:elementinnervalue");
-                webViewport.child.addMessageListener("embed:prompt");
-            }
-            onRecvAsyncMessage: {
-                // print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:prompt") {
-                    testcaseid.compare(data.defaultValue, "Your name");
-                    testcaseid.compare(data.text, "Please enter your name:");
-                    var responsePrompt = null;
-                    switch(appWindow.testCaseNum) {
-                        case 0:
-                            responsePrompt="expectedPromptResult";
-                            break;
-                        case 1:
-                            responsePrompt="unexpectedPromptResult";
-                            break;
-                    }
-                    if (responsePrompt) {
-                        webViewport.child.sendAsyncMessage("promptresponse", {
-                                                            winid: data.winid,
-                                                            checkval: true,
-                                                            accepted: true,
-                                                            promptvalue: responsePrompt
-                                                          })
-                    }
-                    appWindow.promptReceived = true;
-                } else if (message == "testembed:elementinnervalue") {
-                    appWindow.testResult = data.value;
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListener("testembed:elementinnervalue")
+            webViewport.addMessageListener("embed:prompt")
+        }
+        onRecvAsyncMessage: {
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "embed:prompt") {
+                testcaseid.compare(data.defaultValue, "Your name")
+                testcaseid.compare(data.text, "Please enter your name:")
+                var responsePrompt = null
+                switch(appWindow.testCaseNum) {
+                case 0:
+                    responsePrompt = "expectedPromptResult"
+                    break
+                case 1:
+                    responsePrompt = "unexpectedPromptResult"
+                    break
                 }
+                if (responsePrompt) {
+                    webViewport.sendAsyncMessage("promptresponse", {
+                                                     winid: data.winid,
+                                                     checkval: true,
+                                                     accepted: true,
+                                                     promptvalue: responsePrompt
+                                                 })
+                }
+                appWindow.promptReceived = true
+            } else if (message == "testembed:elementinnervalue") {
+                appWindow.testResult = data.value
             }
         }
     }

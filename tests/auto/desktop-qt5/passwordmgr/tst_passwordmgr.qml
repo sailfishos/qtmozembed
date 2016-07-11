@@ -9,8 +9,8 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant promptReceived : null
+    property bool mozViewInitialized
+    property bool promptReceived
 
     QmlMozContext {
         id: mozContext
@@ -18,11 +18,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -32,23 +28,20 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js");
-                webViewport.child.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("embed:login");
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "embed:login") {
-                    webViewport.child.sendAsyncMessage("embedui:login", {
-                                                        buttonidx: 1,
-                                                        id: data.id
-                                                       })
-                    appWindow.promptReceived = true;
-                }
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListener("embed:login")
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "embed:login") {
+                webViewport.sendAsyncMessage("embedui:login", {
+                                                       buttonidx: 1,
+                                                       id: data.id
+                                                   })
+                appWindow.promptReceived = true
             }
         }
     }

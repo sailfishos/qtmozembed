@@ -18,6 +18,7 @@
 #include "geckoworker.h"
 #include "qmessagepump.h"
 #include "qmozviewcreator.h"
+#include "qmozwindow.h"
 
 #include "nsDebug.h"
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
@@ -41,6 +42,7 @@ public:
     , mQtPump(NULL)
     , mAsyncContext(getenv("USE_ASYNC"))
     , mViewCreator(NULL)
+    , mMozWindow(NULL)
     {
         LOGT("Create new Context: %p, parent:%p", (void*)this, (void*)qq);
         setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
@@ -61,7 +63,7 @@ public:
         delete mThread;
     }
 
-    virtual bool ExecuteChildThread() {
+    virtual bool ExecuteChildThread() override {
         if (!getenv("GECKO_THREAD")) {
             LOGT("Execute in child Native thread: %p", (void*)mThread);
             GeckoWorker *worker = new GeckoWorker(mApp);
@@ -71,13 +73,13 @@ public:
             worker->moveToThread(mThread);
 
             mThread->setObjectName("GeckoWorkerThread");
-            mThread->start(QThread::LowPriority);
+            mThread->start(QThread::NormalPriority);
             return true;
         }
         return false;
     }
     // Native thread must be stopped here
-    virtual bool StopChildThread() {
+    virtual bool StopChildThread() override {
         if (mThread) {
             LOGT("Stop Native thread: %p", (void*)mThread);
             mThread->exit(0);
@@ -87,7 +89,7 @@ public:
         return false;
     }
     // App Initialized and ready to API call
-    virtual void Initialized() {
+    virtual void Initialized() override {
         mInitialized = true;
 #if defined(GL_PROVIDER_EGL) || defined(GL_PROVIDER_GLX)
         if (mApp->GetRenderType() == EmbedLiteApp::RENDER_AUTO) {
@@ -109,13 +111,14 @@ public:
         mObserversList.clear();
     }
     // App Destroyed, and ready to delete and program exit
-    virtual void Destroyed() {
+    virtual void Destroyed() override {
         LOGT("");
+        q->destroyed();
         if (mAsyncContext) {
             mQtPump->deleteLater();
         }
     }
-    virtual void OnObserve(const char* aTopic, const char16_t* aData) {
+    virtual void OnObserve(const char* aTopic, const char16_t* aData) override {
         // LOGT("aTopic: %s, data: %s", aTopic, NS_ConvertUTF16toUTF8(aData).get());
         QString data((QChar*)aData);
         if (!data.startsWith('{') && !data.startsWith('[') && !data.startsWith('"')) {
@@ -134,6 +137,12 @@ public:
         } else {
             LOGT("parse: s:'%s', err:%s, errLine:%i", data.toUtf8().data(), error.errorString().toUtf8().data(), error.offset);
         }
+    }
+    virtual void LastViewDestroyed() override {
+        Q_EMIT q->lastViewDestroyed();
+    }
+    virtual void LastWindowDestroyed() override {
+        Q_EMIT q->lastWindowDestroyed();
     }
     void setDefaultPrefs()
     {
@@ -156,7 +165,7 @@ public:
     }
     bool IsInitialized() { return mApp && mInitialized; }
 
-    virtual uint32_t CreateNewWindowRequested(const uint32_t& chromeFlags, const char* uri, const uint32_t& contextFlags, EmbedLiteView* aParentView)
+    virtual uint32_t CreateNewWindowRequested(const uint32_t& chromeFlags, const char* uri, const uint32_t& contextFlags, EmbedLiteView* aParentView) override
     {
         LOGT("QtMozEmbedContext new Window requested: parent:%p", (void*)aParentView);
         uint32_t viewId = QMozContext::GetInstance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
@@ -178,6 +187,7 @@ private:
     MessagePumpQt* mQtPump;
     bool mAsyncContext;
     QMozViewCreator *mViewCreator;
+    QScopedPointer<QMozWindow> mMozWindow;
 };
 
 QMozContext::QMozContext(QObject* parent)
@@ -324,7 +334,12 @@ float QMozContext::pixelRatio() const
 
 void QMozContext::stopEmbedding()
 {
-    GetApp()->Stop();
+    if (registeredWindow()) {
+        connect(this, &QMozContext::lastWindowDestroyed, this, &QMozContext::stopEmbedding);
+        d->mMozWindow.reset();
+    } else {
+        GetApp()->Stop();
+    }
 }
 
 quint32
@@ -348,6 +363,16 @@ QMozContext::isAccelerated() const
     if (!d->mApp)
         return false;
     return d->mApp->IsAccelerated();
+}
+
+void QMozContext::registerWindow(QMozWindow *window)
+{
+    d->mMozWindow.reset(window);
+}
+
+QMozWindow *QMozContext::registeredWindow() const
+{
+    return d->mMozWindow.data();
 }
 
 void

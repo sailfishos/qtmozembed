@@ -9,8 +9,8 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant favicon : null
+    property bool mozViewInitialized
+    property string favicon
 
     QmlMozContext {
         id: mozContext
@@ -18,11 +18,7 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -32,17 +28,14 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("chrome:linkadded");
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-                if (message == "chrome:linkadded" && data.get == "image/x-icon") {
-                    appWindow.favicon = data.href;
-                }
+        onViewInitialized: {
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListener("chrome:linkadded")
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "chrome:linkadded" && data.get == "image/x-icon") {
+                appWindow.favicon = data.href
             }
         }
     }
@@ -55,6 +48,7 @@ Item {
 
         function cleanup() {
             mozContext.dumpTS("tst_multitouch cleanup")
+            wait(500)
         }
 
         function test_TestFaviconPage()

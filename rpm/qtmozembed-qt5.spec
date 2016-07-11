@@ -1,6 +1,8 @@
+%global min_xulrunner_version 38.8.0.4
+
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
-Version:    1.12.32
+Version:    1.13.9
 Release:    1
 Group:      Applications/Internet
 License:    MPLv2
@@ -12,11 +14,14 @@ BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5QuickTest)
-BuildRequires:  xulrunner-qt5-devel >= 31.8.0.6
 BuildRequires:  pkgconfig(nspr)
+BuildRequires:  xulrunner-qt5-devel >= %{min_xulrunner_version}
 BuildRequires:  qt5-default
 BuildRequires:  qt5-qttools
-Requires:       xulrunner-qt5 >= 31.8.0.6
+Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
+
+%{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
+%{!?qtc_make:%define qtc_make make}
 
 %description
 Qt embeddings for Gecko browser engine
@@ -42,8 +47,8 @@ This package contains QML unit tests for QtMozEmbed library
 %setup -q -n %{name}-%{version}
 
 %build
-%qmake5 VERSION=%{version}
-%{__make} %{?jobs:MOZ_MAKE_FLAGS="-j%jobs"}
+%qtc_qmake5 -r VERSION=%{version}
+%qtc_make %{?_smp_mflags}
 
 %install
 %qmake5_install

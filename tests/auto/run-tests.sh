@@ -1,10 +1,11 @@
 #!/bin/sh
 
+QTVER=5
+
 # Create a temporary DBus session to isolate us from the normal environment.
 export `dbus-launch`
 if [ "$QTMOZEMBEDOBJDIR" != "" ]; then
   QMLMOZTESTRUNNER=$QTMOZEMBEDOBJDIR/tests/qmlmoztestrunner/qmlmoztestrunner
-  export QML_IMPORT_PATH=$QTMOZEMBEDOBJDIR/qmlplugin4
   export QML2_IMPORT_PATH=$QTMOZEMBEDOBJDIR/qmlplugin5
 else
   QMLMOZTESTRUNNER=/usr/lib/qt$QTVER/bin/qmlmoztestrunner

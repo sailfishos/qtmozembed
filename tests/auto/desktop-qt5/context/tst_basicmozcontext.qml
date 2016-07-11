@@ -9,21 +9,15 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
-    property variant lastObserveMessage
+    property bool mozViewInitialized
+    property var mozView
+    property var lastObserveMessage
 
     QmlMozContext {
         id: mozContext
     }
     Connections {
         target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
         onRecvObserve: {
             lastObserveMessage = { msg: message, data: data }
         }
@@ -42,10 +36,6 @@ Item {
         function test_context1Init()
         {
             SharedTests.shared_context1Init()
-        }
-        function test_context2AcceleratedAPI()
-        {
-            SharedTests.shared_context2AcceleratedAPI()
         }
         function test_context3PrefAPI()
         {

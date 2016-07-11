@@ -9,8 +9,8 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant testResult : null
+    property bool mozViewInitialized
+    property var testResult
 
     QmlMozContext {
         id: mozContext
@@ -18,34 +18,33 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest");
-            mozContext.instance.setPref("browser.search.log", true);
-            mozContext.instance.addObserver("browser-search-engine-modified");
-            mozContext.instance.addObserver("embed:search");
-            mozContext.instance.setPref("keyword.enabled", true);
+            mozContext.instance.setPref("browser.search.defaultenginename", "QMOZTest")
+            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            mozContext.instance.setPref("browser.search.log", true)
+            mozContext.instance.addObserver("browser-search-engine-modified")
+            mozContext.instance.addObserver("embed:search")
+            mozContext.instance.setPref("keyword.enabled", true)
         }
         onRecvObserve: {
             if (message == "embed:search") {
                 switch (data.msg) {
                     case "init": {
-                        print("Received: search:" + message, ", msg: ", data.msg, data.defaultEngine);
-                        break;
+                        print("Received: search:" + message, ", msg: ", data.msg, data.defaultEngine)
+                        break
                     }
                     case "pluginslist": {
-                        print("Received: search:" + message, ", msg: ", data.msg, data.list[0].name, data.list[0].isDefault, data.list[0].isCurrent);
-                        appWindow.testResult = data.list;
-                        break;
+                        for (var i = 0; i < data.list.length; ++i) {
+                            print("Received: search:" + message, ", msg: ", data.msg, data.list[i].name, data.list[i].isDefault, data.list[i].isCurrent)
+                        }
+                        appWindow.testResult = data.list
+                        break
                     }
                 }
             } else if (message == "browser-search-engine-modified") {
                 if (data == "engine-loaded") {
-                    appWindow.testResult = "loaded";
+                    appWindow.testResult = "loaded"
                 }
-                print("Received: search mod:", data);
+                print("Received: search mod:", data)
             }
         }
     }
@@ -56,14 +55,11 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                appWindow.mozViewInitialized = true
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-            }
+        onViewInitialized: {
+            appWindow.mozViewInitialized = true
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
         }
     }
 

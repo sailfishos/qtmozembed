@@ -9,21 +9,15 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
+    property bool mozViewInitialized
 
     QmlMozContext {
         id: mozContext
     }
     Connections {
         target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
         onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data);
+            print("onRecvObserve: msg:", message, ", data:", data.data)
         }
     }
 
@@ -33,29 +27,20 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-                webViewport.child.loadFrameScript("chrome://embedlite/content/SelectHelper.js");
-                webViewport.child.useQmlMouse = true;
-                appWindow.mozViewInitialized = true
-            }
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
+            webViewport.useQmlMouse = true
+            appWindow.mozViewInitialized = true
         }
     }
 
     MouseArea {
         id: viewportMouse
         anchors.fill: parent
-        onPressed: {
-            webViewport.child.recvMousePress(mouseX, mouseY)
-        }
-        onReleased: {
-            webViewport.child.recvMouseRelease(mouseX, mouseY)
-        }
-        onPositionChanged: {
-            webViewport.child.recvMouseMove(mouseX, mouseY)
-        }
+        onPressed: webViewport.recvMousePress(mouseX, mouseY)
+        onReleased: webViewport.recvMouseRelease(mouseX, mouseY)
+        onPositionChanged: webViewport.recvMouseMove(mouseX, mouseY)
     }
 
     resources: TestCase {
@@ -70,8 +55,8 @@ Item {
 
         function test_ActiveHyperLink()
         {
-            SharedTests.shared_ActiveHyperLink();
-            webViewport.child.useQmlMouse = false;
+            SharedTests.shared_ActiveHyperLink()
+            webViewport.useQmlMouse = false
         }
     }
 }

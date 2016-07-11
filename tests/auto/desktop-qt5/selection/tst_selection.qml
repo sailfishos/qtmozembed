@@ -9,22 +9,16 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property string selectedContent : ""
+    property bool mozViewInitialized
+    property string selectedContent
 
     QmlMozContext {
         id: mozContext
     }
     Connections {
         target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
-        }
         onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data);
+            print("onRecvObserve: msg:", message, ", data:", data.data)
             appWindow.selectedContent = data.data
         }
     }
@@ -35,17 +29,14 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
-        Connections {
-            target: webViewport.child
-            onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://embedlite/content/embedhelper.js");
-                webViewport.child.loadFrameScript("chrome://embedlite/content/SelectHelper.js");
-                appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
-            }
-            onRecvAsyncMessage: {
-                print("onRecvAsyncMessage:" + message + ", data:" + data)
-            }
+        onViewInitialized: {
+            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
+            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
+            appWindow.mozViewInitialized = true
+            webViewport.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
+        }
+        onRecvAsyncMessage: {
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
         }
     }
 

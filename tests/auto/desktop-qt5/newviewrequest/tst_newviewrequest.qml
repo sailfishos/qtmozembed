@@ -10,10 +10,10 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized : false
-    property variant mozView : null
-    property variant oldMozView : null
-    property variant createParentID : 0
+    property bool mozViewInitialized
+    property var mozView
+    property var oldMozView
+    property int createParentID
 
     QmlMozContext {
         id: mozContext
@@ -21,25 +21,15 @@ Item {
 
     WebViewCreator {
         onNewWindowRequested: {
-            print("New Window Requested: url: ", url, ", parentID:", parentId);
-            appWindow.oldMozView = appWindow.mozView;
-            appWindow.mozView = null;
-            appWindow.createParentID = parentId;
-            MyScript.createSpriteObjectsQt5();
+            print("New Window Requested: url: ", url, ", parentID:", parentId)
+            appWindow.oldMozView = appWindow.mozView
+            appWindow.mozView = null
+            appWindow.createParentID = parentId
+            MyScript.createSpriteObjects()
             while (appWindow.mozView === null) {
                 testcaseid.wait()
             }
             testcaseid.verify(mozView.uniqueID() > 0)
-        }
-    }
-
-    Connections {
-        target: mozContext.instance
-        onOnInitialized: {
-            // Gecko does not switch to SW mode if gl context failed to init
-            // and qmlmoztestrunner does not build in GL mode
-            // Let's put it here for now in SW mode always
-            mozContext.instance.setIsAccelerated(true);
         }
     }
 
@@ -59,7 +49,7 @@ Item {
         }
         function test_2newviewInit()
         {
-            SharedTests.shared_2newviewInit(true)
+            SharedTests.shared_2newviewInit()
         }
         function test_viewTestNewWindowAPI()
         {

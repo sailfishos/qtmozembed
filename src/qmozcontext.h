@@ -18,6 +18,7 @@ namespace embedlite {
 class EmbedLiteApp;
 }}
 class QMozViewCreator;
+class QMozWindow;
 
 class QMozContext : public QObject
 {
@@ -34,6 +35,9 @@ public:
     Q_INVOKABLE bool initialized() const;
     Q_INVOKABLE bool isAccelerated() const;
 
+    void registerWindow(QMozWindow* window);
+    QMozWindow *registeredWindow() const;
+
     static QMozContext* GetInstance();
 
     TaskHandle PostUITask(TaskCallback, void* data, int timeout = 0);
@@ -42,6 +46,9 @@ public:
 
 Q_SIGNALS:
     void onInitialized();
+    void destroyed();
+    void lastViewDestroyed();
+    void lastWindowDestroyed();
     void recvObserve(const QString message, const QVariant data);
 
 public Q_SLOTS:
