@@ -2,7 +2,7 @@
 
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
-Version:    1.13.9
+Version:    1.13.12
 Release:    1
 Group:      Applications/Internet
 License:    MPLv2
