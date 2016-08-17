@@ -29,7 +29,7 @@ class QuickMozView : public QQuickItem
 
 public:
     QuickMozView(QQuickItem *parent = 0);
-    ~QuickMozView();
+    virtual ~QuickMozView();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
     void RenderToCurrentContext();
@@ -74,21 +74,21 @@ private Q_SLOTS:
 
 // INTERNAL
 protected:
-    void itemChange(ItemChange change, const ItemChangeData &) override;
-    void geometryChanged(const QRectF & newGeometry, const QRectF & oldGeometry) override;
-    QSGNode* updatePaintNode(QSGNode* node, UpdatePaintNodeData* data) override;
-    void mouseMoveEvent(QMouseEvent* event) override;
-    void mousePressEvent(QMouseEvent* event) override;
-    void mouseReleaseEvent(QMouseEvent* event) override;
-    QVariant inputMethodQuery(Qt::InputMethodQuery property) const override;
-    void inputMethodEvent(QInputMethodEvent* event) override;
-    void keyPressEvent(QKeyEvent*) override;
-    void keyReleaseEvent(QKeyEvent*) override;
-    void focusInEvent(QFocusEvent*) override;
-    void focusOutEvent(QFocusEvent*) override;
-    void touchEvent(QTouchEvent*) override;
-    void timerEvent(QTimerEvent*) override;
-    void componentComplete() override;
+    void itemChange(ItemChange change, const ItemChangeData &) Q_DECL_OVERRIDE;
+    void geometryChanged(const QRectF & newGeometry, const QRectF & oldGeometry) Q_DECL_OVERRIDE;
+    QSGNode* updatePaintNode(QSGNode* node, UpdatePaintNodeData* data) Q_DECL_OVERRIDE;
+    void mouseMoveEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
+    void mousePressEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
+    void mouseReleaseEvent(QMouseEvent* event) Q_DECL_OVERRIDE;
+    QVariant inputMethodQuery(Qt::InputMethodQuery property) const Q_DECL_OVERRIDE;
+    void inputMethodEvent(QInputMethodEvent* event) Q_DECL_OVERRIDE;
+    void keyPressEvent(QKeyEvent*) Q_DECL_OVERRIDE;
+    void keyReleaseEvent(QKeyEvent*) Q_DECL_OVERRIDE;
+    void focusInEvent(QFocusEvent*) Q_DECL_OVERRIDE;
+    void focusOutEvent(QFocusEvent*) Q_DECL_OVERRIDE;
+    void touchEvent(QTouchEvent*) Q_DECL_OVERRIDE;
+    void timerEvent(QTimerEvent*) Q_DECL_OVERRIDE;
+    void componentComplete() Q_DECL_OVERRIDE;
 
 public Q_SLOTS:
     void setInputMethodHints(Qt::InputMethodHints hints);

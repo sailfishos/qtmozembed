@@ -137,25 +137,6 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
 void QuickMozView::updateGLContextInfo()
 {
     if (window()) {
-        Qt::ScreenOrientation orientation = window()->contentOrientation();
-        QSize viewPortSize;
-        int minValue = qMin(window()->width(), window()->height());
-        int maxValue = qMax(window()->width(), window()->height());
-
-        switch (orientation) {
-        case Qt::LandscapeOrientation:
-        case Qt::InvertedLandscapeOrientation:
-            viewPortSize.setWidth(maxValue);
-            viewPortSize.setHeight(minValue);
-            LOGT("Update landscape viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        default:
-            viewPortSize.setWidth(minValue);
-            viewPortSize.setHeight(maxValue);
-            LOGT("Update portrait viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        }
-
         Q_EMIT updateViewSize();
     }
 }
@@ -216,7 +197,9 @@ void QuickMozView::createView()
 {
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
-        mozWindow = new QMozWindow(d->mSize.toSize());
+        QSize mozViewSize = window()->contentOrientation() == Qt::PortraitOrientation ? QSize(width(), height()) : QSize(height(), width());
+        d->setSize(mozViewSize);
+        mozWindow = new QMozWindow(mozViewSize);
         d->mContext->registerWindow(mozWindow);
     }
     d->setMozWindow(mozWindow);
@@ -750,7 +733,7 @@ void QuickMozView::timerEvent(QTimerEvent *event)
 
 void QuickMozView::componentComplete()
 {
-    QQuickItem::componentComplete();
+    QQuickItem::componentComplete(); // this clobbers the geometry. TODO: why? QQuickItem::dptr->_anchors is non-null despite no anchors being set in QML?
     // The first created view gets always parentId of 0
     if (!d->mContext->initialized()) {
         connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(contextInitialized()));
