@@ -15,6 +15,7 @@ BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5QuickTest)
 BuildRequires:  pkgconfig(nspr)
+BuildRequires:  pkgconfig(pixman-1)
 BuildRequires:  xulrunner-qt5-devel >= %{min_xulrunner_version}
 BuildRequires:  qt5-default
 BuildRequires:  qt5-qttools
