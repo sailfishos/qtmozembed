@@ -62,6 +62,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
         d->UpdateViewSize();
     });
     updateEnabled();
+
+
 }
 
 QuickMozView::~QuickMozView()
@@ -167,10 +169,20 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
         if (!win)
             return;
         // All of these signals are emitted from scene graph rendering thread.
-        connect(win, SIGNAL(beforeRendering()), this, SLOT(refreshNodeTexture()), Qt::DirectConnection);
-        connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
-        connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
-        connect(win, SIGNAL(visibleChanged(bool)), this, SLOT(windowVisibleChanged(bool)));
+        connect(win,  &QQuickWindow::beforeRendering,
+                this, &QuickMozView::refreshNodeTexture,         static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        connect(win,  &QQuickWindow::beforeSynchronizing,
+                this, &QuickMozView::createThreadRenderObject,   static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        connect(win,  &QQuickWindow::sceneGraphInitialized,
+                this, &QuickMozView::createThreadRenderObject,   static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        connect(win,  &QQuickWindow::sceneGraphInvalidated,
+                this, &QuickMozView::clearThreadRenderObject,    static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        connect(win,  &QQuickWindow::visibleChanged,
+                this, &QuickMozView::windowVisibleChanged,       static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        if (QOpenGLContext *ctxt = win->openglContext()) {
+            connect(ctxt, &QOpenGLContext::aboutToBeDestroyed,
+                    this, &QuickMozView::clearThreadRenderObject, static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+        }
     }
 }
 
@@ -192,13 +204,20 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
 void QuickMozView::createThreadRenderObject()
 {
     updateGLContextInfo(QOpenGLContext::currentContext());
-    disconnect(window(), SIGNAL(beforeSynchronizing()), this, 0);
+    disconnect(window(), &QQuickWindow::beforeSynchronizing, this, 0);
+    disconnect(window(), &QQuickWindow::sceneGraphInitialized, this, 0);
+    resumeView();
 }
 
 void QuickMozView::clearThreadRenderObject()
 {
     QOpenGLContext* ctx = QOpenGLContext::currentContext();
-    Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
+    if (ctx == Q_NULLPTR) {
+        return; // already cleared (due to sceneGraphInvalidated or QOpenGLContext::aboutToBeDestroyed)
+    }
+
+    Q_ASSERT(ctx->makeCurrent(ctx->surface()));
+    suspendView();
 
 #if defined(QT_OPENGL_ES_2)
     if (mConsTex) {
@@ -209,7 +228,10 @@ void QuickMozView::clearThreadRenderObject()
 
     QQuickWindow *win = window();
     if (!win) return;
-    connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
+    connect(win,  &QQuickWindow::beforeSynchronizing,
+            this, &QuickMozView::createThreadRenderObject, static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
+    connect(win,  &QQuickWindow::sceneGraphInitialized,
+            this, &QuickMozView::createThreadRenderObject, static_cast<Qt::ConnectionType>(Qt::DirectConnection | Qt::UniqueConnection));
 }
 
 void QuickMozView::createView()
