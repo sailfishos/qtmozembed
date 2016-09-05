@@ -142,6 +142,10 @@ protected:
     QRectF mContentRect;
     QSizeF mScrollableSize;
     QPointF mScrollableOffset;
+    bool mAtXBeginning;
+    bool mAtXEnd;
+    bool mAtYBeginning;
+    bool mAtYEnd;
     // Non visual
     QMozScrollDecorator mVerticalScrollDecorator;
     QMozScrollDecorator mHorizontalScrollDecorator;

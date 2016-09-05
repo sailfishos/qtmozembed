@@ -70,6 +70,10 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentHeightChanged FINAL) \
     Q_PROPERTY(QSizeF scrollableSize READ scrollableSize FINAL) \
     Q_PROPERTY(QPointF scrollableOffset READ scrollableOffset NOTIFY scrollableOffsetChanged FINAL) \
+    Q_PROPERTY(bool atXBeginning READ atXBeginning NOTIFY atXBeginningChanged FINAL) \
+    Q_PROPERTY(bool atXEnd READ atXEnd NOTIFY atXEndChanged FINAL) \
+    Q_PROPERTY(bool atYBeginning READ atYBeginning NOTIFY atYBeginningChanged FINAL) \
+    Q_PROPERTY(bool atYEnd READ atYEnd NOTIFY atYEndChanged FINAL) \
     Q_PROPERTY(float resolution READ resolution) \
     Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL) \
     Q_PROPERTY(QColor bgcolor READ bgcolor NOTIFY bgColorChanged FINAL) \
@@ -97,6 +101,10 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     qreal contentHeight() const; \
     QSizeF scrollableSize() const; \
     QPointF scrollableOffset() const; \
+    bool atXBeginning() const; \
+    bool atXEnd() const; \
+    bool atYBeginning() const; \
+    bool atYEnd() const; \
     float resolution() const; \
     bool isPainted() const; \
     QColor bgcolor() const; \
@@ -158,6 +166,10 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void contentLoaded(QString docuri); \
     void viewAreaChanged(); \
     void scrollableOffsetChanged(); \
+    void atXBeginningChanged(); \
+    void atXEndChanged(); \
+    void atYBeginningChanged(); \
+    void atYEndChanged(); \
     void handleLongTap(QPoint point, QMozReturnValue *retval); \
     void handleSingleTap(QPoint point, QMozReturnValue *retval); \
     void handleDoubleTap(QPoint point, QMozReturnValue *retval); \

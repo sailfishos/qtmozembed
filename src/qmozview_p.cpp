@@ -146,6 +146,20 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
         }
     }
 
+    // determine if the viewport is panned to any edges
+    bool oldAXB = mAtXBeginning;
+    bool oldAXE = mAtXEnd;
+    bool oldAYB = mAtYBeginning;
+    bool oldAYE = mAtYEnd;
+    mAtXBeginning = aPosX == 0 || gfx::FuzzyEqual(0+1.0, aPosX+1.0, SCROLL_EPSILON);
+    mAtXEnd = (aPosX + (mContentResolution * mContentRect.width()) + SCROLL_EPSILON) >= mScrollableSize.width();
+    mAtYBeginning = aPosY == 0 || gfx::FuzzyEqual(0+1.0, aPosY+1.0, SCROLL_EPSILON);
+    mAtYEnd = (aPosY + (mContentResolution * mContentRect.height()) + SCROLL_EPSILON) >= mScrollableSize.height();
+    if (oldAXB != mAtXBeginning) mViewIface->atXBeginningChanged();
+    if (oldAXE != mAtXEnd)       mViewIface->atXEndChanged();
+    if (oldAYB != mAtYBeginning) mViewIface->atYBeginningChanged();
+    if (oldAYE != mAtYEnd)       mViewIface->atYEndChanged();
+
     if (widthChanged) {
         mViewIface->contentWidthChanged();
     }

@@ -473,6 +473,26 @@ QPointF QuickMozView::scrollableOffset() const
     return d->mScrollableOffset;
 }
 
+bool QuickMozView::atXBeginning() const
+{
+    return d->mAtXBeginning;
+}
+
+bool QuickMozView::atXEnd() const
+{
+    return d->mAtXEnd;
+}
+
+bool QuickMozView::atYBeginning() const
+{
+    return d->mAtYBeginning;
+}
+
+bool QuickMozView::atYEnd() const
+{
+    return d->mAtYEnd;
+}
+
 float QuickMozView::resolution() const
 {
     return d->mContentResolution;

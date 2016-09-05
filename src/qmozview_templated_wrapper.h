@@ -38,6 +38,10 @@ public:
     virtual void contentHeightChanged() = 0;
     virtual void viewAreaChanged() = 0;
     virtual void scrollableOffsetChanged() = 0;
+    virtual void atXBeginningChanged() = 0;
+    virtual void atXEndChanged() = 0;
+    virtual void atYBeginningChanged() = 0;
+    virtual void atYEndChanged() = 0;
     virtual void chromeChanged() = 0;
     virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
@@ -133,6 +137,22 @@ public:
     void scrollableOffsetChanged()
     {
         Q_EMIT view.scrollableOffsetChanged();
+    }
+    void atXBeginningChanged()
+    {
+        Q_EMIT view.atXBeginningChanged();
+    }
+    void atXEndChanged()
+    {
+        Q_EMIT view.atXEndChanged();
+    }
+    void atYBeginningChanged()
+    {
+        Q_EMIT view.atYBeginningChanged();
+    }
+    void atYEndChanged()
+    {
+        Q_EMIT view.atYEndChanged();
     }
     void chromeChanged()
     {
