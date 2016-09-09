@@ -55,8 +55,8 @@ public Q_SLOTS:
     void setIsAccelerated(bool aIsAccelerated);
     void addComponentManifest(const QString& manifestPath);
     void addObserver(const QString& aTopic);
-    void sendObserve(const QString& aTopic, const QString& string);
-    void sendObserve(const QString& aTopic, const QVariant& variant);
+    void sendObserve(const QString& aTopic, const QString& value);
+    void sendObserve(const QString& aTopic, const QVariant& value);
     // running this without delay specified will execute Gecko/Qt nested main loop
     // and block this call until stopEmbedding called
     void runEmbedding(int aDelay = -1);
