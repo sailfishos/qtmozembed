@@ -214,24 +214,31 @@ QMozContext::~QMozContext()
 }
 
 void
-QMozContext::sendObserve(const QString& aTopic, const QVariant& variant)
+QMozContext::sendObserve(const QString& aTopic, const QVariant& value)
 {
     if (!d->mApp)
         return;
 
-    QJsonDocument doc = QJsonDocument::fromVariant(variant);
-    QByteArray array = doc.toJson();
+    QJsonDocument doc;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(value);
+        doc = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        doc = QJsonDocument::fromVariant(value);
+    }
 
+    QByteArray array = doc.toJson();
     d->mApp->SendObserve(aTopic.toUtf8().data(), (const char16_t*)QString(array).constData());
 }
 
 void
-QMozContext::sendObserve(const QString& aTopic, const QString& string)
+QMozContext::sendObserve(const QString& aTopic, const QString& value)
 {
     if (!d->mApp)
         return;
 
-    d->mApp->SendObserve(aTopic.toUtf8().data(), (const char16_t*)string.constData());
+    d->mApp->SendObserve(aTopic.toUtf8().data(), (const char16_t*)value.constData());
 }
 
 void

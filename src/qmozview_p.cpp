@@ -7,6 +7,7 @@
 #define LOG_COMPONENT "QMozViewPrivate"
 
 #include <QGuiApplication>
+#include <QJSValue>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QTouchEvent>
@@ -418,14 +419,20 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
 }
 
-void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &variant)
+void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &value)
 {
     if (!mViewInitialized)
         return;
 
-    QJsonDocument doc = QJsonDocument::fromVariant(variant);
+    QJsonDocument doc;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(value);
+        doc = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        doc = QJsonDocument::fromVariant(value);
+    }
     QByteArray array = doc.toJson();
-
     mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
 }
 
