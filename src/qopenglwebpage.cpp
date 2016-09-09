@@ -94,7 +94,7 @@ void QOpenGLWebPage::createView()
 {
     LOGT("QOpenGLWebPage");
     if (!d->mView) {
-        EmbedLiteWindow* win = d->mMozWindow->d->mWindow;
+        EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
         d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode);
         d->mView->SetListener(d);
         d->mView->SetDPI(QGuiApplication::primaryScreen()->physicalDotsPerInch());
@@ -197,7 +197,7 @@ QMozWindow *QOpenGLWebPage::mozWindow() const
     return d->mMozWindow;
 }
 
-void QOpenGLWebPage::setMozWindow(QMozWindow* window)
+void QOpenGLWebPage::setMozWindow(QMozWindow *window)
 {
     d->setMozWindow(window);
     connect(window, &QMozWindow::drawOverlay,
@@ -297,17 +297,17 @@ void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
     d->mInputMethodHints = hints;
 }
 
-void QOpenGLWebPage::inputMethodEvent(QInputMethodEvent* event)
+void QOpenGLWebPage::inputMethodEvent(QInputMethodEvent *event)
 {
     d->inputMethodEvent(event);
 }
 
-void QOpenGLWebPage::keyPressEvent(QKeyEvent* event)
+void QOpenGLWebPage::keyPressEvent(QKeyEvent *event)
 {
     d->keyPressEvent(event);
 }
 
-void QOpenGLWebPage::keyReleaseEvent(QKeyEvent* event)
+void QOpenGLWebPage::keyReleaseEvent(QKeyEvent *event)
 {
     return d->keyReleaseEvent(event);
 }
@@ -317,13 +317,13 @@ QVariant QOpenGLWebPage::inputMethodQuery(Qt::InputMethodQuery property) const
     return d->inputMethodQuery(property);
 }
 
-void QOpenGLWebPage::focusInEvent(QFocusEvent* event)
+void QOpenGLWebPage::focusInEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
     d->SetIsFocused(true);
 }
 
-void QOpenGLWebPage::focusOutEvent(QFocusEvent* event)
+void QOpenGLWebPage::focusOutEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
     d->SetIsFocused(false);
@@ -423,12 +423,12 @@ bool QOpenGLWebPage::pinching() const{
     return d->mPinching;
 }
 
-QMozScrollDecorator* QOpenGLWebPage::verticalScrollDecorator() const
+QMozScrollDecorator *QOpenGLWebPage::verticalScrollDecorator() const
 {
     return &d->mVerticalScrollDecorator;
 }
 
-QMozScrollDecorator* QOpenGLWebPage::horizontalScrollDecorator() const
+QMozScrollDecorator *QOpenGLWebPage::horizontalScrollDecorator() const
 {
     return &d->mHorizontalScrollDecorator;
 }

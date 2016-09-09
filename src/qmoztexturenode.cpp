@@ -8,7 +8,7 @@
 #include <QQuickWindow>
 #include <QThread>
 
-MozTextureNode::MozTextureNode(QuickMozView* aView)
+MozTextureNode::MozTextureNode(QuickMozView *aView)
   : m_id(0)
   , m_size(0, 0)
   , m_texture(0)

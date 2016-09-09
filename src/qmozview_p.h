@@ -33,44 +33,44 @@ class QMozViewPrivate : public QObject,
 {
     Q_OBJECT
 public:
-    QMozViewPrivate(IMozQViewIface* aViewIface, QObject* publicPtr);
+    QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr);
     virtual ~QMozViewPrivate();
 
     // EmbedLiteViewListener implementation:
     void ViewInitialized() override;
     void ViewDestroyed() override;
     void SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a) override;
-    void OnLocationChanged(const char* aLocation, bool aCanGoBack, bool aCanGoForward) override;
+    void OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward) override;
     void OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal) override;
-    void OnLoadStarted(const char* aLocation) override;
+    void OnLoadStarted(const char *aLocation) override;
     void OnLoadFinished(void) override;
     void OnWindowCloseRequested() override;
-    void RecvAsyncMessage(const char16_t* aMessage, const char16_t* aData) override;
-    char* RecvSyncMessage(const char16_t* aMessage, const char16_t*  aData) override;
+    void RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData) override;
+    char *RecvSyncMessage(const char16_t *aMessage, const char16_t *aData) override;
     void OnLoadRedirect(void) override;
-    void OnSecurityChanged(const char* aStatus, unsigned int aState) override;
+    void OnSecurityChanged(const char *aStatus, unsigned int aState) override;
     void OnFirstPaint(int32_t aX, int32_t aY) override;
-    void GetIMEStatus(int32_t* aIMEEnabled, int32_t* aIMEOpen, intptr_t* aNativeIMEContext) override;
+    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext) override;
     void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
-                         const char16_t* inputType, const char16_t* inputMode) override;
-    void OnTitleChanged(const char16_t* aTitle) override;
-    bool HandleLongTap(const nsIntPoint& aPoint) override;
-    bool HandleSingleTap(const nsIntPoint& aPoint) override;
-    bool HandleDoubleTap(const nsIntPoint& aPoint) override;
-    bool SendAsyncScrollDOMEvent(const gfxRect& aContentRect, const gfxSize& aScrollableSize) override;
+                         const char16_t *inputType, const char16_t *inputMode) override;
+    void OnTitleChanged(const char16_t *aTitle) override;
+    bool HandleLongTap(const nsIntPoint &aPoint) override;
+    bool HandleSingleTap(const nsIntPoint &aPoint) override;
+    bool HandleDoubleTap(const nsIntPoint &aPoint) override;
+    bool SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
-    void SetMargins(const QMargins& margins);
+    void SetMargins(const QMargins &margins);
     QColor GetBackgroundColor() const;
     void SetIsFocused(bool aIsFocused);
     void SetThrottlePainting(bool aThrottle);
     void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void TestFlickingMode(QTouchEvent *event);
-    void HandleTouchEnd(bool& draggingChanged, bool& pinchingChanged);
+    void HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
     void ResetState();
     void UpdateMoving(bool moving);
     void ResetPainted();
     void UpdateViewSize();
-    void ReceiveInputEvent(const mozilla::InputData& event);
+    void ReceiveInputEvent(const mozilla::InputData &event);
 
     void setSize(const QSizeF &size);
 
@@ -85,10 +85,10 @@ public:
     void inputMethodEvent(QInputMethodEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
-    void touchEvent(QTouchEvent* event);
+    void touchEvent(QTouchEvent *event);
 
-    void sendAsyncMessage(const QString& name, const QVariant& variant);
-    void setMozWindow(QMozWindow*);
+    void sendAsyncMessage(const QString &name, const QVariant &value);
+    void setMozWindow(QMozWindow *);
 
 public Q_SLOTS:
     void onCompositorCreated();
@@ -97,24 +97,24 @@ protected:
     friend class QOpenGLWebPage;
     friend class QuickMozView;
 
-    void synthTouchBegin(const QVariant& touches);
-    void synthTouchMove(const QVariant& touches);
-    void synthTouchEnd(const QVariant& touches);
+    void synthTouchBegin(const QVariant &touches);
+    void synthTouchMove(const QVariant &touches);
+    void synthTouchEnd(const QVariant &touches);
     void recvMouseMove(int posX, int posY);
     void recvMousePress(int posX, int posY);
     void recvMouseRelease(int posX, int posY);
 
-    IMozQViewIface* mViewIface;
+    IMozQViewIface *mViewIface;
     QPointer<QObject> q;
     QPointer<QMozWindow> mMozWindow;
-    QMozContext* mContext;
-    mozilla::embedlite::EmbedLiteView* mView;
+    QMozContext *mContext;
+    mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
     QColor mBgColor;
     QMargins mMargins;
     mutable QMutex mBgColorMutex;
     QImage mTempBufferImage;
-    QSGTexture* mTempTexture;
+    QSGTexture *mTempTexture;
     bool mEnabled;
     bool mChromeGestureEnabled;
     qreal mChromeGestureThreshold;

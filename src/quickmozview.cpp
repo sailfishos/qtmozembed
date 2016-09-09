@@ -118,7 +118,7 @@ void QuickMozView::updateEnabled()
     d->mEnabled = QQuickItem::isEnabled();
 }
 
-void QuickMozView::updateGLContextInfo(QOpenGLContext* ctx)
+void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
 {
     d->mHasContext = ctx != nullptr && ctx->surface() != nullptr;
     if (!d->mHasContext) {
@@ -195,7 +195,7 @@ void QuickMozView::createThreadRenderObject()
 
 void QuickMozView::clearThreadRenderObject()
 {
-    QOpenGLContext* ctx = QOpenGLContext::currentContext();
+    QOpenGLContext *ctx = QOpenGLContext::currentContext();
     Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
 
 #if defined(QT_OPENGL_ES_2)
@@ -225,7 +225,7 @@ void QuickMozView::createView()
 }
 
 QSGNode*
-QuickMozView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
+QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
 {
 #if defined(QT_OPENGL_ES_2)
 #define TextureNodeType MozExtMaterialNode
@@ -237,7 +237,7 @@ QuickMozView::updatePaintNode(QSGNode* oldNode, UpdatePaintNodeData* data)
         return 0;
     }
 
-    TextureNodeType* n = static_cast<TextureNodeType*>(oldNode);
+    TextureNodeType *n = static_cast<TextureNodeType*>(oldNode);
     if (!n) {
 #if defined(QT_OPENGL_ES_2)
         n = new TextureNodeType();
@@ -263,7 +263,7 @@ void QuickMozView::refreshNodeTexture()
     if (d && d->mView) {
 #if defined(QT_OPENGL_ES_2)
         int width = 0, height = 0;
-        static QOpenGLExtension_OES_EGL_image* extension = nullptr;
+        static QOpenGLExtension_OES_EGL_image *extension = nullptr;
         if (!extension) {
             extension = new QOpenGLExtension_OES_EGL_image();
             extension->initializeOpenGLFunctions();
@@ -276,7 +276,7 @@ void QuickMozView::refreshNodeTexture()
           QMetaObject::invokeMethod(this, "resumeRendering", Qt::QueuedConnection);
         }
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
-        void* image = d->mMozWindow->getPlatformImage(&width, &height);
+        void *image = d->mMozWindow->getPlatformImage(&width, &height);
         if (image) {
             extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
             Q_EMIT textureReady(mConsTex, QSize(width, height));
@@ -344,7 +344,7 @@ void QuickMozView::compositingFinished()
     Q_EMIT dispatchItemUpdate();
 }
 
-void QuickMozView::mouseMoveEvent(QMouseEvent* e)
+void QuickMozView::mouseMoveEvent(QMouseEvent *e)
 {
     if (!mUseQmlMouse) {
         const bool accepted = e->isAccepted();
@@ -356,7 +356,7 @@ void QuickMozView::mouseMoveEvent(QMouseEvent* e)
     }
 }
 
-void QuickMozView::mousePressEvent(QMouseEvent* e)
+void QuickMozView::mousePressEvent(QMouseEvent *e)
 {
     if (!mUseQmlMouse) {
         const bool accepted = e->isAccepted();
@@ -368,7 +368,7 @@ void QuickMozView::mousePressEvent(QMouseEvent* e)
     }
 }
 
-void QuickMozView::mouseReleaseEvent(QMouseEvent* e)
+void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
 {
     if (!mUseQmlMouse) {
         const bool accepted = e->isAccepted();
@@ -385,17 +385,17 @@ void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
     d->mInputMethodHints = hints;
 }
 
-void QuickMozView::inputMethodEvent(QInputMethodEvent* event)
+void QuickMozView::inputMethodEvent(QInputMethodEvent *event)
 {
     d->inputMethodEvent(event);
 }
 
-void QuickMozView::keyPressEvent(QKeyEvent* event)
+void QuickMozView::keyPressEvent(QKeyEvent *event)
 {
     d->keyPressEvent(event);
 }
 
-void QuickMozView::keyReleaseEvent(QKeyEvent* event)
+void QuickMozView::keyReleaseEvent(QKeyEvent *event)
 {
     d->keyReleaseEvent(event);
 }
@@ -405,13 +405,13 @@ QVariant QuickMozView::inputMethodQuery(Qt::InputMethodQuery property) const
     return d->inputMethodQuery(property);
 }
 
-void QuickMozView::focusInEvent(QFocusEvent* event)
+void QuickMozView::focusInEvent(QFocusEvent *event)
 {
     d->SetIsFocused(true);
     QQuickItem::focusInEvent(event);
 }
 
-void QuickMozView::focusOutEvent(QFocusEvent* event)
+void QuickMozView::focusOutEvent(QFocusEvent *event)
 {
     d->SetIsFocused(false);
     QQuickItem::focusOutEvent(event);
@@ -431,7 +431,7 @@ QUrl QuickMozView::url() const
     return QUrl(d->mLocation);
 }
 
-void QuickMozView::setUrl(const QUrl& url)
+void QuickMozView::setUrl(const QUrl &url)
 {
     load(url.toString());
 }
@@ -515,12 +515,12 @@ bool QuickMozView::pinching() const{
     return d->mPinching;
 }
 
-QMozScrollDecorator* QuickMozView::verticalScrollDecorator() const
+QMozScrollDecorator *QuickMozView::verticalScrollDecorator() const
 {
     return &d->mVerticalScrollDecorator;
 }
 
-QMozScrollDecorator* QuickMozView::horizontalScrollDecorator() const
+QMozScrollDecorator *QuickMozView::horizontalScrollDecorator() const
 {
     return &d->mHorizontalScrollDecorator;
 }
@@ -584,7 +584,7 @@ void QuickMozView::setMargins(QMargins margins)
     d->SetMargins(margins);
 }
 
-void QuickMozView::loadHtml(const QString& html, const QUrl& baseUrl)
+void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
 {
     LOGT();
 }
@@ -623,32 +623,32 @@ void QuickMozView::reload()
     d->mView->Reload(false);
 }
 
-void QuickMozView::load(const QString& url)
+void QuickMozView::load(const QString &url)
 {
     d->load(url);
 }
 
-void QuickMozView::sendAsyncMessage(const QString& name, const QVariant& variant)
+void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant)
 {
     d->sendAsyncMessage(name, variant);
 }
 
-void QuickMozView::addMessageListener(const QString& name)
+void QuickMozView::addMessageListener(const QString &name)
 {
     d->addMessageListener(name);
 }
 
-void QuickMozView::addMessageListeners(const QStringList& messageNamesList)
+void QuickMozView::addMessageListeners(const QStringList &messageNamesList)
 {
     d->addMessageListeners(messageNamesList);
 }
 
-void QuickMozView::loadFrameScript(const QString& name)
+void QuickMozView::loadFrameScript(const QString &name)
 {
     d->loadFrameScript(name);
 }
 
-void QuickMozView::newWindow(const QString& url)
+void QuickMozView::newWindow(const QString &url)
 {
     LOGT("New Window: %s", url.toUtf8().data());
 }
@@ -680,17 +680,17 @@ void QuickMozView::setPrivateMode(bool aPrivateMode)
     }
 }
 
-void QuickMozView::synthTouchBegin(const QVariant& touches)
+void QuickMozView::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);
 }
 
-void QuickMozView::synthTouchMove(const QVariant& touches)
+void QuickMozView::synthTouchMove(const QVariant &touches)
 {
     d->synthTouchMove(touches);
 }
 
-void QuickMozView::synthTouchEnd(const QVariant& touches)
+void QuickMozView::synthTouchEnd(const QVariant &touches)
 {
     d->synthTouchEnd(touches);
 }

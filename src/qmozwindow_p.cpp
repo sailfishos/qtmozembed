@@ -17,8 +17,8 @@
 
 #include <mozilla/embedlite/EmbedLiteWindow.h>
 
-EGLContext (EGLAPIENTRY * _eglGetCurrentContext)(void) = nullptr;
-EGLSurface (EGLAPIENTRY * _eglGetCurrentSurface)(EGLint readdraw) = nullptr;
+EGLContext (EGLAPIENTRY *_eglGetCurrentContext)(void) = nullptr;
+EGLSurface (EGLAPIENTRY *_eglGetCurrentSurface)(EGLint readdraw) = nullptr;
 #if defined(ENABLE_GLX)
 GLXContext (*_glxGetCurrentContext)(void) = nullptr;
 GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
@@ -130,7 +130,7 @@ bool QMozWindowPrivate::RequestGLContext(void*& context, void*& surface)
 void QMozWindowPrivate::getEGLContext(void*& context, void*& surface)
 {
     if (!_eglGetCurrentContext || !_eglGetCurrentSurface) {
-        void* handle = dlopen("libEGL.so.1", RTLD_LAZY);
+        void *handle = dlopen("libEGL.so.1", RTLD_LAZY);
         if (!handle)
             return;
 
@@ -150,7 +150,7 @@ void QMozWindowPrivate::getEGLContext(void*& context, void*& surface)
 void QMozWindowPrivate::getGLXContext(void*& context, void*& surface)
 {
     if (!_glxGetCurrentContext || !_glxGetCurrentDrawable) {
-        void* handle = dlopen("libGL.so.1", RTLD_LAZY);
+        void *handle = dlopen("libGL.so.1", RTLD_LAZY);
         if (!handle)
             return;
 

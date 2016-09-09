@@ -19,7 +19,7 @@ class QMozWindow: public QObject
     Q_OBJECT
 
 public:
-    explicit QMozWindow(const QSize &size, QObject* parent = nullptr);
+    explicit QMozWindow(const QSize &size, QObject *parent = nullptr);
     ~QMozWindow();
 
     void setSize(const QSize &size);
@@ -27,7 +27,7 @@ public:
     void setContentOrientation(Qt::ScreenOrientation);
     Qt::ScreenOrientation contentOrientation() const;
     Qt::ScreenOrientation pendingOrientation() const;
-    void* getPlatformImage(int* width, int* height);
+    void *getPlatformImage(int *width, int *height);
     void suspendRendering();
     void resumeRendering();
     void scheduleUpdate();

@@ -219,7 +219,7 @@ MozKey::DOMKeyCodeToQtKeyCode(int aKeysym)
 }
 
 uint32_t*
-MozKey::GetFlagWord32(uint32_t aKeyCode, uint32_t* aMask)
+MozKey::GetFlagWord32(uint32_t aKeyCode, uint32_t *aMask)
 {
   /* Mozilla DOM Virtual Key Code is from 0 to 224. */
   // NS_ASSERTION((aKeyCode <= 0xFF), "Invalid DOM Key Code");

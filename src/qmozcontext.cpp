@@ -28,11 +28,11 @@
 
 using namespace mozilla::embedlite;
 
-static QMozContext* protectSingleton = nullptr;
+static QMozContext *protectSingleton = nullptr;
 
 class QMozContextPrivate : public EmbedLiteAppListener {
 public:
-    QMozContextPrivate(QMozContext* qq)
+    QMozContextPrivate(QMozContext *qq)
     : q(qq)
     , mApp(NULL)
     , mInitialized(false)
@@ -119,7 +119,7 @@ public:
             mQtPump->deleteLater();
         }
     }
-    virtual void OnObserve(const char* aTopic, const char16_t* aData) override {
+    virtual void OnObserve(const char *aTopic, const char16_t *aData) override {
         // LOGT("aTopic: %s, data: %s", aTopic, NS_ConvertUTF16toUTF8(aData).get());
         QString data((QChar*)aData);
         if (!data.startsWith('{') && !data.startsWith('[') && !data.startsWith('"')) {
@@ -158,7 +158,7 @@ public:
         } else if (getenv("GB_UA")) {
             mApp->SetCharPref("general.useragent.override", "Mozilla/5.0 (Meego; NokiaN9) AppleWebKit/534.13 (KHTML, like Gecko) NokiaBrowser/8.5.0 Mobile Safari/534.13");
         } else {
-            const char* customUA = getenv("CUSTOM_UA");
+            const char *customUA = getenv("CUSTOM_UA");
             if (customUA) {
                 mApp->SetCharPref("general.useragent.override", customUA);
             }
@@ -166,32 +166,32 @@ public:
     }
     bool IsInitialized() { return mApp && mInitialized; }
 
-    virtual uint32_t CreateNewWindowRequested(const uint32_t& chromeFlags, const char* uri, const uint32_t& contextFlags, EmbedLiteView* aParentView) override
+    virtual uint32_t CreateNewWindowRequested(const uint32_t& chromeFlags, const char *uri, const uint32_t& contextFlags, EmbedLiteView *aParentView) override
     {
         LOGT("QtMozEmbedContext new Window requested: parent:%p", (void*)aParentView);
         uint32_t viewId = QMozContext::GetInstance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
         return viewId;
     }
 
-    EmbedLiteMessagePump* EmbedLoop() { return mQtPump->EmbedLoop(); }
+    EmbedLiteMessagePump *EmbedLoop() { return mQtPump->EmbedLoop(); }
 
     QList<QString> mObserversList;
 private:
-    QMozContext* q;
-    EmbedLiteApp* mApp;
+    QMozContext *q;
+    EmbedLiteApp *mApp;
     bool mInitialized;
     float mPixelRatio;
     friend class QMozContext;
-    QThread* mThread;
+    QThread *mThread;
     bool mEmbedStarted;
-    EmbedLiteMessagePump* mEventLoopPrivate;
-    MessagePumpQt* mQtPump;
+    EmbedLiteMessagePump *mEventLoopPrivate;
+    MessagePumpQt *mQtPump;
     bool mAsyncContext;
     QMozViewCreator *mViewCreator;
     QScopedPointer<QMozWindow> mMozWindow;
 };
 
-QMozContext::QMozContext(QObject* parent)
+QMozContext::QMozContext(QObject *parent)
     : QObject(parent)
     , d(new QMozContextPrivate(this))
 {
@@ -275,7 +275,7 @@ void QMozContext::addObservers(const QStringList& aObserversList)
 QMozContext*
 QMozContext::GetInstance()
 {
-    static QMozContext* lsSingleton = nullptr;
+    static QMozContext *lsSingleton = nullptr;
     if (!lsSingleton) {
         lsSingleton = new QMozContext(0);
         NS_ASSERTION(lsSingleton, "not initialized");
@@ -283,14 +283,14 @@ QMozContext::GetInstance()
     return lsSingleton;
 }
 
-QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void* data, int timeout)
+QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
     if (!d->mApp)
         return nullptr;
     return d->mApp->PostTask(cb, data, timeout);
 }
 
-QMozContext::TaskHandle QMozContext::PostCompositorTask(QMozContext::TaskCallback cb, void* data, int timeout)
+QMozContext::TaskHandle QMozContext::PostCompositorTask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
     if (!d->mApp)
         return nullptr;
@@ -427,7 +427,7 @@ QMozContext::notifyFirstUIInitialized()
     }
 }
 
-void QMozContext::setViewCreator(QMozViewCreator* viewCreator)
+void QMozContext::setViewCreator(QMozViewCreator *viewCreator)
 {
     d->mViewCreator = viewCreator;
 }

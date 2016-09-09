@@ -47,7 +47,7 @@ private:
     bool setReadyToPaint(bool ready);
 
     QMozWindow& q;
-    mozilla::embedlite::EmbedLiteWindow* mWindow;
+    mozilla::embedlite::EmbedLiteWindow *mWindow;
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
     QSize mSize;
