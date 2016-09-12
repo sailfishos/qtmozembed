@@ -16,48 +16,52 @@
 namespace mozilla {
 namespace embedlite {
 class EmbedLiteApp;
-}}
+}
+}
 
 class MessagePumpQt : public QObject, public mozilla::embedlite::EmbedLiteMessagePumpListener
 {
-  Q_OBJECT
+    Q_OBJECT
 
 public:
-  MessagePumpQt(mozilla::embedlite::EmbedLiteApp *aApp);
-  ~MessagePumpQt();
+    MessagePumpQt(mozilla::embedlite::EmbedLiteApp *aApp);
+    ~MessagePumpQt();
 
-  virtual bool event(QEvent *e);
-  void scheduleDelayedIfNeeded();
-  void HandleDispatch();
-  void ScheduleWork();
+    virtual bool event(QEvent *e);
+    void scheduleDelayedIfNeeded();
+    void HandleDispatch();
+    void ScheduleWork();
 
-  virtual void Run(void *aDelegate);
-  virtual void Quit();
-  virtual void ScheduleWorkLocal();
-  virtual void ScheduleDelayedWork(const int aDelay);
+    virtual void Run(void *aDelegate);
+    virtual void Quit();
+    virtual void ScheduleWorkLocal();
+    virtual void ScheduleDelayedWork(const int aDelay);
 
-  mozilla::embedlite::EmbedLiteMessagePump *EmbedLoop() { return mEventLoopPrivate; }
+    mozilla::embedlite::EmbedLiteMessagePump *EmbedLoop()
+    {
+        return mEventLoopPrivate;
+    }
 
 public Q_SLOTS:
-  void dispatchDelayed();
+    void dispatchDelayed();
 
 private:
-  // We may make recursive calls to Run, so we save state that needs to be
-  // separate between them in this structure type.
-  struct RunState {
-    void *delegate;
-    // Used to flag that the current Run() invocation should return ASAP.
-    bool should_quit;
-    // Used to count how many Run() invocations are on the stack.
-    int run_depth;
-  };
+    // We may make recursive calls to Run, so we save state that needs to be
+    // separate between them in this structure type.
+    struct RunState {
+        void *delegate;
+        // Used to flag that the current Run() invocation should return ASAP.
+        bool should_quit;
+        // Used to count how many Run() invocations are on the stack.
+        int run_depth;
+    };
 
-  mozilla::embedlite::EmbedLiteApp *mApp;
-  mozilla::embedlite::EmbedLiteMessagePump *mEventLoopPrivate;
-  QTimer *mTimer;
-  RunState *state_;
-  int mLastDelayedWorkTime;
-  bool mStarted;
+    mozilla::embedlite::EmbedLiteApp *mApp;
+    mozilla::embedlite::EmbedLiteMessagePump *mEventLoopPrivate;
+    QTimer *mTimer;
+    RunState *mState;
+    int mLastDelayedWorkTime;
+    bool mStarted;
 };
 
 #endif /* qmessagepump_h */

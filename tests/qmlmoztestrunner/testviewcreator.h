@@ -19,7 +19,7 @@ class TestViewCreator : public QMozViewCreator
     Q_OBJECT
 
 public:
-    explicit TestViewCreator(QObject* parent = 0);
+    explicit TestViewCreator(QObject *parent = 0);
     ~TestViewCreator() {}
 
     virtual quint32 createView(const QString &url, const quint32 &parentId);

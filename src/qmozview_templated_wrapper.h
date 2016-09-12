@@ -43,7 +43,7 @@ public:
     virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
-    virtual void imeNotification(int state, bool open, int cause, int focusChange, const QString& type) = 0;
+    virtual void imeNotification(int state, bool open, int cause, int focusChange, const QString &type) = 0;
     virtual void bgColorChanged() = 0;
     virtual void useQmlMouse(bool value) = 0;
     virtual void draggingChanged() = 0;
@@ -56,7 +56,7 @@ template<class TMozQView>
 class IMozQView : public IMozQViewIface
 {
 public:
-    IMozQView(TMozQView& aView) : view(aView) {}
+    IMozQView(TMozQView &aView) : view(aView) {}
 
     void setInputMethodHints(Qt::InputMethodHints hints)
     {
@@ -151,7 +151,7 @@ public:
     {
         Q_EMIT view.handleDoubleTap(point, retval);
     }
-    void imeNotification(int state, bool open, int cause, int focusChange, const QString& type)
+    void imeNotification(int state, bool open, int cause, int focusChange, const QString &type)
     {
         Q_EMIT view.imeNotification(state, open, cause, focusChange, type);
     }
@@ -195,7 +195,7 @@ public:
         Q_EMIT view.contentHeightChanged();
     }
 
-    TMozQView& view;
+    TMozQView &view;
 };
 
 #endif /* qmozview_templated_wrapper_h */

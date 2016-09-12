@@ -21,11 +21,20 @@ class QMozReturnValue : public QObject
 
 public:
     QMozReturnValue(QObject *parent = 0) : QObject(parent) {}
-    QMozReturnValue(const QMozReturnValue& aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; }
+    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL)
+    {
+        mMessage = aMsg.mMessage;
+    }
     virtual ~QMozReturnValue() {}
 
-    QVariant getMessage() const { return mMessage; }
-    void setMessage(const QVariant& msg) { mMessage = msg; }
+    QVariant getMessage() const
+    {
+        return mMessage;
+    }
+    void setMessage(const QVariant &msg)
+    {
+        mMessage = msg;
+    }
 
 private:
     QVariant mMessage;
@@ -40,10 +49,10 @@ class QMozReturnValue : public QObject \
     Q_PROPERTY(QVariant message READ getMessage WRITE setMessage FINAL) \
 public: \
     QMozReturnValue(QObject *parent = 0) : QObject(parent) {} \
-    QMozReturnValue(const QMozReturnValue& aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; } \
+    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; } \
     virtual ~QMozReturnValue() {} \
     QVariant getMessage() const { return mMessage; } \
-    void setMessage(const QVariant& msg) { mMessage = msg; } \
+    void setMessage(const QVariant &msg) { mMessage = msg; } \
 private: \
     QVariant mMessage; \
 }; \
@@ -109,22 +118,22 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setMargins(QMargins);
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
-    void loadHtml(const QString& html, const QUrl& baseUrl = QUrl()); \
+    void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
     void goBack(); \
     void goForward(); \
     void stop(); \
     void reload(); \
     void load(const QString&); \
-    void sendAsyncMessage(const QString& name, const QVariant& variant); \
-    void addMessageListener(const QString& name); \
-    void addMessageListeners(const QStringList& messageNamesList); \
-    void loadFrameScript(const QString& name); \
-    void newWindow(const QString& url = "about:blank"); \
+    void sendAsyncMessage(const QString &name, const QVariant &variant); \
+    void addMessageListener(const QString &name); \
+    void addMessageListeners(const QStringList &messageNamesList); \
+    void loadFrameScript(const QString &name); \
+    void newWindow(const QString &url = "about:blank"); \
     quint32 uniqueID() const; \
     void setParentID(unsigned aParentID); \
-    void synthTouchBegin(const QVariant& touches); \
-    void synthTouchMove(const QVariant& touches); \
-    void synthTouchEnd(const QVariant& touches); \
+    void synthTouchBegin(const QVariant &touches); \
+    void synthTouchMove(const QVariant &touches); \
+    void synthTouchEnd(const QVariant &touches); \
     void suspendView(); \
     void resumeView(); \
     void recvMouseMove(int posX, int posY); \
@@ -152,7 +161,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void handleLongTap(QPoint point, QMozReturnValue *retval); \
     void handleSingleTap(QPoint point, QMozReturnValue *retval); \
     void handleDoubleTap(QPoint point, QMozReturnValue *retval); \
-    void imeNotification(int state, bool open, int cause, int focusChange, const QString& type); \
+    void imeNotification(int state, bool open, int cause, int focusChange, const QString &type); \
     void bgColorChanged(); \
     void useQmlMouse(bool value); \
     void draggingChanged(); \

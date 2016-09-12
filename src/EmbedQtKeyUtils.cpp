@@ -13,14 +13,12 @@
 
 using namespace mozilla;
 
-struct nsKeyConverter
-{
+struct nsKeyConverter {
     int vkCode; // Platform independent key code
     int keysym; // Qt key code
 };
 
-static struct nsKeyConverter nsKeycodes[] =
-{
+static struct nsKeyConverter nsKeycodes[] = {
 //  { nsIDOMKeyEvent::DOM_VK_CANCEL,        Qt::Key_Cancel },
     { nsIDOMKeyEvent::DOM_VK_BACK_SPACE,    Qt::Key_Backspace },
     { nsIDOMKeyEvent::DOM_VK_TAB,           Qt::Key_Tab },
@@ -169,14 +167,14 @@ MozKey::QtKeyCodeToDOMKeyCode(int aKeysym, int aModifier)
     // misc other things
     for (i = 0; i < ArrayLength(nsKeycodes); i++) {
         if (nsKeycodes[i].keysym == aKeysym)
-            return(nsKeycodes[i].vkCode);
+            return (nsKeycodes[i].vkCode);
     }
 
     // function keys
     if (aKeysym >= Qt::Key_F1 && aKeysym <= Qt::Key_F24)
         return aKeysym - Qt::Key_F1 + nsIDOMKeyEvent::DOM_VK_F1;
 
-    return((int)0);
+    return ((int)0);
 }
 
 int
@@ -188,89 +186,91 @@ MozKey::DOMKeyCodeToQtKeyCode(int aKeysym)
     // most likely, more letters will be getting typed in than things in
     // the key list, so we will look through these first.
 
-    if (aKeysym >= nsIDOMKeyEvent::DOM_VK_A && aKeysym <= nsIDOMKeyEvent::DOM_VK_Z)
-      // gdk and DOM both use the ASCII codes for these keys.
-      return aKeysym;
+    if (aKeysym >= nsIDOMKeyEvent::DOM_VK_A && aKeysym <= nsIDOMKeyEvent::DOM_VK_Z) {
+        // gdk and DOM both use the ASCII codes for these keys.
+        return aKeysym;
+    }
 
     // numbers
-    if (aKeysym >= nsIDOMKeyEvent::DOM_VK_0 && aKeysym <= nsIDOMKeyEvent::DOM_VK_9)
-      // gdk and DOM both use the ASCII codes for these keys.
-      return aKeysym - Qt::Key_0 + nsIDOMKeyEvent::DOM_VK_0;
+    if (aKeysym >= nsIDOMKeyEvent::DOM_VK_0 && aKeysym <= nsIDOMKeyEvent::DOM_VK_9) {
+        // gdk and DOM both use the ASCII codes for these keys.
+        return aKeysym - Qt::Key_0 + nsIDOMKeyEvent::DOM_VK_0;
+    }
 
     // keypad numbers
     if (aKeysym >= nsIDOMKeyEvent::DOM_VK_NUMPAD0 && aKeysym <= nsIDOMKeyEvent::DOM_VK_NUMPAD9) {
-      NS_ERROR("keypad numbers conversion not implemented");
-      //return aKeysym - nsIDOMKeyEvent::DOM_VK_NUMPAD0 + Qt::Key_KP_0;
-      return 0;
+        NS_ERROR("keypad numbers conversion not implemented");
+        //return aKeysym - nsIDOMKeyEvent::DOM_VK_NUMPAD0 + Qt::Key_KP_0;
+        return 0;
     }
 
     // misc other things
     for (i = 0; i < ArrayLength(nsKeycodes); ++i) {
-      if (nsKeycodes[i].vkCode == aKeysym) {
-        return nsKeycodes[i].keysym;
-      }
+        if (nsKeycodes[i].vkCode == aKeysym) {
+            return nsKeycodes[i].keysym;
+        }
     }
 
     // function keys
     if (aKeysym >= nsIDOMKeyEvent::DOM_VK_F1 && aKeysym <= nsIDOMKeyEvent::DOM_VK_F9)
-      return aKeysym - nsIDOMKeyEvent::DOM_VK_F1 + Qt::Key_F1;
+        return aKeysym - nsIDOMKeyEvent::DOM_VK_F1 + Qt::Key_F1;
 
     return 0;
 }
 
-uint32_t*
+uint32_t *
 MozKey::GetFlagWord32(uint32_t aKeyCode, uint32_t *aMask)
 {
-  /* Mozilla DOM Virtual Key Code is from 0 to 224. */
-  // NS_ASSERTION((aKeyCode <= 0xFF), "Invalid DOM Key Code");
-  static uint32_t mKeyDownFlags[8];
-  memset(mKeyDownFlags, 0, sizeof(mKeyDownFlags));
-  aKeyCode &= 0xFF;
+    /* Mozilla DOM Virtual Key Code is from 0 to 224. */
+    // NS_ASSERTION((aKeyCode <= 0xFF), "Invalid DOM Key Code");
+    static uint32_t mKeyDownFlags[8];
+    memset(mKeyDownFlags, 0, sizeof(mKeyDownFlags));
+    aKeyCode &= 0xFF;
 
-  /* 32 = 2^5 = 0x20 */
-  *aMask = uint32_t(1) << (aKeyCode & 0x1F);
-  return &mKeyDownFlags[(aKeyCode >> 5)];
+    /* 32 = 2^5 = 0x20 */
+    *aMask = uint32_t(1) << (aKeyCode & 0x1F);
+    return &mKeyDownFlags[(aKeyCode >> 5)];
 }
 
 bool
 MozKey::IsKeyDown(uint32_t aKeyCode)
 {
-  uint32_t mask;
-  uint32_t* flag = GetFlagWord32(aKeyCode, &mask);
-  return ((*flag) & mask) != 0;
+    uint32_t mask;
+    uint32_t *flag = GetFlagWord32(aKeyCode, &mask);
+    return ((*flag) & mask) != 0;
 }
 
 void
 MozKey::SetKeyDownFlag(uint32_t aKeyCode)
 {
-  uint32_t mask;
-  uint32_t* flag = GetFlagWord32(aKeyCode, &mask);
-  *flag |= mask;
+    uint32_t mask;
+    uint32_t *flag = GetFlagWord32(aKeyCode, &mask);
+    *flag |= mask;
 }
 
 void
 MozKey::ClearKeyDownFlag(uint32_t aKeyCode)
 {
-  uint32_t mask;
-  uint32_t* flag = GetFlagWord32(aKeyCode, &mask);
-  *flag &= ~mask;
+    uint32_t mask;
+    uint32_t *flag = GetFlagWord32(aKeyCode, &mask);
+    *flag &= ~mask;
 }
 
 int
 MozKey::QtModifierToDOMModifier(int aModifiers)
 {
-  int32_t modifiers = 0;
-  if (aModifiers & Qt::ControlModifier) {
-    modifiers |= nsIDOMWindowUtils::MODIFIER_CONTROL;
-  }
-  if (aModifiers & Qt::AltModifier) {
-    modifiers |= nsIDOMWindowUtils::MODIFIER_ALT;
-  }
-  if (aModifiers & Qt::ShiftModifier) {
-    modifiers |= nsIDOMWindowUtils::MODIFIER_SHIFT;
-  }
-  if (aModifiers & Qt::MetaModifier) {
-    modifiers |= nsIDOMWindowUtils::MODIFIER_META;
-  }
-  return modifiers;
+    int32_t modifiers = 0;
+    if (aModifiers & Qt::ControlModifier) {
+        modifiers |= nsIDOMWindowUtils::MODIFIER_CONTROL;
+    }
+    if (aModifiers & Qt::AltModifier) {
+        modifiers |= nsIDOMWindowUtils::MODIFIER_ALT;
+    }
+    if (aModifiers & Qt::ShiftModifier) {
+        modifiers |= nsIDOMWindowUtils::MODIFIER_SHIFT;
+    }
+    if (aModifiers & Qt::MetaModifier) {
+        modifiers |= nsIDOMWindowUtils::MODIFIER_META;
+    }
+    return modifiers;
 }

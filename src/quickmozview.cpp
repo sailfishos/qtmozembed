@@ -34,15 +34,15 @@ using namespace mozilla;
 using namespace mozilla::embedlite;
 
 QuickMozView::QuickMozView(QQuickItem *parent)
-  : QQuickItem(parent)
-  , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
-  , mParentID(0)
-  , mPrivateMode(false)
-  , mUseQmlMouse(false)
-  , mActive(false)
-  , mBackground(false)
-  , mLoaded(false)
-  , mConsTex(0)
+    : QQuickItem(parent)
+    , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
+    , mParentID(0)
+    , mPrivateMode(false)
+    , mUseQmlMouse(false)
+    , mActive(false)
+    , mBackground(false)
+    , mLoaded(false)
+    , mConsTex(0)
 {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
@@ -175,9 +175,9 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
     LOGT("newGeometry size: [%g, %g] oldGeometry size: [%g,%g]", newGeometry.size().width(),
-                                                                 newGeometry.size().height(),
-                                                                 oldGeometry.size().width(),
-                                                                 oldGeometry.size().height());
+         newGeometry.size().height(),
+         oldGeometry.size().width(),
+         oldGeometry.size().height());
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
     if (newGeometry.size() != d->mSize) {
         d->setSize(newGeometry.size());
@@ -224,7 +224,7 @@ void QuickMozView::createView()
             this, &QuickMozView::compositingFinished);
 }
 
-QSGNode*
+QSGNode *
 QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
 {
 #if defined(QT_OPENGL_ES_2)
@@ -237,14 +237,14 @@ QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
         return 0;
     }
 
-    TextureNodeType *n = static_cast<TextureNodeType*>(oldNode);
+    TextureNodeType *n = static_cast<TextureNodeType *>(oldNode);
     if (!n) {
 #if defined(QT_OPENGL_ES_2)
         n = new TextureNodeType();
 #else
         n = new TextureNodeType(this);
 #endif
-        connect(this, SIGNAL(textureReady(int,QSize)), n, SLOT(newTexture(int,QSize)), Qt::DirectConnection);
+        connect(this, SIGNAL(textureReady(int, QSize)), n, SLOT(newTexture(int, QSize)), Qt::DirectConnection);
         connect(window(), SIGNAL(beforeRendering()), n, SLOT(prepareNode()), Qt::DirectConnection);
     }
     n->update();
@@ -271,9 +271,9 @@ void QuickMozView::refreshNodeTexture()
         Q_ASSERT(extension);
 
         if (!mConsTex) {
-          glGenTextures(1, &mConsTex);
-          // Call resumeRendering() from the main thread
-          QMetaObject::invokeMethod(this, "resumeRendering", Qt::QueuedConnection);
+            glGenTextures(1, &mConsTex);
+            // Call resumeRendering() from the main thread
+            QMetaObject::invokeMethod(this, "resumeRendering", Qt::QueuedConnection);
         }
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
         void *image = d->mMozWindow->getPlatformImage(&width, &height);
@@ -350,8 +350,7 @@ void QuickMozView::mouseMoveEvent(QMouseEvent *e)
         const bool accepted = e->isAccepted();
         recvMouseMove(e->pos().x(), e->pos().y());
         e->setAccepted(accepted);
-    }
-    else {
+    } else {
         QQuickItem::mouseMoveEvent(e);
     }
 }
@@ -362,8 +361,7 @@ void QuickMozView::mousePressEvent(QMouseEvent *e)
         const bool accepted = e->isAccepted();
         recvMousePress(e->pos().x(), e->pos().y());
         e->setAccepted(accepted);
-    }
-    else {
+    } else {
         QQuickItem::mousePressEvent(e);
     }
 }
@@ -374,8 +372,7 @@ void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
         const bool accepted = e->isAccepted();
         recvMouseRelease(e->pos().x(), e->pos().y());
         e->setAccepted(accepted);
-    }
-    else {
+    } else {
         QQuickItem::mouseReleaseEvent(e);
     }
 }
@@ -511,7 +508,8 @@ bool QuickMozView::moving() const
     return d->mMoving;
 }
 
-bool QuickMozView::pinching() const{
+bool QuickMozView::pinching() const
+{
     return d->mPinching;
 }
 

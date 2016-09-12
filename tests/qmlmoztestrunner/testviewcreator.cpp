@@ -12,8 +12,8 @@
 #include "qmozcontext.h"
 #include "testviewcreator.h"
 
-TestViewCreator::TestViewCreator(QObject* parent)
-  : QMozViewCreator(parent)
+TestViewCreator::TestViewCreator(QObject *parent)
+    : QMozViewCreator(parent)
 {
     QMozContext::GetInstance()->setViewCreator(this);
 };

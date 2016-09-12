@@ -17,7 +17,7 @@ public:
     Q_INVOKABLE QString getenv(const QString envVarName) const; // Within this function I call the system getenv() function.
 public Q_SLOTS:
     void waitLoop(bool mayWait = true, int aTimeout = -1);
-    void dumpTS(const QString& msg);
+    void dumpTS(const QString &msg);
 };
 
 #endif

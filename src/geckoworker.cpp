@@ -10,7 +10,7 @@
 
 using namespace mozilla::embedlite;
 
-GeckoWorker::GeckoWorker(EmbedLiteApp* aApp, QObject* parent)
+GeckoWorker::GeckoWorker(EmbedLiteApp *aApp, QObject *parent)
     : QObject(parent),
       mApp(aApp)
 {

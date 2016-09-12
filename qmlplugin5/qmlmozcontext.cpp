@@ -19,7 +19,7 @@ QmlMozContext::waitLoop(bool mayWait, int aTimeout)
     if (mayWait)
         flags |= QEventLoop::WaitForMoreEvents;
 
-    QAbstractEventDispatcher *dispatcher =  QAbstractEventDispatcher::instance(QThread::currentThread());
+    QAbstractEventDispatcher *dispatcher = QAbstractEventDispatcher::instance(QThread::currentThread());
     if (!dispatcher) {
         return;
     }
@@ -31,7 +31,7 @@ QmlMozContext::waitLoop(bool mayWait, int aTimeout)
 }
 
 void
-QmlMozContext::dumpTS(const QString& msg)
+QmlMozContext::dumpTS(const QString &msg)
 {
     printf("TimeStamp: msg:\"%s\", Ts: %llu\n", msg.toUtf8().data(), QDateTime::currentMSecsSinceEpoch() / 1000);
 }

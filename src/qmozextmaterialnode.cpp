@@ -11,8 +11,7 @@
 
 #define LOCAL_GL_TEXTURE_EXTERNAL 0x8D65
 
-struct MozExternalTexture
-{
+struct MozExternalTexture {
     GLuint id;
 };
 
@@ -75,7 +74,7 @@ void MozExtMaterialNode::updateGeometry(const QSize &size)
 }
 
 MozExtMaterialNode::MozExtMaterialNode()
-  : m_id(0)
+    : m_id(0)
 {
     setGeometry(new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), 4));
 

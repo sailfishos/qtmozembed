@@ -29,7 +29,7 @@ class QMozContext;
 class QMozWindow;
 
 class QMozViewPrivate : public QObject,
-                        public mozilla::embedlite::EmbedLiteViewListener
+    public mozilla::embedlite::EmbedLiteViewListener
 {
     Q_OBJECT
 public:
@@ -170,6 +170,6 @@ protected:
     QStringList mPendingFrameScripts;
 };
 
-qint64 current_timestamp(QTouchEvent*);
+qint64 current_timestamp(QTouchEvent *);
 
 #endif /* qmozview_p_h */

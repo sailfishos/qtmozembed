@@ -50,7 +50,7 @@ mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
 
 } // namespace
 
-QMozWindowPrivate::QMozWindowPrivate(QMozWindow& window, const QSize &size)
+QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     : q(window)
     , mWindow(nullptr)
     , mReadyToPaint(true)
@@ -106,7 +106,7 @@ void QMozWindowPrivate::timerEvent(QTimerEvent *event)
     }
 }
 
-bool QMozWindowPrivate::RequestGLContext(void*& context, void*& surface)
+bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface)
 {
     q.requestGLContext();
 
@@ -127,7 +127,7 @@ bool QMozWindowPrivate::RequestGLContext(void*& context, void*& surface)
     return false;
 }
 
-void QMozWindowPrivate::getEGLContext(void*& context, void*& surface)
+void QMozWindowPrivate::getEGLContext(void *&context, void *&surface)
 {
     if (!_eglGetCurrentContext || !_eglGetCurrentSurface) {
         void *handle = dlopen("libEGL.so.1", RTLD_LAZY);
@@ -147,7 +147,7 @@ void QMozWindowPrivate::getEGLContext(void*& context, void*& surface)
 }
 
 #if defined(ENABLE_GLX)
-void QMozWindowPrivate::getGLXContext(void*& context, void*& surface)
+void QMozWindowPrivate::getGLXContext(void *&context, void *&surface)
 {
     if (!_glxGetCurrentContext || !_glxGetCurrentDrawable) {
         void *handle = dlopen("libGL.so.1", RTLD_LAZY);
@@ -162,7 +162,7 @@ void QMozWindowPrivate::getGLXContext(void*& context, void*& surface)
         dlclose(handle);
     }
 
-    surface = reinterpret_cast<void*>(_glxGetCurrentDrawable());
+    surface = reinterpret_cast<void *>(_glxGetCurrentDrawable());
     context = _glxGetCurrentContext();
 }
 #endif
@@ -187,7 +187,7 @@ void QMozWindowPrivate::DrawUnderlay()
     q.drawUnderlay();
 }
 
-void QMozWindowPrivate::DrawOverlay(const nsIntRect& aRect)
+void QMozWindowPrivate::DrawOverlay(const nsIntRect &aRect)
 {
     q.drawOverlay(QRect(aRect.x, aRect.y, aRect.width, aRect.height));
 }
