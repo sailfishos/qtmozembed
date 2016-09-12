@@ -196,7 +196,7 @@ public:
         return mQtPump->EmbedLoop();
     }
 
-    QList<QString> mObserversList;
+    QStringList mObserversList;
 private:
     QMozContext *q;
     EmbedLiteApp *mApp;
@@ -276,6 +276,7 @@ QMozContext::addObserver(const QString &aTopic)
 {
     if (!d->IsInitialized()) {
         d->mObserversList.append(aTopic);
+        d->mObserversList.removeDuplicates();
         return;
     }
 
@@ -284,8 +285,11 @@ QMozContext::addObserver(const QString &aTopic)
 
 void QMozContext::addObservers(const QStringList &aObserversList)
 {
-    if (!d->mApp)
+    if (!d->IsInitialized()) {
+        d->mObserversList.append(aObserversList);
+        d->mObserversList.removeDuplicates();
         return;
+    }
 
     nsTArray<nsCString> observersList;
     for (int i = 0; i < aObserversList.size(); i++) {
