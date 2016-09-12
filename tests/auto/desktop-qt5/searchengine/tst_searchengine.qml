@@ -18,12 +18,12 @@ Item {
     Connections {
         target: mozContext.instance
         onOnInitialized: {
-            mozContext.instance.setPref("browser.search.defaultenginename", "QMOZTest")
+            mozContext.instance.setPreference("browser.search.defaultenginename", "QMOZTest")
             mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-            mozContext.instance.setPref("browser.search.log", true)
+            mozContext.instance.setPreference("browser.search.log", true)
             mozContext.instance.addObserver("browser-search-engine-modified")
             mozContext.instance.addObserver("embed:search")
-            mozContext.instance.setPref("keyword.enabled", true)
+            mozContext.instance.setPreference("keyword.enabled", true)
         }
         onRecvObserve: {
             if (message == "embed:search") {

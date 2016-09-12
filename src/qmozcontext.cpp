@@ -101,9 +101,13 @@ public:
             mApp->SetIsAccelerated(true);
         }
 #endif
-        if (mPixelRatio != 1.0) {
-            q->setPixelRatio(mPixelRatio);
+        // Apply initial preferences.
+        QMapIterator<QString, QVariant> preferenceIterator(mInitialPreferences);
+        while (preferenceIterator.hasNext()) {
+            preferenceIterator.next();
+            q->setPreference(preferenceIterator.key(), preferenceIterator.value());
         }
+        mInitialPreferences.clear();
 
         setDefaultPrefs();
         mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
@@ -206,6 +210,7 @@ private:
     bool mAsyncContext;
     QMozViewCreator *mViewCreator;
     QScopedPointer<QMozWindow> mMozWindow;
+    QMap<QString, QVariant> mInitialPreferences;
 };
 
 QMozContext::QMozContext(QObject *parent)
@@ -349,7 +354,7 @@ QMozContext::GetApp()
 void QMozContext::setPixelRatio(float ratio)
 {
     d->mPixelRatio = ratio;
-    setPref(QString("layout.css.devPixelsPerPx"), QString("%1").arg(ratio));
+    setPreference(QString("layout.css.devPixelsPerPx"), QString("%1").arg(ratio));
 }
 
 float QMozContext::pixelRatio() const
@@ -403,34 +408,41 @@ QMozWindow *QMozContext::registeredWindow() const
 void
 QMozContext::setPref(const QString &aName, const QVariant &aPref)
 {
-    LOGT("name:%s, type:%i", aName.toUtf8().data(), aPref.type());
+    qWarning() << "QMozContext::setPref is deprecated and will be removed 1st of December 2016. Use QMozContext::setPreference instead.";
+    setPreference(aName, aPref);
+}
+
+void QMozContext::setPreference(const QString &key, const QVariant &value)
+{
+    LOGT("name:%s, type:%i", key.toUtf8().data(), value.type());
     if (!d->mInitialized) {
         LOGT("Error: context not yet initialized");
+        d->mInitialPreferences.insert(key, value);
         return;
     }
-    switch (aPref.type()) {
+    switch (value.type()) {
     case QVariant::String:
-        d->mApp->SetCharPref(aName.toUtf8().data(), aPref.toString().toUtf8().data());
+        d->mApp->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
         break;
     case QVariant::Int:
     case QVariant::UInt:
     case QVariant::LongLong:
     case QVariant::ULongLong:
-        d->mApp->SetIntPref(aName.toUtf8().data(), aPref.toInt());
+        d->mApp->SetIntPref(key.toUtf8().data(), value.toInt());
         break;
     case QVariant::Bool:
-        d->mApp->SetBoolPref(aName.toUtf8().data(), aPref.toBool());
+        d->mApp->SetBoolPref(key.toUtf8().data(), value.toBool());
         break;
     case QMetaType::Float:
     case QMetaType::Double:
-        if (aPref.canConvert<int>()) {
-            d->mApp->SetIntPref(aName.toUtf8().data(), aPref.toInt());
+        if (value.canConvert<int>()) {
+            d->mApp->SetIntPref(key.toUtf8().data(), value.toInt());
         } else {
-            d->mApp->SetCharPref(aName.toUtf8().data(), aPref.toString().toUtf8().data());
+            d->mApp->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
         }
         break;
     default:
-        LOGT("Unknown pref type: %i", aPref.type());
+        LOGT("Unknown pref type: %i", value.type());
     }
 }
 

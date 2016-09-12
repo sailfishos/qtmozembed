@@ -29,7 +29,7 @@ function shared_context1Init()
 function shared_context3PrefAPI()
 {
     mozContext.dumpTS("test_context3PrefAPI start")
-    mozContext.instance.setPref("test.embedlite.pref", "result");
+    mozContext.instance.setPreference("test.embedlite.pref", "result");
     mozContext.dumpTS("test_context3PrefAPI end")
 }
 function shared_context4ObserveAPI()
@@ -150,11 +150,11 @@ function shared_TestDownloadMgrPage()
 {
     mozContext.dumpTS("test_TestLoginMgrPage start")
     testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.setPref("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
-    mozContext.instance.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
-    mozContext.instance.setPref("browser.download.manager.retention", 2);
-    mozContext.instance.setPref("browser.helperApps.deleteTempFileOnExit", false);
-    mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
+    mozContext.instance.setPreference("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
+    mozContext.instance.setPreference("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
+    mozContext.instance.setPreference("browser.download.manager.retention", 2);
+    mozContext.instance.setPreference("browser.helperApps.deleteTempFileOnExit", false);
+    mozContext.instance.setPreference("browser.download.manager.quitBehavior", 1);
     mozContext.instance.addObserver("embed:download");
     testcaseid.verify(MyScript.waitMozView())
     appWindow.promptReceived = false
@@ -337,10 +337,10 @@ function shared_TestCheckDefaultSearch()
     };
     mozContext.dumpTS("TestCheckDefaultSearch start")
     testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.setPref("browser.search.log", true);
+    mozContext.instance.setPreference("browser.search.log", true);
     mozContext.instance.addObserver("browser-search-engine-modified");
     mozContext.instance.addObserver("embed:search");
-    mozContext.instance.setPref("keyword.enabled", true);
+    mozContext.instance.setPreference("keyword.enabled", true);
     testcaseid.verify(MyScript.waitMozView())
     mozContext.instance.sendObserve("embedui:search", {msg:"remove", name: "QMOZTest"})
     testcaseid.verify(wrtWait(function() { return (!engineExistsPredicate()); }))

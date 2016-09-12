@@ -61,7 +61,9 @@ public Q_SLOTS:
     // and block this call until stopEmbedding called
     void runEmbedding(int aDelay = -1);
     void stopEmbedding();
+
     void setPref(const QString &aName, const QVariant &aPref);
+    void setPreference(const QString &key, const QVariant &value);
     void notifyFirstUIInitialized();
     void setProfile(const QString);
     void addObservers(const QStringList &aObserversList);
