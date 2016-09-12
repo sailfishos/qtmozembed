@@ -876,7 +876,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
     QList<int> pressedIds, moveIds, endIds;
     QHash<int,int> idHash;
     for (int i = 0; i < touchPointsCount; ++i) {
-        const QTouchEvent::TouchPoint& pt = event->touchPoints().at(i);
+        const QTouchEvent::TouchPoint &pt = event->touchPoints().at(i);
         idHash.insert(pt.id(), i);
         switch (pt.state()) {
             case Qt::TouchPointPressed: {
@@ -911,7 +911,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         startIds.append(id);
         std::sort(startIds.begin(), startIds.end(), std::less<int>());
         Q_FOREACH (int startId, startIds) {
-            const QTouchEvent::TouchPoint& pt = event->touchPoints().at(idHash.value(startId));
+            const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(startId));
             mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
             multiTouchInputStart.mTouches.AppendElement(SingleTouchData(pt.id(),
                                                                nspt,
@@ -924,7 +924,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
     }
 
     Q_FOREACH (int id, endIds) {
-        const QTouchEvent::TouchPoint& pt = event->touchPoints().at(idHash.value(id));
+        const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(id));
         mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
         MultiTouchInput multiTouchInputEnd(MultiTouchInput::MULTITOUCH_END, timeStamp, TimeStamp(), 0);
         multiTouchInputEnd.mTouches.AppendElement(SingleTouchData(pt.id(),
@@ -945,7 +945,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         std::sort(moveIds.begin(), moveIds.end(), std::less<int>());
         MultiTouchInput multiTouchInputMove(MultiTouchInput::MULTITOUCH_MOVE, timeStamp, TimeStamp(), 0);
         Q_FOREACH (int id, moveIds) {
-            const QTouchEvent::TouchPoint& pt = event->touchPoints().at(idHash.value(id));
+            const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(id));
             mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
             multiTouchInputMove.mTouches.AppendElement(SingleTouchData(pt.id(),
                                                               nspt,

@@ -339,7 +339,7 @@ QUrl QOpenGLWebPage::url() const
     return QUrl(d->mLocation);
 }
 
-void QOpenGLWebPage::setUrl(const QUrl& url)
+void QOpenGLWebPage::setUrl(const QUrl &url)
 {
     load(url.toString());
 }
@@ -492,7 +492,7 @@ void QOpenGLWebPage::setMargins(QMargins margins)
     d->SetMargins(margins);
 }
 
-void QOpenGLWebPage::loadHtml(const QString& html, const QUrl& baseUrl)
+void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 {
     LOGT();
 }
@@ -526,32 +526,32 @@ void QOpenGLWebPage::reload()
     d->mView->Reload(false);
 }
 
-void QOpenGLWebPage::load(const QString& url)
+void QOpenGLWebPage::load(const QString &url)
 {
     d->load(url);
 }
 
-void QOpenGLWebPage::sendAsyncMessage(const QString& name, const QVariant& value)
+void QOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value)
 {
     d->sendAsyncMessage(name, value);
 }
 
-void QOpenGLWebPage::addMessageListener(const QString& name)
+void QOpenGLWebPage::addMessageListener(const QString &name)
 {
     d->addMessageListener(name);
 }
 
-void QOpenGLWebPage::addMessageListeners(const QStringList& messageNamesList)
+void QOpenGLWebPage::addMessageListeners(const QStringList &messageNamesList)
 {
     d->addMessageListeners(messageNamesList);
 }
 
-void QOpenGLWebPage::loadFrameScript(const QString& name)
+void QOpenGLWebPage::loadFrameScript(const QString &name)
 {
     d->loadFrameScript(name);
 }
 
-void QOpenGLWebPage::newWindow(const QString& url)
+void QOpenGLWebPage::newWindow(const QString &url)
 {
     LOGT("New Window: %s", url.toUtf8().data());
 }
@@ -569,17 +569,17 @@ void QOpenGLWebPage::setParentID(unsigned aParentID)
     }
 }
 
-void QOpenGLWebPage::synthTouchBegin(const QVariant& touches)
+void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);
 }
 
-void QOpenGLWebPage::synthTouchMove(const QVariant& touches)
+void QOpenGLWebPage::synthTouchMove(const QVariant &touches)
 {
     d->synthTouchMove(touches);
 }
 
-void QOpenGLWebPage::synthTouchEnd(const QVariant& touches)
+void QOpenGLWebPage::synthTouchEnd(const QVariant &touches)
 {
     d->synthTouchEnd(touches);
 }

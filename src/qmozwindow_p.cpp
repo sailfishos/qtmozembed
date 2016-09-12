@@ -50,7 +50,7 @@ mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
 
 } // namespace
 
-QMozWindowPrivate::QMozWindowPrivate(QMozWindow& window, const QSize &size)
+QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     : q(window)
     , mWindow(nullptr)
     , mReadyToPaint(true)
@@ -187,7 +187,7 @@ void QMozWindowPrivate::DrawUnderlay()
     q.drawUnderlay();
 }
 
-void QMozWindowPrivate::DrawOverlay(const nsIntRect& aRect)
+void QMozWindowPrivate::DrawOverlay(const nsIntRect &aRect)
 {
     q.drawOverlay(QRect(aRect.x, aRect.y, aRect.width, aRect.height));
 }

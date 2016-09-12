@@ -106,7 +106,7 @@ public:
         Q_EMIT q->onInitialized();
         QListIterator<QString> i(mObserversList);
         while (i.hasNext()) {
-            const QString& str = i.next();
+            const QString &str = i.next();
             mApp->AddObserver(str.toUtf8().data());
         }
         mObserversList.clear();
@@ -166,7 +166,7 @@ public:
     }
     bool IsInitialized() { return mApp && mInitialized; }
 
-    virtual uint32_t CreateNewWindowRequested(const uint32_t& chromeFlags, const char *uri, const uint32_t& contextFlags, EmbedLiteView *aParentView) override
+    virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags, const char *uri, const uint32_t &contextFlags, EmbedLiteView *aParentView) override
     {
         LOGT("QtMozEmbedContext new Window requested: parent:%p", (void*)aParentView);
         uint32_t viewId = QMozContext::GetInstance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
@@ -214,7 +214,7 @@ QMozContext::~QMozContext()
 }
 
 void
-QMozContext::sendObserve(const QString& aTopic, const QVariant& value)
+QMozContext::sendObserve(const QString &aTopic, const QVariant &value)
 {
     if (!d->mApp)
         return;
@@ -233,7 +233,7 @@ QMozContext::sendObserve(const QString& aTopic, const QVariant& value)
 }
 
 void
-QMozContext::sendObserve(const QString& aTopic, const QString& value)
+QMozContext::sendObserve(const QString &aTopic, const QString &value)
 {
     if (!d->mApp)
         return;
@@ -242,7 +242,7 @@ QMozContext::sendObserve(const QString& aTopic, const QString& value)
 }
 
 void
-QMozContext::addComponentManifest(const QString& manifestPath)
+QMozContext::addComponentManifest(const QString &manifestPath)
 {
     if (!d->mApp)
         return;
@@ -250,7 +250,7 @@ QMozContext::addComponentManifest(const QString& manifestPath)
 }
 
 void
-QMozContext::addObserver(const QString& aTopic)
+QMozContext::addObserver(const QString &aTopic)
 {
     if (!d->IsInitialized()) {
         d->mObserversList.append(aTopic);
@@ -260,7 +260,7 @@ QMozContext::addObserver(const QString& aTopic)
     d->mApp->AddObserver(aTopic.toUtf8().data());
 }
 
-void QMozContext::addObservers(const QStringList& aObserversList)
+void QMozContext::addObservers(const QStringList &aObserversList)
 {
     if (!d->mApp)
         return;
@@ -351,7 +351,7 @@ void QMozContext::stopEmbedding()
 }
 
 quint32
-QMozContext::createView(const QString& url, const quint32& parentId)
+QMozContext::createView(const QString &url, const quint32 &parentId)
 {
     return d->mViewCreator ? d->mViewCreator->createView(url, parentId) : 0;
 }
@@ -384,7 +384,7 @@ QMozWindow *QMozContext::registeredWindow() const
 }
 
 void
-QMozContext::setPref(const QString& aName, const QVariant& aPref)
+QMozContext::setPref(const QString &aName, const QVariant &aPref)
 {
     LOGT("name:%s, type:%i", aName.toUtf8().data(), aPref.type());
     if (!d->mInitialized) {

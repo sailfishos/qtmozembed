@@ -53,20 +53,20 @@ Q_SIGNALS:
 
 public Q_SLOTS:
     void setIsAccelerated(bool aIsAccelerated);
-    void addComponentManifest(const QString& manifestPath);
-    void addObserver(const QString& aTopic);
-    void sendObserve(const QString& aTopic, const QString& value);
-    void sendObserve(const QString& aTopic, const QVariant& value);
+    void addComponentManifest(const QString &manifestPath);
+    void addObserver(const QString &aTopic);
+    void sendObserve(const QString &aTopic, const QString &value);
+    void sendObserve(const QString &aTopic, const QVariant &value);
     // running this without delay specified will execute Gecko/Qt nested main loop
     // and block this call until stopEmbedding called
     void runEmbedding(int aDelay = -1);
     void stopEmbedding();
-    void setPref(const QString& aName, const QVariant& aPref);
+    void setPref(const QString &aName, const QVariant &aPref);
     void notifyFirstUIInitialized();
     void setProfile(const QString);
-    void addObservers(const QStringList& aObserversList);
+    void addObservers(const QStringList &aObserversList);
     void setViewCreator(QMozViewCreator *viewCreator);
-    quint32 createView(const QString& url, const quint32& parentId = 0);
+    quint32 createView(const QString &url, const quint32 &parentId = 0);
 
 private:
     QMozContext(QObject *parent = 0);

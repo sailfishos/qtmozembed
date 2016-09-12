@@ -30,7 +30,7 @@ protected:
     bool RequestGLContext(void*& context, void*& surface) override;
     void WindowInitialized() override;
     void DrawUnderlay() override;
-    void DrawOverlay(const nsIntRect& aRect) override;
+    void DrawOverlay(const nsIntRect &aRect) override;
     bool PreRender() override;
     void CompositorCreated() override;
     void CompositingFinished() override;
@@ -46,7 +46,7 @@ private:
 #endif
     bool setReadyToPaint(bool ready);
 
-    QMozWindow& q;
+    QMozWindow &q;
     mozilla::embedlite::EmbedLiteWindow *mWindow;
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;

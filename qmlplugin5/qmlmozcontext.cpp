@@ -31,7 +31,7 @@ QmlMozContext::waitLoop(bool mayWait, int aTimeout)
 }
 
 void
-QmlMozContext::dumpTS(const QString& msg)
+QmlMozContext::dumpTS(const QString &msg)
 {
     printf("TimeStamp: msg:\"%s\", Ts: %llu\n", msg.toUtf8().data(), QDateTime::currentMSecsSinceEpoch() / 1000);
 }
