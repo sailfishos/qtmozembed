@@ -68,12 +68,12 @@ public:
     bool event(QEvent *event);
     QVariant inputMethodQuery(Qt::InputMethodQuery property) const;
     void inputMethodEvent(QInputMethodEvent *event);
-    void keyPressEvent(QKeyEvent*);
-    void keyReleaseEvent(QKeyEvent*);
-    void focusInEvent(QFocusEvent*);
-    void focusOutEvent(QFocusEvent*);
-    void touchEvent(QTouchEvent*);
-    void timerEvent(QTimerEvent*);
+    void keyPressEvent(QKeyEvent *);
+    void keyReleaseEvent(QKeyEvent *);
+    void focusInEvent(QFocusEvent *);
+    void focusOutEvent(QFocusEvent *);
+    void touchEvent(QTouchEvent *);
+    void timerEvent(QTimerEvent *);
 
     QSharedPointer<QMozGrabResult> grabToImage(const QSize &targetSize = QSize());
 

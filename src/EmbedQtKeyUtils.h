@@ -14,14 +14,14 @@
 class MozKey
 {
 public:
-  static int QtModifierToDOMModifier(int aModifiers);
-  static int QtKeyCodeToDOMKeyCode(int aKeysym, int aModifiers = 0);
-  static int DOMKeyCodeToQtKeyCode(int aKeysym);
+    static int QtModifierToDOMModifier(int aModifiers);
+    static int QtKeyCodeToDOMKeyCode(int aKeysym, int aModifiers = 0);
+    static int DOMKeyCodeToQtKeyCode(int aKeysym);
 
-  static uint32_t *GetFlagWord32(uint32_t aKeyCode, uint32_t *aMask);
-  static bool IsKeyDown(uint32_t aKeyCode);
-  static void SetKeyDownFlag(uint32_t aKeyCode);
-  static void ClearKeyDownFlag(uint32_t aKeyCode);
+    static uint32_t *GetFlagWord32(uint32_t aKeyCode, uint32_t *aMask);
+    static bool IsKeyDown(uint32_t aKeyCode);
+    static void SetKeyDownFlag(uint32_t aKeyCode);
+    static void ClearKeyDownFlag(uint32_t aKeyCode);
 };
 
 #endif /* __EmbedQtKeyUtils_h__ */

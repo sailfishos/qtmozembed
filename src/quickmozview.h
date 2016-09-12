@@ -45,7 +45,10 @@ public:
     bool loaded() const;
 
 private:
-    QObject *getChild() { return this; }
+    QObject *getChild()
+    {
+        return this;
+    }
     void updateGLContextInfo();
 
 public Q_SLOTS:

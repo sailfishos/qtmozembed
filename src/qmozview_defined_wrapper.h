@@ -21,11 +21,20 @@ class QMozReturnValue : public QObject
 
 public:
     QMozReturnValue(QObject *parent = 0) : QObject(parent) {}
-    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; }
+    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL)
+    {
+        mMessage = aMsg.mMessage;
+    }
     virtual ~QMozReturnValue() {}
 
-    QVariant getMessage() const { return mMessage; }
-    void setMessage(const QVariant &msg) { mMessage = msg; }
+    QVariant getMessage() const
+    {
+        return mMessage;
+    }
+    void setMessage(const QVariant &msg)
+    {
+        mMessage = msg;
+    }
 
 private:
     QVariant mMessage;

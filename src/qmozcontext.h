@@ -16,7 +16,8 @@ class QMozContextPrivate;
 namespace mozilla {
 namespace embedlite {
 class EmbedLiteApp;
-}}
+}
+}
 class QMozViewCreator;
 class QMozWindow;
 

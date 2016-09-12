@@ -25,110 +25,110 @@ static int sPokeEvent;
 }  // namespace
 
 MessagePumpQt::MessagePumpQt(EmbedLiteApp *aApp)
-  : mApp(aApp), mTimer(new QTimer(this)), state_(0), mLastDelayedWorkTime(-1)
+    : mApp(aApp), mTimer(new QTimer(this)), state_(0), mLastDelayedWorkTime(-1)
 {
-  mEventLoopPrivate = mApp->CreateEmbedLiteMessagePump(this);
-  // Register our custom event type, to use in qApp event loop
-  sPokeEvent = QEvent::registerEventType();
-  connect(mTimer, SIGNAL(timeout()), this, SLOT(dispatchDelayed()));
-  mTimer->setSingleShot(true);
+    mEventLoopPrivate = mApp->CreateEmbedLiteMessagePump(this);
+    // Register our custom event type, to use in qApp event loop
+    sPokeEvent = QEvent::registerEventType();
+    connect(mTimer, SIGNAL(timeout()), this, SLOT(dispatchDelayed()));
+    mTimer->setSingleShot(true);
 }
 
 MessagePumpQt::~MessagePumpQt()
 {
-  mTimer->stop();
-  delete mTimer;
-  delete state_;
-  delete mEventLoopPrivate;
+    mTimer->stop();
+    delete mTimer;
+    delete state_;
+    delete mEventLoopPrivate;
 }
 
 bool
 MessagePumpQt::event(QEvent *e)
 {
-  if (e->type() == sPokeEvent) {
-    HandleDispatch();
-    return true;
-  }
-  return QObject::event(e);
+    if (e->type() == sPokeEvent) {
+        HandleDispatch();
+        return true;
+    }
+    return QObject::event(e);
 }
 
 void MessagePumpQt::HandleDispatch()
 {
-  if (state_->should_quit) {
-    return;
-  }
-
-  if (mEventLoopPrivate->DoWork(state_->delegate)) {
-    // there might be more, see more_work_is_plausible 
-    // variable above, that's why we ScheduleWork() to keep going.
-    ScheduleWorkLocal();
-  }
-
-  if (state_->should_quit) {
-    return;
-  }
-
-  bool doIdleWork = !mEventLoopPrivate->DoDelayedWork(state_->delegate);
-  scheduleDelayedIfNeeded();
-
-  if (doIdleWork) {
-    if (mEventLoopPrivate->DoIdleWork(state_->delegate)) {
-      ScheduleWorkLocal();
+    if (state_->should_quit) {
+        return;
     }
-  }
+
+    if (mEventLoopPrivate->DoWork(state_->delegate)) {
+        // there might be more, see more_work_is_plausible
+        // variable above, that's why we ScheduleWork() to keep going.
+        ScheduleWorkLocal();
+    }
+
+    if (state_->should_quit) {
+        return;
+    }
+
+    bool doIdleWork = !mEventLoopPrivate->DoDelayedWork(state_->delegate);
+    scheduleDelayedIfNeeded();
+
+    if (doIdleWork) {
+        if (mEventLoopPrivate->DoIdleWork(state_->delegate)) {
+            ScheduleWorkLocal();
+        }
+    }
 }
 
 void MessagePumpQt::ScheduleWorkLocal()
 {
-  QCoreApplication::postEvent(this,
-                              new QEvent((QEvent::Type)sPokeEvent));
+    QCoreApplication::postEvent(this,
+                                new QEvent((QEvent::Type)sPokeEvent));
 }
 
 void
 MessagePumpQt::scheduleDelayedIfNeeded()
 {
-  if (mLastDelayedWorkTime == -1) {
-    return;
-  }
+    if (mLastDelayedWorkTime == -1) {
+        return;
+    }
 
-  if (mTimer->isActive()) {
-    mTimer->stop();
-  }
+    if (mTimer->isActive()) {
+        mTimer->stop();
+    }
 
-  mTimer->start(mLastDelayedWorkTime >= 0 ? mLastDelayedWorkTime : 0);
+    mTimer->start(mLastDelayedWorkTime >= 0 ? mLastDelayedWorkTime : 0);
 }
 
 void
 MessagePumpQt::dispatchDelayed()
 {
-  HandleDispatch();
+    HandleDispatch();
 }
 
 void MessagePumpQt::Run(void *delegate)
 {
-  RunState *state = new RunState();
-  state->delegate = delegate;
-  state->should_quit = false;
-  state->run_depth = state_ ? state_->run_depth + 1 : 1;
-  state_ = state;
-  HandleDispatch();
+    RunState *state = new RunState();
+    state->delegate = delegate;
+    state->should_quit = false;
+    state->run_depth = state_ ? state_->run_depth + 1 : 1;
+    state_ = state;
+    HandleDispatch();
 }
 
 void MessagePumpQt::Quit()
 {
-  if (state_) {
-    state_->should_quit = true;
-    state_->delegate = NULL;
-  }
+    if (state_) {
+        state_->should_quit = true;
+        state_->delegate = NULL;
+    }
 }
 
 void MessagePumpQt::ScheduleWork()
 {
-  ScheduleWorkLocal();
+    ScheduleWorkLocal();
 }
 
 void MessagePumpQt::ScheduleDelayedWork(const int aDelay)
 {
-  mLastDelayedWorkTime = aDelay;
-  scheduleDelayedIfNeeded();
+    mLastDelayedWorkTime = aDelay;
+    scheduleDelayedIfNeeded();
 }

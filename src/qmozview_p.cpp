@@ -45,7 +45,7 @@ qint64 current_timestamp(QTouchEvent *aEvent)
 
     struct timeval te;
     gettimeofday(&te, NULL);
-    qint64 milliseconds = te.tv_sec*1000LL + te.tv_usec/1000;
+    qint64 milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
 }
 
@@ -79,7 +79,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mGraphicsViewAssigned(false)
     , mContentRect(0.0, 0.0, 0.0, 0.0)
     , mScrollableSize(0.0, 0.0)
-    , mScrollableOffset(0,0)
+    , mScrollableOffset(0, 0)
     , mContentResolution(0.0)
     , mIsPainted(false)
     , mInputMethodHints(0)
@@ -119,7 +119,7 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
     }
 
     if (!gfx::FuzzyEqual(mScrollableOffset.x(), aPosX, SCROLL_EPSILON) ||
-        !gfx::FuzzyEqual(mScrollableOffset.y(), aPosY, SCROLL_EPSILON)) {
+            !gfx::FuzzyEqual(mScrollableOffset.y(), aPosY, SCROLL_EPSILON)) {
 
         mScrollableOffset.setX(aPosX);
         mScrollableOffset.setY(aPosY);
@@ -169,25 +169,25 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
             qreal touchHorizontalThreshold = pressArea.width() * 2;
             qreal touchVerticalThreshold = pressArea.height() * 2;
             if (!mLastStationaryPos.isNull() && (qAbs(mLastStationaryPos.x() - touchPoint.x()) > touchHorizontalThreshold
-                                             || qAbs(mLastStationaryPos.y() - touchPoint.y()) > touchVerticalThreshold)) {
+                                                 || qAbs(mLastStationaryPos.y() - touchPoint.y()) > touchVerticalThreshold)) {
                 // Threshold exceeded. Reset stationary position and time.
                 mLastStationaryTimestamp = current_timestamp(event);
                 mLastStationaryPos = touchPoint;
-            } else if (qAbs(mLastPos.x() - touchPoint.x()) <= touchHorizontalThreshold && qAbs(mLastPos.y() - touchPoint.y()) <= touchVerticalThreshold) {
+            } else if (qAbs(mLastPos.x() - touchPoint.x()) <= touchHorizontalThreshold
+                       && qAbs(mLastPos.y() - touchPoint.y()) <= touchVerticalThreshold) {
                 // Handle stationary position when panning stops and continues. Eventually mCanFlick is based on timestamps between events, see touch end block.
                 if (mCanFlick) {
                     mLastStationaryTimestamp = current_timestamp(event);
                     mLastStationaryPos = touchPoint;
                 }
                 mCanFlick = false;
-            }
-            else {
+            } else {
                 mCanFlick = true;
             }
             mLastTimestamp = current_timestamp(event);
         } else if (event->type() == QEvent::TouchEnd) {
-            mCanFlick =(qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                    (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD);
+            mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
+                        (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD);
             mLastStationaryPos = QPointF();
         }
     }
@@ -298,7 +298,7 @@ void QMozViewPrivate::addMessageListeners(const QStringList &messageNamesList)
 
     nsTArray<nsString> messages;
     for (int i = 0; i < messageNamesList.size(); i++) {
-        messages.AppendElement((char16_t*)messageNamesList.at(i).data());
+        messages.AppendElement((char16_t *)messageNamesList.at(i).data());
     }
     mView->AddMessageListeners(messages);
 }
@@ -346,7 +346,8 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
 
 void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 {
-    LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
+    LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(),
+         event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
     mPreedit = !event->preeditString().isEmpty();
     if (mViewInitialized) {
         if (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly) {
@@ -433,7 +434,7 @@ void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &valu
         doc = QJsonDocument::fromVariant(value);
     }
     QByteArray array = doc.toJson();
-    mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    mView->SendAsyncMessage((const char16_t *)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
 }
 
 void QMozViewPrivate::setMozWindow(QMozWindow *window)
@@ -499,11 +500,11 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
 
 void QMozViewPrivate::SetMargins(const QMargins &margins)
 {
-  if (margins != mMargins) {
-    mMargins = margins;
-    mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
-    mViewIface->marginsChanged();
-  }
+    if (margins != mMargins) {
+        mMargins = margins;
+        mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
+        mViewIface->marginsChanged();
+    }
 }
 
 // Can be read for instance from gecko compositor thread.
@@ -649,23 +650,20 @@ void QMozViewPrivate::SetThrottlePainting(bool aThrottle)
 }
 
 void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
-                                              const char16_t *inputType, const char16_t *inputMode)
+                                      const char16_t *inputType, const char16_t *inputMode)
 {
     Qt::InputMethodHints hints = Qt::ImhNone;
     hints = aIstate == 2 ? Qt::ImhHiddenText : Qt::ImhPreferLowercase;
 
-    QString imType((QChar*)inputType);
+    QString imType((QChar *)inputType);
     if (imType.contains("number", Qt::CaseInsensitive)) {
         //hints |= Qt::ImhDigitsOnly;
         hints |= Qt::ImhFormattedNumbersOnly;
-    }
-    else if (imType.contains("tel", Qt::CaseInsensitive)) {
+    } else if (imType.contains("tel", Qt::CaseInsensitive)) {
         hints |= Qt::ImhDialableCharactersOnly;
-    }
-    else if (imType.contains("email", Qt::CaseInsensitive)) {
+    } else if (imType.contains("email", Qt::CaseInsensitive)) {
         hints |= Qt::ImhEmailCharactersOnly;
-    }
-    else if (imType.contains("url", Qt::CaseInsensitive)) {
+    } else if (imType.contains("url", Qt::CaseInsensitive)) {
         hints |= Qt::ImhUrlCharactersOnly;
     }
     mViewIface->setInputMethodHints(hints);
@@ -699,7 +697,7 @@ void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intp
 
 void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
 {
-    mTitle = QString((QChar*)aTitle);
+    mTitle = QString((QChar *)aTitle);
     mViewIface->titleChanged();
 }
 
@@ -722,7 +720,8 @@ bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const
             // In MozView coordinates
             qreal offset = aContentRect.y * mContentResolution;
             qreal currentDelta = offset - mDragStartY;
-            LOGT("dragStartY: %f, %f, %f, %f, %d", mDragStartY, offset, currentDelta, mMoveDelta, (qAbs(currentDelta) < mMoveDelta));
+            LOGT("dragStartY: %f, %f, %f, %f, %d", mDragStartY, offset, currentDelta, mMoveDelta,
+                 (qAbs(currentDelta) < mMoveDelta));
 
             if (qAbs(currentDelta) < mMoveDelta) {
                 mDragStartY = offset;
@@ -861,10 +860,10 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             i.next();
             QPointF pos = i.value();
             multiTouchInputEnd.mTouches.AppendElement(SingleTouchData(i.key(),
-                                                             mozilla::ScreenIntPoint(pos.x(), pos.y()),
-                                                             mozilla::ScreenSize(1, 1),
-                                                             180.0f,
-                                                             0));
+                                                                      mozilla::ScreenIntPoint(pos.x(), pos.y()),
+                                                                      mozilla::ScreenSize(1, 1),
+                                                                      180.0f,
+                                                                      0));
         }
         // All touch point should be cleared but let's clear active touch points anyways.
         mActiveTouchPoints.clear();
@@ -874,29 +873,29 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
     }
 
     QList<int> pressedIds, moveIds, endIds;
-    QHash<int,int> idHash;
+    QHash<int, int> idHash;
     for (int i = 0; i < touchPointsCount; ++i) {
         const QTouchEvent::TouchPoint &pt = event->touchPoints().at(i);
         idHash.insert(pt.id(), i);
         switch (pt.state()) {
-            case Qt::TouchPointPressed: {
-                mActiveTouchPoints.insert(pt.id(), pt.pos());
-                pressedIds.append(pt.id());
-                break;
-            }
-            case Qt::TouchPointReleased: {
-                mActiveTouchPoints.remove(pt.id());
-                endIds.append(pt.id());
-                break;
-            }
-            case Qt::TouchPointMoved:
-            case Qt::TouchPointStationary: {
-                mActiveTouchPoints.insert(pt.id(), pt.pos());
-                moveIds.append(pt.id());
-                break;
-            }
-            default:
-                break;
+        case Qt::TouchPointPressed: {
+            mActiveTouchPoints.insert(pt.id(), pt.pos());
+            pressedIds.append(pt.id());
+            break;
+        }
+        case Qt::TouchPointReleased: {
+            mActiveTouchPoints.remove(pt.id());
+            endIds.append(pt.id());
+            break;
+        }
+        case Qt::TouchPointMoved:
+        case Qt::TouchPointStationary: {
+            mActiveTouchPoints.insert(pt.id(), pt.pos());
+            moveIds.append(pt.id());
+            break;
+        }
+        default:
+            break;
         }
     }
 
@@ -914,10 +913,10 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(startId));
             mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
             multiTouchInputStart.mTouches.AppendElement(SingleTouchData(pt.id(),
-                                                               nspt,
-                                                               mozilla::ScreenSize(1, 1),
-                                                               180.0f,
-                                                               pt.pressure()));
+                                                                        nspt,
+                                                                        mozilla::ScreenSize(1, 1),
+                                                                        180.0f,
+                                                                        pt.pressure()));
         }
 
         ReceiveInputEvent(multiTouchInputStart);
@@ -928,10 +927,10 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
         MultiTouchInput multiTouchInputEnd(MultiTouchInput::MULTITOUCH_END, timeStamp, TimeStamp(), 0);
         multiTouchInputEnd.mTouches.AppendElement(SingleTouchData(pt.id(),
-                                                         nspt,
-                                                         mozilla::ScreenSize(1, 1),
-                                                         180.0f,
-                                                         pt.pressure()));
+                                                                  nspt,
+                                                                  mozilla::ScreenSize(1, 1),
+                                                                  180.0f,
+                                                                  pt.pressure()));
         ReceiveInputEvent(multiTouchInputEnd);
     }
 
@@ -948,10 +947,10 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(id));
             mozilla::ScreenIntPoint nspt(pt.pos().x(), pt.pos().y());
             multiTouchInputMove.mTouches.AppendElement(SingleTouchData(pt.id(),
-                                                              nspt,
-                                                              mozilla::ScreenSize(1, 1),
-                                                              180.0f,
-                                                              pt.pressure()));
+                                                                       nspt,
+                                                                       mozilla::ScreenSize(1, 1),
+                                                                       180.0f,
+                                                                       pt.pressure()));
         }
         ReceiveInputEvent(multiTouchInputMove);
     }
@@ -970,8 +969,7 @@ void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_START,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
     int ptId = 0;
-    for(QList<QVariant>::iterator it = list.begin(); it != list.end(); it++)
-    {
+    for (QList<QVariant>::iterator it = list.begin(); it != list.end(); it++) {
         const QPointF pt = (*it).toPointF();
         mozilla::ScreenIntPoint nspt(pt.x(), pt.y());
         ptId++;
@@ -990,8 +988,7 @@ void QMozViewPrivate::synthTouchMove(const QVariant &touches)
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_MOVE,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
     int ptId = 0;
-    for(QList<QVariant>::iterator it = list.begin(); it != list.end(); it++)
-    {
+    for (QList<QVariant>::iterator it = list.begin(); it != list.end(); it++) {
         const QPointF pt = (*it).toPointF();
         mozilla::ScreenIntPoint nspt(pt.x(), pt.y());
         ptId++;
@@ -1010,8 +1007,7 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_END,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
     int ptId = 0;
-    for(QList<QVariant>::iterator it = list.begin(); it != list.end(); it++)
-    {
+    for (QList<QVariant>::iterator it = list.begin(); it != list.end(); it++) {
         const QPointF pt = (*it).toPointF();
         mozilla::ScreenIntPoint nspt(pt.x(), pt.y());
         ptId++;
@@ -1030,10 +1026,10 @@ void QMozViewPrivate::recvMouseMove(int posX, int posY)
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_MOVE,
                               QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
         event.mTouches.AppendElement(SingleTouchData(0,
-                                     mozilla::ScreenIntPoint(posX, posY),
-                                     mozilla::ScreenSize(1, 1),
-                                     180.0f,
-                                     1.0f));
+                                                     mozilla::ScreenIntPoint(posX, posY),
+                                                     mozilla::ScreenSize(1, 1),
+                                                     180.0f,
+                                                     1.0f));
         ReceiveInputEvent(event);
     }
 }
@@ -1045,10 +1041,10 @@ void QMozViewPrivate::recvMousePress(int posX, int posY)
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_START,
                               QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
         event.mTouches.AppendElement(SingleTouchData(0,
-                                     mozilla::ScreenIntPoint(posX, posY),
-                                     mozilla::ScreenSize(1, 1),
-                                     180.0f,
-                                     1.0f));
+                                                     mozilla::ScreenIntPoint(posX, posY),
+                                                     mozilla::ScreenSize(1, 1),
+                                                     180.0f,
+                                                     1.0f));
         ReceiveInputEvent(event);
     }
 }
@@ -1059,10 +1055,10 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_END,
                               QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
         event.mTouches.AppendElement(SingleTouchData(0,
-                                     mozilla::ScreenIntPoint(posX, posY),
-                                     mozilla::ScreenSize(1, 1),
-                                     180.0f,
-                                     1.0f));
+                                                     mozilla::ScreenIntPoint(posX, posY),
+                                                     mozilla::ScreenSize(1, 1),
+                                                     180.0f,
+                                                     1.0f));
         ReceiveInputEvent(event);
     }
     if (mPendingTouchEvent) {

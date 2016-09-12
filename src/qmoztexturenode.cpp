@@ -9,10 +9,10 @@
 #include <QThread>
 
 MozTextureNode::MozTextureNode(QuickMozView *aView)
-  : m_id(0)
-  , m_size(0, 0)
-  , m_texture(0)
-  , m_view(aView)
+    : m_id(0)
+    , m_size(0, 0)
+    , m_texture(0)
+    , m_view(aView)
 {
     // Our texture node must have a texture, so use the default 0 texture.
     m_texture = m_view->window()->createTextureFromId(0, QSize(1, 1));

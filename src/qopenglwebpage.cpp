@@ -52,15 +52,15 @@ using namespace mozilla::embedlite;
     In order to use this, embedlite.compositor.external_gl_context preference  needs to be set.
 */
 QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
-  : QObject(parent)
-  , d(new QMozViewPrivate(new IMozQView<QOpenGLWebPage>(*this), this))
-  , mParentID(0)
-  , mPrivateMode(false)
-  , mActive(false)
-  , mLoaded(false)
-  , mCompleted(false)
-  , mSizeUpdateScheduled(false)
-  , mThrottlePainting(false)
+    : QObject(parent)
+    , d(new QMozViewPrivate(new IMozQView<QOpenGLWebPage>(*this), this))
+    , mParentID(0)
+    , mPrivateMode(false)
+    , mActive(false)
+    , mLoaded(false)
+    , mCompleted(false)
+    , mSizeUpdateScheduled(false)
+    , mThrottlePainting(false)
 {
     d->mContext = QMozContext::GetInstance();
     d->mHasContext = true;
@@ -237,29 +237,29 @@ bool QOpenGLWebPage::event(QEvent *event)
 {
     switch (event->type()) {
     case QEvent::InputMethodQuery: {
-        QInputMethodQueryEvent *query = static_cast<QInputMethodQueryEvent*>(event);
+        QInputMethodQueryEvent *query = static_cast<QInputMethodQueryEvent *>(event);
         Qt::InputMethodQueries queries = query->queries();
         for (int bit = 0; bit < 32; bit++) {
-            Qt::InputMethodQuery q = (Qt::InputMethodQuery)(1<<bit);
+            Qt::InputMethodQuery q = (Qt::InputMethodQuery)(1 << bit);
             if (queries & q) query->setValue(q, inputMethodQuery(q));
         }
         query->accept();
         break;
     }
     case QEvent::InputMethod:
-        inputMethodEvent(static_cast<QInputMethodEvent*>(event));
+        inputMethodEvent(static_cast<QInputMethodEvent *>(event));
         break;
     case QEvent::FocusIn:
-        focusInEvent(static_cast<QFocusEvent*>(event));
+        focusInEvent(static_cast<QFocusEvent *>(event));
         break;
     case QEvent::FocusOut:
-        focusOutEvent(static_cast<QFocusEvent*>(event));
+        focusOutEvent(static_cast<QFocusEvent *>(event));
         break;
     case QEvent::KeyPress:
-        keyPressEvent(static_cast<QKeyEvent*>(event));
+        keyPressEvent(static_cast<QKeyEvent *>(event));
         break;
     case QEvent::KeyRelease:
-        keyReleaseEvent(static_cast<QKeyEvent*>(event));
+        keyReleaseEvent(static_cast<QKeyEvent *>(event));
         break;
 
     default:
@@ -419,7 +419,8 @@ bool QOpenGLWebPage::moving() const
     return d->mMoving;
 }
 
-bool QOpenGLWebPage::pinching() const{
+bool QOpenGLWebPage::pinching() const
+{
     return d->mPinching;
 }
 

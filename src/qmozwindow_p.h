@@ -17,7 +17,7 @@ class QMozWindow;
 class QMozWindowPrivate : public mozilla::embedlite::EmbedLiteWindowListener
 {
 public:
-    QMozWindowPrivate(QMozWindow&, const QSize &size);
+    QMozWindowPrivate(QMozWindow &, const QSize &size);
     virtual ~QMozWindowPrivate();
 
     void setSize(const QSize &size);
@@ -27,7 +27,7 @@ public:
 
 protected:
     // EmbedLiteWindowListener:
-    bool RequestGLContext(void*& context, void*& surface) override;
+    bool RequestGLContext(void *&context, void *&surface) override;
     void WindowInitialized() override;
     void DrawUnderlay() override;
     void DrawOverlay(const nsIntRect &aRect) override;
@@ -40,9 +40,9 @@ private:
     friend class QOpenGLWebPage;
     friend class QuickMozView;
 
-    void getEGLContext(void*& context, void*& surface);
+    void getEGLContext(void *&context, void *&surface);
 #if defined(ENABLE_GLX)
-    void getGLXContext(void*& context, void*& surface);
+    void getGLXContext(void *&context, void *&surface);
 #endif
     bool setReadyToPaint(bool ready);
 

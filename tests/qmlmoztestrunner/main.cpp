@@ -62,10 +62,14 @@ int main(int argc, char **argv)
             QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
             // These components must be loaded before app start
             QString componentPath(DEFAULT_COMPONENTS_PATH);
-            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/components") + QString("/EmbedLiteBinComponents.manifest"));
-            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/chrome") + QString("/EmbedLiteJSScripts.manifest"));
-            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/chrome") + QString("/EmbedLiteOverrides.manifest"));
-            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/components") + QString("/EmbedLiteJSComponents.manifest"));
+            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/components") +
+                                                             QString("/EmbedLiteBinComponents.manifest"));
+            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/chrome") +
+                                                             QString("/EmbedLiteJSScripts.manifest"));
+            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/chrome") +
+                                                             QString("/EmbedLiteOverrides.manifest"));
+            QMozContext::GetInstance()->addComponentManifest(componentPath + QString("/components") +
+                                                             QString("/EmbedLiteJSComponents.manifest"));
             QMozContext::GetInstance()->runEmbedding();
 
             retv = runn.GetResult();

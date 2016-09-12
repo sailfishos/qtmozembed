@@ -12,7 +12,8 @@
 namespace mozilla {
 namespace embedlite {
 class EmbedLiteApp;
-}}
+}
+}
 
 /*!
  * An instance of this class runs in its own thread/event loop and is used to

@@ -19,7 +19,7 @@ QmlMozContext::waitLoop(bool mayWait, int aTimeout)
     if (mayWait)
         flags |= QEventLoop::WaitForMoreEvents;
 
-    QAbstractEventDispatcher *dispatcher =  QAbstractEventDispatcher::instance(QThread::currentThread());
+    QAbstractEventDispatcher *dispatcher = QAbstractEventDispatcher::instance(QThread::currentThread());
     if (!dispatcher) {
         return;
     }

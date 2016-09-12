@@ -21,7 +21,8 @@
 // Handle web page grab readiness through event loop so that connection type to the ready signal doesn't matter.
 const QEvent::Type Event_WebPageGrab_Completed = static_cast<QEvent::Type>(QEvent::registerEventType());
 
-QImage gl_read_framebuffer(const QRect &rect) {
+QImage gl_read_framebuffer(const QRect &rect)
+{
     QSize size = rect.size();
     int x = rect.x();
     int y = rect.y();
@@ -112,7 +113,8 @@ void QMozGrabResult::captureImage(const QRect &rect)
     }
 
     int x = d->orientation == Qt::LandscapeOrientation ? rect.width() - w : 0;
-    int y = (d->orientation == Qt::PortraitOrientation || d->orientation == Qt::LandscapeOrientation) ? rect.height() - h : 0;
+    int y = (d->orientation == Qt::PortraitOrientation
+             || d->orientation == Qt::LandscapeOrientation) ? rect.height() - h : 0;
 
     QRect targetRect(x, y, w, h);
     QImage image = gl_read_framebuffer(targetRect);
