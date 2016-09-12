@@ -230,32 +230,16 @@ QMozContext::~QMozContext()
     delete d;
 }
 
-void
-QMozContext::sendObserve(const QString &aTopic, const QVariant &value)
+void QMozContext::sendObserve(const QString &aTopic, const QVariant &value)
 {
-    if (!d->mApp)
-        return;
-
-    QJsonDocument doc;
-    if (value.userType() == QMetaType::type("QJSValue")) {
-        // Qt 5.6 likes to pass a QJSValue
-        QJSValue jsValue = qvariant_cast<QJSValue>(value);
-        doc = QJsonDocument::fromVariant(jsValue.toVariant());
-    } else {
-        doc = QJsonDocument::fromVariant(value);
-    }
-
-    QByteArray array = doc.toJson();
-    d->mApp->SendObserve(aTopic.toUtf8().data(), (const char16_t *)QString(array).constData());
+    qWarning() << "QMozContext::sendObserve is deprecated and will be removed 1st of December 2016. Use QMozContext::notifyObservers instead.";
+    notifyObservers(aTopic, value);
 }
 
-void
-QMozContext::sendObserve(const QString &aTopic, const QString &value)
+void QMozContext::sendObserve(const QString &aTopic, const QString &value)
 {
-    if (!d->mApp)
-        return;
-
-    d->mApp->SendObserve(aTopic.toUtf8().data(), (const char16_t *)value.constData());
+    qWarning() << "QMozContext::sendObserve is deprecated and will be removed 1st of December 2016. Use QMozContext::notifyObservers instead.";
+    notifyObservers(aTopic, value);
 }
 
 void
@@ -293,8 +277,37 @@ void QMozContext::addObservers(const QStringList &aObserversList)
     d->mApp->AddObservers(observersList);
 }
 
-QMozContext *
-QMozContext::GetInstance()
+void QMozContext::notifyObservers(const QString &topic, const QString &value)
+{
+    if (!d->IsInitialized()) {
+        qWarning() << "Trying to notify observer before context initialized.";
+        return;
+    }
+
+    d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)value.constData());
+}
+
+void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
+{
+    if (!d->IsInitialized()) {
+        qWarning() << "Trying to notify observers before context initialized.";
+        return;
+    }
+
+    QJsonDocument doc;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(value);
+        doc = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        doc = QJsonDocument::fromVariant(value);
+    }
+
+    QByteArray array = doc.toJson();
+    d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)QString(array).constData());
+}
+
+QMozContext *QMozContext::GetInstance()
 {
     static QMozContext *lsSingleton = nullptr;
     if (!lsSingleton) {
