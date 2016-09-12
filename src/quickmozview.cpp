@@ -51,7 +51,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     setFlag(ItemAcceptsDrops, true);
     setFlag(ItemAcceptsInputMethod, true);
 
-    d->mContext = QMozContext::GetInstance();
+    d->mContext = QMozContext::instance();
     connect(this, SIGNAL(setIsActive(bool)), this, SLOT(SetIsActive(bool)));
     connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
     connect(this, SIGNAL(enabledChanged()), this, SLOT(updateEnabled()));

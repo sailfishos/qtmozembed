@@ -15,7 +15,7 @@
 TestViewCreator::TestViewCreator(QObject *parent)
     : QMozViewCreator(parent)
 {
-    QMozContext::GetInstance()->setViewCreator(this);
+    QMozContext::instance()->setViewCreator(this);
 };
 
 quint32 TestViewCreator::createView(const QString &url, const quint32 &parentId)
