@@ -59,7 +59,7 @@ private:
     mozilla::embedlite::EmbedLiteApp *mApp;
     mozilla::embedlite::EmbedLiteMessagePump *mEventLoopPrivate;
     QTimer *mTimer;
-    RunState *state_;
+    RunState *mState;
     int mLastDelayedWorkTime;
     bool mStarted;
 };
