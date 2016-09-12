@@ -187,7 +187,7 @@ public:
                                               EmbedLiteView *aParentView) override
     {
         LOGT("QtMozEmbedContext new Window requested: parent:%p", (void *)aParentView);
-        uint32_t viewId = QMozContext::GetInstance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
+        uint32_t viewId = QMozContext::instance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
         return viewId;
     }
 
@@ -313,6 +313,12 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
 }
 
 QMozContext *QMozContext::GetInstance()
+{
+    qWarning() << "QMozContext::GetInstance() is deprecated and will be removed 1st of December 2016. Use QMozContext::instance() instead.";
+    return QMozContext::instance();
+}
+
+QMozContext *QMozContext::instance()
 {
     static QMozContext *lsSingleton = nullptr;
     if (!lsSingleton) {

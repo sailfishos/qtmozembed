@@ -8,7 +8,7 @@
 
 QObject *QmlMozContext::instance() const
 {
-    return QMozContext::GetInstance();
+    return QMozContext::instance();
 }
 
 void

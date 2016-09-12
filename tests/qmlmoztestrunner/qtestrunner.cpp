@@ -58,7 +58,7 @@ int QTestRunner::GetResult() const
 void QTestRunner::DropInStartup()
 {
     mResult = RunMainTest();
-    QMozContext::GetInstance()->stopEmbedding();
+    QMozContext::instance()->stopEmbedding();
 }
 
 int QTestRunner::RunMainTest()
