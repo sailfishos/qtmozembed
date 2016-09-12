@@ -16,7 +16,7 @@ class MozTextureNode : public QObject, public QSGSimpleTextureNode
 {
     Q_OBJECT
 public:
-    MozTextureNode(QuickMozView* aView);
+    MozTextureNode(QuickMozView *aView);
 
     ~MozTextureNode()
     {

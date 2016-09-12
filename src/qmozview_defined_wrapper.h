@@ -20,7 +20,7 @@ class QMozReturnValue : public QObject
     Q_PROPERTY(QVariant message READ getMessage WRITE setMessage FINAL)
 
 public:
-    QMozReturnValue(QObject* parent = 0) : QObject(parent) {}
+    QMozReturnValue(QObject *parent = 0) : QObject(parent) {}
     QMozReturnValue(const QMozReturnValue& aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; }
     virtual ~QMozReturnValue() {}
 
@@ -39,7 +39,7 @@ class QMozReturnValue : public QObject \
     Q_OBJECT \
     Q_PROPERTY(QVariant message READ getMessage WRITE setMessage FINAL) \
 public: \
-    QMozReturnValue(QObject* parent = 0) : QObject(parent) {} \
+    QMozReturnValue(QObject *parent = 0) : QObject(parent) {} \
     QMozReturnValue(const QMozReturnValue& aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; } \
     virtual ~QMozReturnValue() {} \
     QVariant getMessage() const { return mMessage; } \
@@ -68,8 +68,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL) \
     Q_PROPERTY(bool moving READ moving NOTIFY movingChanged FINAL) \
     Q_PROPERTY(bool pinching READ pinching NOTIFY pinchingChanged FINAL) \
-    Q_PROPERTY(QMozScrollDecorator* verticalScrollDecorator READ verticalScrollDecorator NOTIFY verticalScrollDecoratorChanged FINAL) \
-    Q_PROPERTY(QMozScrollDecorator* horizontalScrollDecorator READ horizontalScrollDecorator NOTIFY horizontalScrollDecoratorChanged FINAL) \
+    Q_PROPERTY(QMozScrollDecorator *verticalScrollDecorator READ verticalScrollDecorator NOTIFY verticalScrollDecoratorChanged FINAL) \
+    Q_PROPERTY(QMozScrollDecorator *horizontalScrollDecorator READ horizontalScrollDecorator NOTIFY horizontalScrollDecoratorChanged FINAL) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
@@ -97,8 +97,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool dragging() const; \
     bool moving() const; \
     bool pinching() const; \
-    QMozScrollDecorator* verticalScrollDecorator() const; \
-    QMozScrollDecorator* horizontalScrollDecorator() const; \
+    QMozScrollDecorator *verticalScrollDecorator() const; \
+    QMozScrollDecorator *horizontalScrollDecorator() const; \
     bool chromeGestureEnabled() const; \
     void setChromeGestureEnabled(bool value); \
     bool chrome() const; \
@@ -142,16 +142,16 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void viewDestroyed(); \
     void windowCloseRequested(); \
     void recvAsyncMessage(const QString message, const QVariant data); \
-    bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue* response); \
+    bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response); \
     void loadRedirect(); \
     void securityChanged(QString status, uint state); \
     void firstPaint(int offx, int offy); \
     void contentLoaded(QString docuri); \
     void viewAreaChanged(); \
     void scrollableOffsetChanged(); \
-    void handleLongTap(QPoint point, QMozReturnValue* retval); \
-    void handleSingleTap(QPoint point, QMozReturnValue* retval); \
-    void handleDoubleTap(QPoint point, QMozReturnValue* retval); \
+    void handleLongTap(QPoint point, QMozReturnValue *retval); \
+    void handleSingleTap(QPoint point, QMozReturnValue *retval); \
+    void handleDoubleTap(QPoint point, QMozReturnValue *retval); \
     void imeNotification(int state, bool open, int cause, int focusChange, const QString& type); \
     void bgColorChanged(); \
     void useQmlMouse(bool value); \

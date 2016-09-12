@@ -10,10 +10,10 @@
 class QmlMozContext : public QQuickItem
 {
     Q_OBJECT
-    Q_PROPERTY(QObject* instance READ instance CONSTANT)
+    Q_PROPERTY(QObject *instance READ instance CONSTANT)
 
 public:
-    QObject* instance() const;
+    QObject *instance() const;
     Q_INVOKABLE QString getenv(const QString envVarName) const; // Within this function I call the system getenv() function.
 public Q_SLOTS:
     void waitLoop(bool mayWait = true, int aTimeout = -1);

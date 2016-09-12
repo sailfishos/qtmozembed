@@ -15,7 +15,7 @@
 
 using namespace mozilla::embedlite;
 
-QMozWindow::QMozWindow(const QSize &size, QObject* parent)
+QMozWindow::QMozWindow(const QSize &size, QObject *parent)
     : QObject(parent)
     , d(new QMozWindowPrivate(*this, size))
 {
@@ -59,7 +59,7 @@ Qt::ScreenOrientation QMozWindow::pendingOrientation() const
     return d->mPendingOrientation;
 }
 
-void* QMozWindow::getPlatformImage(int* width, int* height)
+void *QMozWindow::getPlatformImage(int *width, int *height)
 {
     return d->mWindow->GetPlatformImage(width, height);
 }

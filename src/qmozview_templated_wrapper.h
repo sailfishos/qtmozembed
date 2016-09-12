@@ -30,7 +30,7 @@ public:
     virtual void viewDestroyed() = 0;
     virtual void windowCloseRequested() = 0;
     virtual void recvAsyncMessage(const QString message, const QVariant data) = 0;
-    virtual bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue* response) = 0;
+    virtual bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response) = 0;
     virtual void loadRedirect() = 0;
     virtual void securityChanged(QString status, uint state) = 0;
     virtual void firstPaint(int offx, int offy) = 0;
@@ -40,9 +40,9 @@ public:
     virtual void viewAreaChanged() = 0;
     virtual void scrollableOffsetChanged() = 0;
     virtual void chromeChanged() = 0;
-    virtual void handleLongTap(QPoint point, QMozReturnValue* retval) = 0;
-    virtual void handleSingleTap(QPoint point, QMozReturnValue* retval) = 0;
-    virtual void handleDoubleTap(QPoint point, QMozReturnValue* retval) = 0;
+    virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
+    virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
+    virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void imeNotification(int state, bool open, int cause, int focusChange, const QString& type) = 0;
     virtual void bgColorChanged() = 0;
     virtual void useQmlMouse(bool value) = 0;
@@ -107,7 +107,7 @@ public:
     {
         Q_EMIT view.recvAsyncMessage(message, data);
     }
-    bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue* response)
+    bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response)
     {
         return Q_EMIT view.recvSyncMessage(message, data, response);
     }
@@ -139,15 +139,15 @@ public:
     {
         Q_EMIT view.chromeChanged();
     }
-    void handleLongTap(QPoint point, QMozReturnValue* retval)
+    void handleLongTap(QPoint point, QMozReturnValue *retval)
     {
         Q_EMIT view.handleLongTap(point, retval);
     }
-    void handleSingleTap(QPoint point, QMozReturnValue* retval)
+    void handleSingleTap(QPoint point, QMozReturnValue *retval)
     {
         Q_EMIT view.handleSingleTap(point, retval);
     }
-    void handleDoubleTap(QPoint point, QMozReturnValue* retval)
+    void handleDoubleTap(QPoint point, QMozReturnValue *retval)
     {
         Q_EMIT view.handleDoubleTap(point, retval);
     }

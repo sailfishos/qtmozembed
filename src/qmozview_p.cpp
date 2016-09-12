@@ -37,7 +37,7 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
-qint64 current_timestamp(QTouchEvent* aEvent)
+qint64 current_timestamp(QTouchEvent *aEvent)
 {
     if (aEvent) {
         return aEvent->timestamp();
@@ -49,7 +49,7 @@ qint64 current_timestamp(QTouchEvent* aEvent)
     return milliseconds;
 }
 
-QMozViewPrivate::QMozViewPrivate(IMozQViewIface* aViewIface, QObject *publicPtr)
+QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     : mViewIface(aViewIface)
     , q(publicPtr)
     , mMozWindow(NULL)
@@ -436,7 +436,7 @@ void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &valu
     mView->SendAsyncMessage((const char16_t*)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
 }
 
-void QMozViewPrivate::setMozWindow(QMozWindow* window)
+void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
@@ -497,7 +497,7 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
     mViewIface->bgColorChanged();
 }
 
-void QMozViewPrivate::SetMargins(const QMargins& margins)
+void QMozViewPrivate::SetMargins(const QMargins &margins)
 {
   if (margins != mMargins) {
     mMargins = margins;
@@ -513,7 +513,7 @@ QColor QMozViewPrivate::GetBackgroundColor() const
     return mBgColor;
 }
 
-void QMozViewPrivate::OnLocationChanged(const char* aLocation, bool aCanGoBack, bool aCanGoForward)
+void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward)
 {
     if (mCanGoBack != aCanGoBack) {
         mCanGoBack = aCanGoBack;
@@ -539,7 +539,7 @@ void QMozViewPrivate::OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32
     }
 }
 
-void QMozViewPrivate::OnLoadStarted(const char* aLocation)
+void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
@@ -575,7 +575,7 @@ void QMozViewPrivate::ViewDestroyed()
     mViewIface->viewDestroyed();
 }
 
-void QMozViewPrivate::RecvAsyncMessage(const char16_t* aMessage, const char16_t* aData)
+void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData)
 {
     NS_ConvertUTF16toUTF8 message(aMessage);
     NS_ConvertUTF16toUTF8 data(aData);
@@ -594,7 +594,7 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t* aMessage, const char16_t*
     }
 }
 
-char* QMozViewPrivate::RecvSyncMessage(const char16_t* aMessage, const char16_t*  aData)
+char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t *aData)
 {
     QMozReturnValue response;
     NS_ConvertUTF16toUTF8 message(aMessage);
@@ -620,7 +620,7 @@ void QMozViewPrivate::OnLoadRedirect(void)
     mViewIface->loadRedirect();
 }
 
-void QMozViewPrivate::OnSecurityChanged(const char* aStatus, unsigned int aState)
+void QMozViewPrivate::OnSecurityChanged(const char *aStatus, unsigned int aState)
 {
     LOGT();
     mViewIface->securityChanged(aStatus, aState);
@@ -649,7 +649,7 @@ void QMozViewPrivate::SetThrottlePainting(bool aThrottle)
 }
 
 void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
-                                              const char16_t* inputType, const char16_t* inputMode)
+                                              const char16_t *inputType, const char16_t *inputMode)
 {
     Qt::InputMethodHints hints = Qt::ImhNone;
     hints = aIstate == 2 ? Qt::ImhHiddenText : Qt::ImhPreferLowercase;
@@ -673,7 +673,7 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
         mIsInputFieldFocused = aIstate;
         if (mViewIsFocused) {
 #ifndef QT_NO_IM
-            QInputMethod* inputContext = qGuiApp->inputMethod();
+            QInputMethod *inputContext = qGuiApp->inputMethod();
             if (!inputContext) {
                 LOGT("Requesting SIP: but no input context");
                 return;
@@ -692,18 +692,18 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }
 
-void QMozViewPrivate::GetIMEStatus(int32_t* aIMEEnabled, int32_t* aIMEOpen, intptr_t* aNativeIMEContext)
+void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext)
 {
     *aNativeIMEContext = (intptr_t)qApp->inputMethod();
 }
 
-void QMozViewPrivate::OnTitleChanged(const char16_t* aTitle)
+void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
 {
     mTitle = QString((QChar*)aTitle);
     mViewIface->titleChanged();
 }
 
-bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect& aContentRect, const gfxSize& aScrollableSize)
+bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
     mContentResolution = mMozWindow->size().width() / aContentRect.width;
 
@@ -751,7 +751,7 @@ bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect& aContentRect, const
     return false;
 }
 
-bool QMozViewPrivate::HandleLongTap(const nsIntPoint& aPoint)
+bool QMozViewPrivate::HandleLongTap(const nsIntPoint &aPoint)
 {
     QMozReturnValue retval;
     retval.setMessage(false);
@@ -759,7 +759,7 @@ bool QMozViewPrivate::HandleLongTap(const nsIntPoint& aPoint)
     return retval.getMessage().toBool();
 }
 
-bool QMozViewPrivate::HandleSingleTap(const nsIntPoint& aPoint)
+bool QMozViewPrivate::HandleSingleTap(const nsIntPoint &aPoint)
 {
     QMozReturnValue retval;
     retval.setMessage(false);
@@ -767,7 +767,7 @@ bool QMozViewPrivate::HandleSingleTap(const nsIntPoint& aPoint)
     return retval.getMessage().toBool();
 }
 
-bool QMozViewPrivate::HandleDoubleTap(const nsIntPoint& aPoint)
+bool QMozViewPrivate::HandleDoubleTap(const nsIntPoint &aPoint)
 {
     QMozReturnValue retval;
     retval.setMessage(false);
@@ -775,7 +775,7 @@ bool QMozViewPrivate::HandleDoubleTap(const nsIntPoint& aPoint)
     return retval.getMessage().toBool();
 }
 
-void QMozViewPrivate::touchEvent(QTouchEvent* event)
+void QMozViewPrivate::touchEvent(QTouchEvent *event)
 {
     // QInputMethod sends the QInputMethodEvent. Thus, it will
     // be handled before this touch event. Problem is that
@@ -783,7 +783,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent* event)
     // This should be committed just before moving cursor position to
     // the old cursor position.
     if (mPreedit) {
-        QInputMethod* inputContext = qGuiApp->inputMethod();
+        QInputMethod *inputContext = qGuiApp->inputMethod();
         if (inputContext) {
             inputContext->commit();
         }
@@ -957,14 +957,14 @@ void QMozViewPrivate::touchEvent(QTouchEvent* event)
     }
 }
 
-void QMozViewPrivate::ReceiveInputEvent(const InputData& event)
+void QMozViewPrivate::ReceiveInputEvent(const InputData &event)
 {
     if (mViewInitialized) {
         mView->ReceiveInputEvent(event);
     }
 }
 
-void QMozViewPrivate::synthTouchBegin(const QVariant& touches)
+void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
 {
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_START,
@@ -984,7 +984,7 @@ void QMozViewPrivate::synthTouchBegin(const QVariant& touches)
     mView->ReceiveInputEvent(meventStart);
 }
 
-void QMozViewPrivate::synthTouchMove(const QVariant& touches)
+void QMozViewPrivate::synthTouchMove(const QVariant &touches)
 {
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_MOVE,
@@ -1004,7 +1004,7 @@ void QMozViewPrivate::synthTouchMove(const QVariant& touches)
     mView->ReceiveInputEvent(meventStart);
 }
 
-void QMozViewPrivate::synthTouchEnd(const QVariant& touches)
+void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
 {
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_END,

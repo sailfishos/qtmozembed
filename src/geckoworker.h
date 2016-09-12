@@ -23,14 +23,14 @@ class GeckoWorker : public QObject
     Q_OBJECT
 
 public:
-    explicit GeckoWorker(mozilla::embedlite::EmbedLiteApp* aApp, QObject* parent = 0);
+    explicit GeckoWorker(mozilla::embedlite::EmbedLiteApp *aApp, QObject *parent = 0);
 
 public Q_SLOTS:
     void doWork();
     void quit();
 
 private:
-    mozilla::embedlite::EmbedLiteApp* mApp;
+    mozilla::embedlite::EmbedLiteApp *mApp;
 };
 
 #endif

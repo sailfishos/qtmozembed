@@ -6,7 +6,7 @@
 #include <QDateTime>
 #include <QCoreApplication>
 
-QObject* QmlMozContext::instance() const
+QObject *QmlMozContext::instance() const
 {
     return QMozContext::GetInstance();
 }

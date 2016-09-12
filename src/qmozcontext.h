@@ -24,24 +24,24 @@ class QMozContext : public QObject
 {
     Q_OBJECT
 public:
-    typedef void (*TaskCallback)(void* data);
-    typedef void* TaskHandle;
+    typedef void (*TaskCallback)(void *data);
+    typedef void *TaskHandle;
 
     virtual ~QMozContext();
 
-    mozilla::embedlite::EmbedLiteApp* GetApp();
+    mozilla::embedlite::EmbedLiteApp *GetApp();
     void setPixelRatio(float ratio);
     float pixelRatio() const;
     Q_INVOKABLE bool initialized() const;
     Q_INVOKABLE bool isAccelerated() const;
 
-    void registerWindow(QMozWindow* window);
+    void registerWindow(QMozWindow *window);
     QMozWindow *registeredWindow() const;
 
-    static QMozContext* GetInstance();
+    static QMozContext *GetInstance();
 
-    TaskHandle PostUITask(TaskCallback, void* data, int timeout = 0);
-    TaskHandle PostCompositorTask(TaskCallback, void* data, int timeout = 0);
+    TaskHandle PostUITask(TaskCallback, void *data, int timeout = 0);
+    TaskHandle PostCompositorTask(TaskCallback, void *data, int timeout = 0);
     void CancelTask(TaskHandle);
 
 Q_SIGNALS:
@@ -65,13 +65,13 @@ public Q_SLOTS:
     void notifyFirstUIInitialized();
     void setProfile(const QString);
     void addObservers(const QStringList& aObserversList);
-    void setViewCreator(QMozViewCreator* viewCreator);
+    void setViewCreator(QMozViewCreator *viewCreator);
     quint32 createView(const QString& url, const quint32& parentId = 0);
 
 private:
-    QMozContext(QObject* parent = 0);
+    QMozContext(QObject *parent = 0);
 
-    QMozContextPrivate* d;
+    QMozContextPrivate *d;
     friend class QMozContextPrivate;
 };
 

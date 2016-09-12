@@ -67,7 +67,7 @@ public:
 
     bool event(QEvent *event);
     QVariant inputMethodQuery(Qt::InputMethodQuery property) const;
-    void inputMethodEvent(QInputMethodEvent* event);
+    void inputMethodEvent(QInputMethodEvent *event);
     void keyPressEvent(QKeyEvent*);
     void keyReleaseEvent(QKeyEvent*);
     void focusInEvent(QFocusEvent*);
@@ -104,7 +104,7 @@ private Q_SLOTS:
     void onDrawOverlay(const QRect &rect);
 
 private:
-    QMozViewPrivate* d;
+    QMozViewPrivate *d;
     friend class QMozViewPrivate;
 
     unsigned mParentID;

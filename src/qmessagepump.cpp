@@ -24,7 +24,7 @@ namespace {
 static int sPokeEvent;
 }  // namespace
 
-MessagePumpQt::MessagePumpQt(EmbedLiteApp* aApp)
+MessagePumpQt::MessagePumpQt(EmbedLiteApp *aApp)
   : mApp(aApp), mTimer(new QTimer(this)), state_(0), mLastDelayedWorkTime(-1)
 {
   mEventLoopPrivate = mApp->CreateEmbedLiteMessagePump(this);
@@ -104,9 +104,9 @@ MessagePumpQt::dispatchDelayed()
   HandleDispatch();
 }
 
-void MessagePumpQt::Run(void* delegate)
+void MessagePumpQt::Run(void *delegate)
 {
-  RunState* state = new RunState();
+  RunState *state = new RunState();
   state->delegate = delegate;
   state->should_quit = false;
   state->run_depth = state_ ? state_->run_depth + 1 : 1;
