@@ -17,6 +17,7 @@ isEmpty(VERSION) {
 }
 
 SOURCES += qmozcontext.cpp \
+           qmozenginesettings.cpp \
            qmozgrabresult.cpp \
            qmozscrolldecorator.cpp \
            qmessagepump.cpp \
@@ -28,6 +29,8 @@ SOURCES += qmozcontext.cpp \
            qmozwindow_p.cpp
 
 HEADERS += qmozcontext.h \
+           qmozenginesettings.h \
+           qmozenginesettings_p.h \
            qmozgrabresult.h \
            qmozviewcreator.h \
            qmozscrolldecorator.h \

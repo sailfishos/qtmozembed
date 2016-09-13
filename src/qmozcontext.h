@@ -70,7 +70,7 @@ public Q_SLOTS:
     void stopEmbedding();
     void setPref(const QString &aName, const QVariant &aPref);
     void notifyFirstUIInitialized();
-    void setProfile(const QString);
+    void setProfile(const QString &);
 
     void setViewCreator(QMozViewCreator *viewCreator);
     quint32 createView(const QString &url, const quint32 &parentId = 0);

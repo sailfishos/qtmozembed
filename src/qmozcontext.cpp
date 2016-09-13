@@ -14,6 +14,7 @@
 
 #include "qmozembedlog.h"
 #include "qmozcontext.h"
+#include "qmozenginesettings.h"
 #include "geckoworker.h"
 #include "qmessagepump.h"
 #include "qmozviewcreator.h"
@@ -36,7 +37,6 @@ public:
         : q(qq)
         , mApp(NULL)
         , mInitialized(false)
-        , mPixelRatio(1.0)
         , mThread(new QThread())
         , mEmbedStarted(false)
         , mQtPump(NULL)
@@ -101,11 +101,6 @@ public:
             mApp->SetIsAccelerated(true);
         }
 #endif
-        if (mPixelRatio != 1.0) {
-            q->setPixelRatio(mPixelRatio);
-        }
-
-        setDefaultPrefs();
         mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
         Q_EMIT q->onInitialized();
         QListIterator<QString> i(mObserversList);
@@ -153,27 +148,7 @@ public:
     {
         Q_EMIT q->lastWindowDestroyed();
     }
-    void setDefaultPrefs()
-    {
-        if (getenv("DS_UA")) {
-            mApp->SetCharPref("general.useragent.override", "Mozilla/5.0 (X11; Linux x86_64; rv:20.0) Gecko/20130124 Firefox/20.0");
-        } else if (getenv("MT_UA")) {
-            mApp->SetCharPref("general.useragent.override", "Mozilla/5.0 (Android; Tablet; rv:20.0) Gecko/20.0 Firefox/20.0");
-        } else if (getenv("MP_UA")) {
-            mApp->SetCharPref("general.useragent.override", "Mozilla/5.0 (Android; Mobile; rv:20.0) Gecko/20.0 Firefox/20.0");
-        } else if (getenv("CT_UA")) {
-            mApp->SetCharPref("general.useragent.override",
-                              "Mozilla/5.0 (Linux; Android 4.0.3; Transformer Prime TF201 Build/IML74K) AppleWebKit/535.19 (KHTML, like Gecko) Tablet Chrome/18.0.1025.166 Safari/535.19");
-        } else if (getenv("GB_UA")) {
-            mApp->SetCharPref("general.useragent.override",
-                              "Mozilla/5.0 (Meego; NokiaN9) AppleWebKit/534.13 (KHTML, like Gecko) NokiaBrowser/8.5.0 Mobile Safari/534.13");
-        } else {
-            const char *customUA = getenv("CUSTOM_UA");
-            if (customUA) {
-                mApp->SetCharPref("general.useragent.override", customUA);
-            }
-        }
-    }
+
     bool IsInitialized()
     {
         return mApp && mInitialized;
@@ -197,7 +172,6 @@ private:
     QMozContext *q;
     EmbedLiteApp *mApp;
     bool mInitialized;
-    float mPixelRatio;
     friend class QMozContext;
     QThread *mThread;
     bool mEmbedStarted;
@@ -216,7 +190,7 @@ QMozContext::QMozContext(QObject *parent)
     protectSingleton = this;
 }
 
-void QMozContext::setProfile(const QString profilePath)
+void QMozContext::setProfile(const QString &profilePath)
 {
     d->mApp->SetProfilePath(!profilePath.isEmpty() ? profilePath.toUtf8().data() : NULL);
 }
@@ -371,13 +345,14 @@ QMozContext::GetApp()
 
 void QMozContext::setPixelRatio(float ratio)
 {
-    d->mPixelRatio = ratio;
-    setPref(QString("layout.css.devPixelsPerPx"), QString("%1").arg(ratio));
+    qDebug() << "QMozContext::setPixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPixelRatio instead.";
+    QMozEngineSettings::instance()->setPixelRatio(ratio);
 }
 
 float QMozContext::pixelRatio() const
 {
-    return d->mPixelRatio;
+    qDebug() << "QMozContext::pixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::pixelRatio instead.";
+    return QMozEngineSettings::instance()->pixelRatio();
 }
 
 void QMozContext::stopEmbedding()
@@ -426,35 +401,8 @@ QMozWindow *QMozContext::registeredWindow() const
 void
 QMozContext::setPref(const QString &aName, const QVariant &aPref)
 {
-    LOGT("name:%s, type:%i", aName.toUtf8().data(), aPref.type());
-    if (!d->mInitialized) {
-        LOGT("Error: context not yet initialized");
-        return;
-    }
-    switch (aPref.type()) {
-    case QVariant::String:
-        d->mApp->SetCharPref(aName.toUtf8().data(), aPref.toString().toUtf8().data());
-        break;
-    case QVariant::Int:
-    case QVariant::UInt:
-    case QVariant::LongLong:
-    case QVariant::ULongLong:
-        d->mApp->SetIntPref(aName.toUtf8().data(), aPref.toInt());
-        break;
-    case QVariant::Bool:
-        d->mApp->SetBoolPref(aName.toUtf8().data(), aPref.toBool());
-        break;
-    case QMetaType::Float:
-    case QMetaType::Double:
-        if (aPref.canConvert<int>()) {
-            d->mApp->SetIntPref(aName.toUtf8().data(), aPref.toInt());
-        } else {
-            d->mApp->SetCharPref(aName.toUtf8().data(), aPref.toString().toUtf8().data());
-        }
-        break;
-    default:
-        LOGT("Unknown pref type: %i", aPref.type());
-    }
+    qWarning() << "QMozContext::setPref is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPreference instead.";
+    QMozEngineSettings::instance()->setPreference(aName, aPref);
 }
 
 void
