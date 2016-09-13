@@ -54,10 +54,6 @@ PREFIX = /usr
 
 QT += quick qml
 
-!isEmpty(BUILD_QT5QUICK1) {
-  QT += declarative widgets opengl
-}
-
 #DEFINES += Q_DEBUG_LOG
 
 target.path = $$PREFIX/lib
