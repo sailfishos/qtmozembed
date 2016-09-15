@@ -384,6 +384,26 @@ QPointF QOpenGLWebPage::scrollableOffset() const
     return d->mScrollableOffset;
 }
 
+bool QOpenGLWebPage::atXBeginning() const
+{
+    return d->mAtXBeginning;
+}
+
+bool QOpenGLWebPage::atXEnd() const
+{
+    return d->mAtXEnd;
+}
+
+bool QOpenGLWebPage::atYBeginning() const
+{
+    return d->mAtYBeginning;
+}
+
+bool QOpenGLWebPage::atYEnd() const
+{
+    return d->mAtYEnd;
+}
+
 float QOpenGLWebPage::resolution() const
 {
     return d->mContentResolution;
