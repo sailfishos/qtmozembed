@@ -27,6 +27,7 @@ public:
     typedef void (*TaskCallback)(void *data);
     typedef void *TaskHandle;
 
+    explicit QMozContext(QObject *parent = 0);
     virtual ~QMozContext();
 
     mozilla::embedlite::EmbedLiteApp *GetApp();
@@ -76,10 +77,9 @@ public Q_SLOTS:
     quint32 createView(const QString &url, const quint32 &parentId = 0);
 
 private:
-    QMozContext(QObject *parent = 0);
-
     QMozContextPrivate *d;
-    friend class QMozContextPrivate;
+    Q_DISABLE_COPY(QMozContext)
+    Q_DECLARE_PRIVATE(QMozContext)
 };
 
 #endif /* qmozcontext_h */

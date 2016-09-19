@@ -29,6 +29,7 @@ SOURCES += qmozcontext.cpp \
            qmozwindow_p.cpp
 
 HEADERS += qmozcontext.h \
+           qmozcontext_p.h \
            qmozenginesettings.h \
            qmozenginesettings_p.h \
            qmozgrabresult.h \

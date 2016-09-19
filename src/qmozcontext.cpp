@@ -12,182 +12,190 @@
 #include <QJsonParseError>
 #include <QtQml/QtQml>
 
+#include "qmessagepump.h"
 #include "qmozembedlog.h"
 #include "qmozcontext.h"
+#include "qmozcontext_p.h"
 #include "qmozenginesettings.h"
-#include "geckoworker.h"
-#include "qmessagepump.h"
 #include "qmozviewcreator.h"
+#include "geckoworker.h"
 #include "qmozwindow.h"
 
 #include "nsDebug.h"
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
-#include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/embedlite/EmbedInitGlue.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
+#include "mozilla/embedlite/EmbedInitGlue.h"
 
 using namespace mozilla::embedlite;
 
-static QMozContext *protectSingleton = nullptr;
+Q_GLOBAL_STATIC(QMozContext, mozContextInstance)
+Q_GLOBAL_STATIC(QMozContextPrivate, mozContextPrivateInstance)
 
-class QMozContextPrivate : public EmbedLiteAppListener
+QMozContextPrivate *QMozContextPrivate::instance()
 {
-public:
-    QMozContextPrivate(QMozContext *qq)
-        : q(qq)
-        , mApp(NULL)
-        , mInitialized(false)
-        , mThread(new QThread())
-        , mEmbedStarted(false)
-        , mQtPump(NULL)
-        , mAsyncContext(getenv("USE_ASYNC"))
-        , mViewCreator(NULL)
-        , mMozWindow(NULL)
-    {
-        LOGT("Create new Context: %p, parent:%p", (void *)this, (void *)qq);
-        setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
-        LoadEmbedLite();
-        mApp = XRE_GetEmbedLite();
-        mApp->SetListener(this);
-        mApp->SetIsAccelerated(true);
-        if (mAsyncContext) {
-            mQtPump = new MessagePumpQt(mApp);
-        }
-    }
+    return mozContextPrivateInstance();
+}
 
-    virtual ~QMozContextPrivate()
-    {
-        // deleting a running thread may result in a crash
-        if (!mThread->isFinished()) {
-            mThread->exit(0);
-            mThread->wait();
-        }
-        delete mThread;
+QMozContextPrivate::QMozContextPrivate(QObject *parent)
+    : QObject(parent)
+    , mApp(NULL)
+    , mInitialized(false)
+    , mThread(new QThread())
+    , mEmbedStarted(false)
+    , mQtPump(NULL)
+    , mAsyncContext(getenv("USE_ASYNC"))
+    , mViewCreator(NULL)
+    , mMozWindow(NULL)
+{
+    LOGT("Create new Context: %p, parent:%p", (void *)this, (void *)qq);
+    setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
+    LoadEmbedLite();
+    mApp = XRE_GetEmbedLite();
+    mApp->SetListener(this);
+    mApp->SetIsAccelerated(true);
+    if (mAsyncContext) {
+        mQtPump = new MessagePumpQt(mApp);
     }
+}
 
-    virtual bool ExecuteChildThread() override
-    {
-        if (!getenv("GECKO_THREAD")) {
-            LOGT("Execute in child Native thread: %p", (void *)mThread);
-            GeckoWorker *worker = new GeckoWorker(mApp);
-
-            QObject::connect(mThread, SIGNAL(started()), worker, SLOT(doWork()));
-            QObject::connect(mThread, SIGNAL(finished()), worker, SLOT(quit()));
-            worker->moveToThread(mThread);
-
-            mThread->setObjectName("GeckoWorkerThread");
-            mThread->start(QThread::NormalPriority);
-            return true;
-        }
-        return false;
+QMozContextPrivate::~QMozContextPrivate()
+{
+    // deleting a running thread may result in a crash
+    if (!mThread->isFinished()) {
+        mThread->exit(0);
+        mThread->wait();
     }
-    // Native thread must be stopped here
-    virtual bool StopChildThread() override
-    {
-        if (mThread) {
-            LOGT("Stop Native thread: %p", (void *)mThread);
-            mThread->exit(0);
-            mThread->wait();
-            return true;
-        }
-        return false;
+    delete mThread;
+}
+
+bool QMozContextPrivate::ExecuteChildThread()
+{
+    if (!getenv("GECKO_THREAD")) {
+        LOGT("Execute in child Native thread: %p", (void *)mThread);
+        GeckoWorker *worker = new GeckoWorker(mApp);
+
+        connect(mThread, SIGNAL(started()), worker, SLOT(doWork()));
+        connect(mThread, SIGNAL(finished()), worker, SLOT(quit()));
+        worker->moveToThread(mThread);
+
+        mThread->setObjectName("GeckoWorkerThread");
+        mThread->start(QThread::NormalPriority);
+        return true;
     }
-    // App Initialized and ready to API call
-    virtual void Initialized() override
-    {
-        mInitialized = true;
+    return false;
+}
+
+// Native thread must be stopped here
+bool QMozContextPrivate::StopChildThread()
+{
+    if (mThread) {
+        LOGT("Stop Native thread: %p", (void *)mThread);
+        mThread->exit(0);
+        mThread->wait();
+        return true;
+    }
+    return false;
+}
+
+// App Initialized and ready to API call
+void QMozContextPrivate::Initialized()
+{
+    mInitialized = true;
 #if defined(GL_PROVIDER_EGL) || defined(GL_PROVIDER_GLX)
-        if (mApp->GetRenderType() == EmbedLiteApp::RENDER_AUTO) {
-            mApp->SetIsAccelerated(true);
-        }
+    if (mApp->GetRenderType() == EmbedLiteApp::RENDER_AUTO) {
+        mApp->SetIsAccelerated(true);
+    }
 #endif
-        mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
-        Q_EMIT q->onInitialized();
-        QListIterator<QString> i(mObserversList);
-        while (i.hasNext()) {
-            const QString &str = i.next();
-            mApp->AddObserver(str.toUtf8().data());
-        }
-        mObserversList.clear();
+    mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
+    Q_EMIT initialized();
+    QListIterator<QString> i(mObserversList);
+    while (i.hasNext()) {
+        const QString &str = i.next();
+        mApp->AddObserver(str.toUtf8().data());
     }
-    // App Destroyed, and ready to delete and program exit
-    virtual void Destroyed() override
-    {
-        LOGT("");
-        q->destroyed();
-        if (mAsyncContext) {
-            mQtPump->deleteLater();
-        }
-    }
-    virtual void OnObserve(const char *aTopic, const char16_t *aData) override
-    {
-        // LOGT("aTopic: %s, data: %s", aTopic, NS_ConvertUTF16toUTF8(aData).get());
-        QString data((QChar *)aData);
-        if (!data.startsWith('{') && !data.startsWith('[') && !data.startsWith('"')) {
-            QVariant vdata = QVariant::fromValue(data);
-            Q_EMIT q->recvObserve(aTopic, vdata);
-            return;
-        }
-        bool ok = true;
-        QJsonParseError error;
-        QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
-        ok = error.error == QJsonParseError::NoError;
-        QVariant vdata = doc.toVariant();
-        if (ok) {
-            // LOGT("mesg:%s, data:%s", aTopic, data.toUtf8().data());
-            Q_EMIT q->recvObserve(aTopic, vdata);
-        } else {
-            LOGT("parse: s:'%s', err:%s, errLine:%i", data.toUtf8().data(), error.errorString().toUtf8().data(), error.offset);
-        }
-    }
-    virtual void LastViewDestroyed() override
-    {
-        Q_EMIT q->lastViewDestroyed();
-    }
-    virtual void LastWindowDestroyed() override
-    {
-        Q_EMIT q->lastWindowDestroyed();
-    }
+    mObserversList.clear();
+}
 
-    bool IsInitialized()
-    {
-        return mApp && mInitialized;
+// App Destroyed, and ready to delete and program exit
+void QMozContextPrivate::Destroyed()
+{
+    LOGT("");
+    Q_EMIT destroyed();
+    if (mAsyncContext) {
+        mQtPump->deleteLater();
     }
+}
 
-    virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags, const char *uri, const uint32_t &contextFlags,
-                                              EmbedLiteView *aParentView) override
-    {
-        LOGT("QtMozEmbedContext new Window requested: parent:%p", (void *)aParentView);
-        uint32_t viewId = QMozContext::instance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
-        return viewId;
+void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
+{
+    // LOGT("aTopic: %s, data: %s", aTopic, NS_ConvertUTF16toUTF8(aData).get());
+    QString data((QChar *)aData);
+    if (!data.startsWith('{') && !data.startsWith('[') && !data.startsWith('"')) {
+        QVariant vdata = QVariant::fromValue(data);
+        Q_EMIT recvObserve(aTopic, vdata);
+        return;
     }
-
-    EmbedLiteMessagePump *EmbedLoop()
-    {
-        return mQtPump->EmbedLoop();
+    bool ok = true;
+    QJsonParseError error;
+    QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
+    ok = error.error == QJsonParseError::NoError;
+    QVariant vdata = doc.toVariant();
+    if (ok) {
+        // LOGT("mesg:%s, data:%s", aTopic, data.toUtf8().data());
+        Q_EMIT recvObserve(aTopic, vdata);
+    } else {
+        LOGT("parse: s:'%s', err:%s, errLine:%i", data.toUtf8().data(), error.errorString().toUtf8().data(), error.offset);
     }
+}
 
-    QStringList mObserversList;
-private:
-    QMozContext *q;
-    EmbedLiteApp *mApp;
-    bool mInitialized;
-    friend class QMozContext;
-    QThread *mThread;
-    bool mEmbedStarted;
-    EmbedLiteMessagePump *mEventLoopPrivate;
-    MessagePumpQt *mQtPump;
-    bool mAsyncContext;
-    QMozViewCreator *mViewCreator;
-    QScopedPointer<QMozWindow> mMozWindow;
-};
+void QMozContextPrivate::LastViewDestroyed()
+{
+    Q_EMIT lastViewDestroyed();
+}
+
+void QMozContextPrivate::LastWindowDestroyed()
+{
+    Q_EMIT lastWindowDestroyed();
+}
+
+bool QMozContextPrivate::IsInitialized()
+{
+    return mApp && mInitialized;
+}
+
+uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags, const char *uri, const uint32_t &contextFlags,
+                                                      EmbedLiteView *aParentView)
+{
+    LOGT("QtMozEmbedContext new Window requested: parent:%p", (void *)aParentView);
+    uint32_t viewId = QMozContext::instance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
+    return viewId;
+}
+
+EmbedLiteMessagePump *QMozContextPrivate::EmbedLoop()
+{
+    return mQtPump->EmbedLoop();
+}
+
+QMozContext *QMozContext::instance()
+{
+    return mozContextInstance();
+}
+
+QMozContext *QMozContext::GetInstance()
+{
+    qWarning() << "QMozContext::GetInstance() is deprecated and will be removed 1st of December 2016. Use QMozContext::instance() instead.";
+    return QMozContext::instance();
+}
 
 QMozContext::QMozContext(QObject *parent)
     : QObject(parent)
-    , d(new QMozContextPrivate(this))
+    , d(QMozContextPrivate::instance())
 {
-    Q_ASSERT(protectSingleton == nullptr);
-    protectSingleton = this;
+    connect(d, SIGNAL(initialized()), this, SIGNAL(onInitialized()));
+    connect(d, SIGNAL(destroyed()), this, SIGNAL(destroyed()));
+    connect(d, SIGNAL(lastViewDestroyed()), this, SIGNAL(lastViewDestroyed()));
+    connect(d, SIGNAL(lastWindowDestroyed()), this, SIGNAL(lastWindowDestroyed()));
+    connect(d, SIGNAL(recvObserve(QString,QVariant)), this, SIGNAL(recvObserve(QString,QVariant)));
 }
 
 void QMozContext::setProfile(const QString &profilePath)
@@ -197,7 +205,6 @@ void QMozContext::setProfile(const QString &profilePath)
 
 QMozContext::~QMozContext()
 {
-    protectSingleton = nullptr;
     if (d->mApp) {
         d->mApp->SetListener(NULL);
     }
@@ -279,22 +286,6 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
 
     QByteArray array = doc.toJson();
     d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)QString(array).constData());
-}
-
-QMozContext *QMozContext::GetInstance()
-{
-    qWarning() << "QMozContext::GetInstance() is deprecated and will be removed 1st of December 2016. Use QMozContext::instance() instead.";
-    return QMozContext::instance();
-}
-
-QMozContext *QMozContext::instance()
-{
-    static QMozContext *lsSingleton = nullptr;
-    if (!lsSingleton) {
-        lsSingleton = new QMozContext(0);
-        NS_ASSERTION(lsSingleton, "not initialized");
-    }
-    return lsSingleton;
 }
 
 QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void *data, int timeout)
