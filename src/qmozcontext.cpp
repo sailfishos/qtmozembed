@@ -120,7 +120,7 @@ void QMozContextPrivate::Initialized()
 void QMozContextPrivate::Destroyed()
 {
     LOGT("");
-    Q_EMIT destroyed();
+    Q_EMIT contextDestroyed();
     if (mAsyncContext) {
         mQtPump->deleteLater();
     }
@@ -192,7 +192,7 @@ QMozContext::QMozContext(QObject *parent)
     , d(QMozContextPrivate::instance())
 {
     connect(d, SIGNAL(initialized()), this, SIGNAL(onInitialized()));
-    connect(d, SIGNAL(destroyed()), this, SIGNAL(destroyed()));
+    connect(d, SIGNAL(contextDestroyed()), this, SIGNAL(contextDestroyed()));
     connect(d, SIGNAL(lastViewDestroyed()), this, SIGNAL(lastViewDestroyed()));
     connect(d, SIGNAL(lastWindowDestroyed()), this, SIGNAL(lastWindowDestroyed()));
     connect(d, SIGNAL(recvObserve(QString,QVariant)), this, SIGNAL(recvObserve(QString,QVariant)));
