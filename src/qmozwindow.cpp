@@ -23,14 +23,14 @@ QMozWindow::QMozWindow(const QSize &size, QObject *parent)
                "QMozWindow::QMozWindow",
                QString("Window size is empty, width = %1 and height = %2").arg(size.width(), size.height()).toUtf8().constData());
 
-    d->mWindow = QMozContext::GetInstance()->GetApp()->CreateWindow(size.width(), size.height());
+    d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(size.width(), size.height());
     d->mWindow->SetListener(d.data());
 }
 
 QMozWindow::~QMozWindow()
 {
     d->mWindow->SetListener(nullptr);
-    QMozContext::GetInstance()->GetApp()->DestroyWindow(d->mWindow);
+    QMozContext::instance()->GetApp()->DestroyWindow(d->mWindow);
     d->mWindow = nullptr;
 }
 

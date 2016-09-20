@@ -62,7 +62,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     , mSizeUpdateScheduled(false)
     , mThrottlePainting(false)
 {
-    d->mContext = QMozContext::GetInstance();
+    d->mContext = QMozContext::instance();
     d->mHasContext = true;
 
     connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
