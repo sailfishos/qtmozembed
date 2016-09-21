@@ -33,7 +33,7 @@ public:
     void setAutoLoadImages(bool enabled);
 
     bool javascriptEnabled() const;
-    void setJavascriptEnabled(bool enabled) const;
+    void setJavascriptEnabled(bool enabled);
 
     void setTileSize(const QSize &size);
 
@@ -60,6 +60,7 @@ private:
     void setDefaultPreferences();
     QMap<QString, QVariant> mPreferences;
     bool mInitialized;
+    bool mJavascriptEnabled;
     qreal mPixelRatio;
 };
 

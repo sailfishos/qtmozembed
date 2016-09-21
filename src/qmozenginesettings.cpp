@@ -25,6 +25,7 @@ QMozEngineSettingsPrivate *QMozEngineSettingsPrivate::instance()
 QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     : QObject(parent)
     , mInitialized(false)
+    , mJavascriptEnabled(true)
     , mPixelRatio(1.0)
 {
 
@@ -55,16 +56,16 @@ void QMozEngineSettingsPrivate::setAutoLoadImages(bool enabled)
 
 bool QMozEngineSettingsPrivate::javascriptEnabled() const
 {
-    qDebug() << "UNIMPLEMENTED!!";
-    return true;
+    return mJavascriptEnabled;
 }
 
-void QMozEngineSettingsPrivate::setJavascriptEnabled(bool enabled) const
+void QMozEngineSettingsPrivate::setJavascriptEnabled(bool enabled)
 {
-    Q_UNUSED(enabled);
-    qDebug() << "UNIMPLEMENTED!!";
-
-    // Q_EMIT javascriptEnabledChanged();
+    if (mJavascriptEnabled != enabled) {
+        setPreference(QStringLiteral("javascript.enabled"), QVariant::fromValue<bool>(enabled));
+        mJavascriptEnabled = enabled;
+        Q_EMIT javascriptEnabledChanged();
+    }
 }
 
 void QMozEngineSettingsPrivate::setTileSize(const QSize &size)
