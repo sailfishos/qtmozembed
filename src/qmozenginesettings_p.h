@@ -61,6 +61,7 @@ private:
     QMap<QString, QVariant> mPreferences;
     bool mInitialized;
     bool mJavascriptEnabled;
+    bool mAutoLoadImages;
     qreal mPixelRatio;
 };
 

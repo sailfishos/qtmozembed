@@ -26,6 +26,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     : QObject(parent)
     , mInitialized(false)
     , mJavascriptEnabled(true)
+    , mAutoLoadImages(true)
     , mPixelRatio(1.0)
 {
 
@@ -42,16 +43,18 @@ QMozEngineSettingsPrivate::~QMozEngineSettingsPrivate()
 
 bool QMozEngineSettingsPrivate::autoLoadImages() const
 {
-    qDebug() << "UNIMPLEMENTED!!";
-    return true;
+    return mAutoLoadImages;
 }
 
 void QMozEngineSettingsPrivate::setAutoLoadImages(bool enabled)
 {
-    Q_UNUSED(enabled);
-    qDebug() << "UNIMPLEMENTED!!";
+    // 1-Accept, 2-Deny, 3-dontAcceptForeign
+    if (mAutoLoadImages != enabled) {
+        setPreference(QStringLiteral("permissions.default.image"), QVariant::fromValue<int>(enabled ? 1 : 2));
+        mAutoLoadImages = enabled;
+        Q_EMIT autoLoadImagesChanged();
+    }
 
-    // Q_EMIT autoLoadImagesChanged();
 }
 
 bool QMozEngineSettingsPrivate::javascriptEnabled() const
