@@ -141,7 +141,7 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
     case QVariant::Bool:
         app->SetBoolPref(key.toUtf8().data(), value.toBool());
         break;
-    case QMetaType::Double:
+    case QVariant::Double:
         if (value.canConvert<int>()) {
             app->SetIntPref(key.toUtf8().data(), value.toInt());
         } else {
