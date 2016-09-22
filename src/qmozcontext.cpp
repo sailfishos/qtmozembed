@@ -101,13 +101,14 @@ void QMozContextPrivate::Initialized()
     }
 #endif
     mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
-    Q_EMIT initialized();
     QListIterator<QString> i(mObserversList);
     while (i.hasNext()) {
         const QString &str = i.next();
         mApp->AddObserver(str.toUtf8().data());
     }
     mObserversList.clear();
+
+    Q_EMIT initialized();
 }
 
 // App Destroyed, and ready to delete and program exit

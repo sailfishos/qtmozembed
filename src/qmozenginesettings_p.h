@@ -49,7 +49,7 @@ public:
 
 public Q_SLOTS:
     void onObserve(const QString &topic, const QVariant &data);
-    void setInitialPreferences();
+    void initialize();
 
 Q_SIGNALS:
     void autoLoadImagesChanged();

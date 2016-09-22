@@ -12,10 +12,26 @@
 #include "qmozenginesettings.h"
 #include "qmozenginesettings_p.h"
 
+#include <QStringList>
+
 #include <mozilla/embedlite/EmbedLiteApp.h>
 
 Q_GLOBAL_STATIC(QMozEngineSettings, engineSettingsInstance)
 Q_GLOBAL_STATIC(QMozEngineSettingsPrivate, engineSettingsPrivateInstance)
+
+#define NS_PREF_CHANGED QStringLiteral("embed:nsPrefChanged")
+
+#define PREF_PERMISSIONS_DEFAULT_IMAGE QStringLiteral("permissions.default.image")
+#define PREF_JAVASCRIPT_ENABLED QStringLiteral("javascript.enabled")
+
+#define IMAGE_LOAD_ACCEPT 1
+#define IMAGE_LOAD_DENY 2
+// Allowed, originating site only
+#define IMAGE_LOAD_DONT_ACCEPT_FOREIGN 3
+
+#define PREF_CHANGED_OBSERVERS (QStringList() \
+    << PREF_PERMISSIONS_DEFAULT_IMAGE \
+    << PREF_JAVASCRIPT_ENABLED);
 
 QMozEngineSettingsPrivate *QMozEngineSettingsPrivate::instance()
 {
@@ -31,7 +47,9 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
 {
 
     QMozContext *context = QMozContext::instance();
-    connect(context, &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::setInitialPreferences);
+    connect(context, &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
+    connect(context, &QMozContext::recvObserve, this, &QMozEngineSettingsPrivate::onObserve);
+    context->addObserver(NS_PREF_CHANGED);
 
     // Don't force 16bit color depth
     setPreference(QStringLiteral("gfx.qt.rgb16.force"), QVariant::fromValue<bool>(false));
@@ -50,7 +68,7 @@ void QMozEngineSettingsPrivate::setAutoLoadImages(bool enabled)
 {
     // 1-Accept, 2-Deny, 3-dontAcceptForeign
     if (mAutoLoadImages != enabled) {
-        setPreference(QStringLiteral("permissions.default.image"), QVariant::fromValue<int>(enabled ? 1 : 2));
+        setPreference(PREF_PERMISSIONS_DEFAULT_IMAGE, QVariant::fromValue<int>(enabled ? IMAGE_LOAD_ACCEPT : IMAGE_LOAD_DENY));
         mAutoLoadImages = enabled;
         Q_EMIT autoLoadImagesChanged();
     }
@@ -142,13 +160,42 @@ bool QMozEngineSettingsPrivate::isInitialized() const
 
 void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &data)
 {
-    // TODO : Add observer for all preferences and read them in here.
-    Q_UNUSED(topic)
-    Q_UNUSED(data)
+    if (topic == NS_PREF_CHANGED) {
+        QStringList prefChangedObservers = PREF_CHANGED_OBSERVERS;
+        QVariantMap dataMap = data.toMap();
+        QString changedPreference = dataMap.value(QStringLiteral("name")).toString();
+        QVariant preferenceValue = dataMap.value(QStringLiteral("value"));
+        if (prefChangedObservers.contains(changedPreference)) {
+            if (changedPreference == PREF_PERMISSIONS_DEFAULT_IMAGE) {
+                bool imageLoadingAllowed = !(preferenceValue.toInt() == IMAGE_LOAD_DENY);
+                if (mAutoLoadImages != imageLoadingAllowed) {
+                    mAutoLoadImages = imageLoadingAllowed;
+                    Q_EMIT autoLoadImagesChanged();
+                }
+            } else if (changedPreference == PREF_JAVASCRIPT_ENABLED) {
+                bool jsEnabled = preferenceValue.toBool();
+                if (mJavascriptEnabled != jsEnabled) {
+                    mJavascriptEnabled = jsEnabled;
+                    Q_EMIT javascriptEnabledChanged();
+                }
+            }
+        }
+    }
 }
 
-void QMozEngineSettingsPrivate::setInitialPreferences()
+void QMozEngineSettingsPrivate::initialize()
 {
+    QMozContext *context = QMozContext::instance();
+
+    // Add preference change observers.
+    QStringList prefChangedObservers = PREF_CHANGED_OBSERVERS;
+    QStringList::iterator i;
+    for (i = prefChangedObservers.begin(); i != prefChangedObservers.end(); ++i) {
+        QVariantMap data;
+        data.insert(QStringLiteral("name"), *i);
+        context->notifyObservers(QStringLiteral("embed:addPrefChangedObserver"), data);
+    }
+
     mInitialized = true;
     setDefaultPreferences();
 
@@ -158,7 +205,7 @@ void QMozEngineSettingsPrivate::setInitialPreferences()
         preferenceIterator.next();
         setPreference(preferenceIterator.key(), preferenceIterator.value());
     }
-    disconnect(QMozContext::instance(), &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::setInitialPreferences);
+    disconnect(QMozContext::instance(), &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
 
     Q_EMIT initialized();
 }
