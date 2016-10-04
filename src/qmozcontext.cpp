@@ -60,12 +60,6 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
 
 QMozContextPrivate::~QMozContextPrivate()
 {
-    // deleting a running thread may result in a crash
-    if (!mThread->isFinished()) {
-        mThread->exit(0);
-        mThread->wait();
-    }
-    delete mThread;
 }
 
 bool QMozContextPrivate::ExecuteChildThread()
@@ -88,7 +82,7 @@ bool QMozContextPrivate::ExecuteChildThread()
 // Native thread must be stopped here
 bool QMozContextPrivate::StopChildThread()
 {
-    if (mThread) {
+    if (mThread && !mThread->isFinished()) {
         LOGT("Stop Native thread: %p", (void *)mThread);
         mThread->exit(0);
         mThread->wait();
@@ -120,10 +114,17 @@ void QMozContextPrivate::Initialized()
 void QMozContextPrivate::Destroyed()
 {
     LOGT("");
-    Q_EMIT contextDestroyed();
+    mApp->SetListener(nullptr);
+
+    if (!mThread->isFinished()) {
+        mThread->exit(0);
+        mThread->wait();
+    }
+
     if (mAsyncContext) {
         mQtPump->deleteLater();
     }
+    Q_EMIT contextDestroyed();
 }
 
 void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
@@ -205,10 +206,6 @@ void QMozContext::setProfile(const QString &profilePath)
 
 QMozContext::~QMozContext()
 {
-    if (d->mApp) {
-        d->mApp->SetListener(NULL);
-    }
-    delete d;
 }
 
 void QMozContext::sendObserve(const QString &aTopic, const QVariant &value)

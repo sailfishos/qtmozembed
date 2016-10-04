@@ -17,7 +17,9 @@ GeckoWorker::GeckoWorker(EmbedLiteApp *aApp, QObject *parent)
 
 void GeckoWorker::doWork()
 {
-    mApp->StartChildThread();
+    if (mApp) {
+        mApp->StartChildThread();
+    }
 }
 
 void GeckoWorker::quit()
@@ -25,4 +27,6 @@ void GeckoWorker::quit()
     printf("Call EmbedLiteApp::StopChildThread()\n");
     mApp->StopChildThread();
     deleteLater();
+    sender()->deleteLater();
+    mApp = nullptr;
 }
