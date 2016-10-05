@@ -49,7 +49,7 @@ public:
 
 public Q_SLOTS:
     void onObserve(const QString &topic, const QVariant &data);
-    void setInitialPreferences();
+    void initialize();
 
 Q_SIGNALS:
     void autoLoadImagesChanged();
@@ -61,6 +61,7 @@ private:
     QMap<QString, QVariant> mPreferences;
     bool mInitialized;
     bool mJavascriptEnabled;
+    bool mAutoLoadImages;
     qreal mPixelRatio;
 };
 
