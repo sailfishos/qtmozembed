@@ -64,7 +64,6 @@ Q_SIGNALS:
     void activeChanged();
     void backgroundChanged();
     void loadedChanged();
-    void updateViewSize();
 
     Q_MOZ_VIEW_SIGNALS
 

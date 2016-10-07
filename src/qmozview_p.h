@@ -68,7 +68,6 @@ public:
     void ResetState();
     void UpdateMoving(bool moving);
     void ResetPainted();
-    void UpdateViewSize();
     void ReceiveInputEvent(const mozilla::InputData &event);
 
     void setSize(const QSizeF &size);

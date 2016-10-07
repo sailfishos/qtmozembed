@@ -58,9 +58,6 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(dispatchItemUpdate()), this, SLOT(update()));
     connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
-    connect(this, &QuickMozView::updateViewSize, this, [=]() {
-        d->UpdateViewSize();
-    });
     updateEnabled();
 }
 
@@ -81,9 +78,6 @@ QuickMozView::SetIsActive(bool aIsActive)
 {
     if (QThread::currentThread() == thread() && d->mView) {
         d->mView->SetIsActive(aIsActive);
-        if (mActive) {
-            updateGLContextInfo();
-        }
     } else {
         Q_EMIT setIsActive(aIsActive);
     }
@@ -125,37 +119,6 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
         printf("ERROR: QuickMozView not supposed to work without GL context\n");
         return;
     }
-    updateGLContextInfo();
-}
-
-/**
- *  Updates gl surface size based on current content orientation.
- *  This does not do anything if QQuickItem::window() is null.
- */
-void QuickMozView::updateGLContextInfo()
-{
-    if (window()) {
-        Qt::ScreenOrientation orientation = window()->contentOrientation();
-        QSize viewPortSize;
-        int minValue = qMin(window()->width(), window()->height());
-        int maxValue = qMax(window()->width(), window()->height());
-
-        switch (orientation) {
-        case Qt::LandscapeOrientation:
-        case Qt::InvertedLandscapeOrientation:
-            viewPortSize.setWidth(maxValue);
-            viewPortSize.setHeight(minValue);
-            LOGT("Update landscape viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        default:
-            viewPortSize.setWidth(minValue);
-            viewPortSize.setHeight(maxValue);
-            LOGT("Update portrait viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        }
-
-        Q_EMIT updateViewSize();
-    }
 }
 
 void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
@@ -181,9 +144,6 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
     if (newGeometry.size() != d->mSize) {
         d->setSize(newGeometry.size());
-        if (mActive) {
-            updateGLContextInfo();
-        }
     }
 }
 
