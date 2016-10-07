@@ -15,6 +15,20 @@ struct MozExternalTexture {
     GLuint id;
 };
 
+static void updateRectGeometry(QSGGeometry *g, const QRectF &rect,
+                               const QPointF &topLeft,
+                               const QPointF &bottomLeft,
+                               const QPointF &topRight,
+                               const QPointF &bottomRight)
+{
+    QSGGeometry::TexturedPoint2D *v = g->vertexDataAsTexturedPoint2D();
+    v[0].set(rect.left(), rect.top(), topLeft.x(), topLeft.y());
+    v[1].set(rect.left(), rect.bottom(), bottomLeft.x(), bottomLeft.y());
+    v[2].set(rect.right(), rect.top(), topRight.x(), topRight.y());
+    v[3].set(rect.right(), rect.bottom(), bottomRight.x(), bottomRight.y());
+}
+
+
 class MozTextureShader : public QSGSimpleMaterialShader<MozExternalTexture>
 {
     QSG_DECLARE_SIMPLE_SHADER(MozTextureShader, MozExternalTexture)
@@ -63,18 +77,41 @@ public:
 
 void MozExtMaterialNode::update()
 {
-    updateGeometry(m_size);
+    updateGeometry(m_size, m_orientation);
 }
 
-void MozExtMaterialNode::updateGeometry(const QSize &size)
+void MozExtMaterialNode::updateGeometry(const QSize &size, Qt::ScreenOrientation orientation)
 {
-    QRectF rect(0, 0, size.width(), size.height());
-    QSGGeometry::updateTexturedRectGeometry(geometry(), rect, QRectF(0, 1, 1, -1));
+    // Follow orientation for the sourceRect.
+    const QRectF textureRect(0, 1, 1, -1);
+    const QRectF sourceRect(0, 0, size.width(), size.height());
+
+    // and then texture coordinates
+    switch (orientation) {
+    case Qt::LandscapeOrientation:
+        updateRectGeometry(geometry(), sourceRect, textureRect.topRight(), textureRect.topLeft(),
+                           textureRect.bottomRight(), textureRect.bottomLeft());
+        break;
+    case Qt::InvertedPortraitOrientation:
+        updateRectGeometry(geometry(), sourceRect, textureRect.bottomRight(), textureRect.topRight(),
+                           textureRect.bottomLeft(), textureRect.topLeft());
+        break;
+    case Qt::InvertedLandscapeOrientation:
+        updateRectGeometry(geometry(), sourceRect, textureRect.bottomLeft(), textureRect.bottomRight(),
+                           textureRect.topLeft(), textureRect.topRight());
+        break;
+    default:
+        // Portrait / PrimaryOrientation
+        updateRectGeometry(geometry(), sourceRect, textureRect.topLeft(), textureRect.bottomLeft(),
+                           textureRect.topRight(), textureRect.bottomRight());
+        break;
+    }
     markDirty(QSGNode::DirtyGeometry);
 }
 
 MozExtMaterialNode::MozExtMaterialNode()
     : m_id(0)
+    , m_orientation(Qt::PortraitOrientation)
 {
     setGeometry(new QSGGeometry(QSGGeometry::defaultAttributes_TexturedPoint2D(), 4));
 
@@ -82,21 +119,21 @@ MozExtMaterialNode::MozExtMaterialNode()
     material->setFlag(QSGMaterial::Blending, false);
     material->state()->id = 0;
     setMaterial(material);
-
     setFlags(OwnsMaterial | OwnsGeometry);
 }
 
 void
-MozExtMaterialNode::newTexture(int id, const QSize &size)
+MozExtMaterialNode::newTexture(int id, const QSize &size, int orientation)
 {
     m_id = id;
+    m_orientation = static_cast<Qt::ScreenOrientation>(orientation);
 
     // It might happen that after orientation change when compositing is done
     // QuickMozView::updatePaintNode() gets called before a new texture with new
     // geometry has been created. In this case it's safer to reset node's
     // geometry again.
     if (m_size != size && m_size.width() > 0 && m_size.height() > 0) {
-        updateGeometry(size);
+        updateGeometry(size, m_orientation);
     }
 
     m_size = size;

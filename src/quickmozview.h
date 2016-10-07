@@ -58,7 +58,7 @@ Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
     void dispatchItemUpdate();
-    void textureReady(int id, const QSize &size);
+    void textureReady(int id, const QSize &size, int orientation);
     void parentIdChanged();
     void privateModeChanged();
     void activeChanged();

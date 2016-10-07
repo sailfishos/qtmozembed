@@ -21,8 +21,9 @@ MozTextureNode::MozTextureNode(QuickMozView *aView)
 }
 
 void
-MozTextureNode::newTexture(int id, const QSize &size)
+MozTextureNode::newTexture(int id, const QSize &size, int orientation)
 {
+    Q_UNUSED(orientation);
     m_mutex.lock();
     m_id = id;
     m_size = size;
