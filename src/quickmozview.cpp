@@ -121,7 +121,7 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
     }
 }
 
-void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
+void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
 {
     if (change == ItemSceneChange) {
         QQuickWindow *win = window();
@@ -141,6 +141,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
             d->mSize = win->size();
         }
     }
+    QQuickItem::itemChange(change, data);
 }
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
