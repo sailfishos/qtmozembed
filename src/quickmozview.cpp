@@ -58,9 +58,6 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(dispatchItemUpdate()), this, SLOT(update()));
     connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
-    connect(this, &QuickMozView::updateViewSize, this, [=]() {
-        d->UpdateViewSize();
-    });
     updateEnabled();
 }
 
@@ -81,9 +78,6 @@ QuickMozView::SetIsActive(bool aIsActive)
 {
     if (QThread::currentThread() == thread() && d->mView) {
         d->mView->SetIsActive(aIsActive);
-        if (mActive) {
-            updateGLContextInfo();
-        }
     } else {
         Q_EMIT setIsActive(aIsActive);
     }
@@ -125,37 +119,6 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
         printf("ERROR: QuickMozView not supposed to work without GL context\n");
         return;
     }
-    updateGLContextInfo();
-}
-
-/**
- *  Updates gl surface size based on current content orientation.
- *  This does not do anything if QQuickItem::window() is null.
- */
-void QuickMozView::updateGLContextInfo()
-{
-    if (window()) {
-        Qt::ScreenOrientation orientation = window()->contentOrientation();
-        QSize viewPortSize;
-        int minValue = qMin(window()->width(), window()->height());
-        int maxValue = qMax(window()->width(), window()->height());
-
-        switch (orientation) {
-        case Qt::LandscapeOrientation:
-        case Qt::InvertedLandscapeOrientation:
-            viewPortSize.setWidth(maxValue);
-            viewPortSize.setHeight(minValue);
-            LOGT("Update landscape viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        default:
-            viewPortSize.setWidth(minValue);
-            viewPortSize.setHeight(maxValue);
-            LOGT("Update portrait viewPortSize: [%d,%d]", viewPortSize.width(), viewPortSize.height());
-            break;
-        }
-
-        Q_EMIT updateViewSize();
-    }
 }
 
 void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
@@ -169,22 +132,30 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
         connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
         connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
         connect(win, SIGNAL(visibleChanged(bool)), this, SLOT(windowVisibleChanged(bool)));
+        connect(win, &QQuickWindow::contentOrientationChanged, this, [=](Qt::ScreenOrientation orientation) {
+            if (d->mMozWindow) {
+                d->mMozWindow->setContentOrientation(orientation);
+            }
+        });
+        if (d->mSize.isEmpty()) {
+            d->mSize = win->size();
+        }
     }
 }
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    LOGT("newGeometry size: [%g, %g] oldGeometry size: [%g,%g]", newGeometry.size().width(),
-         newGeometry.size().height(),
-         oldGeometry.size().width(),
-         oldGeometry.size().height());
-    QQuickItem::geometryChanged(newGeometry, oldGeometry);
-    if (newGeometry.size() != d->mSize) {
-        d->setSize(newGeometry.size());
-        if (mActive) {
-            updateGLContextInfo();
+    if (d->mMozWindow) {
+        // Set size for EmbedLiteWindow in "portrait"
+        QSize s = newGeometry.size().toSize();
+        Qt::ScreenOrientation orientation = window()->contentOrientation();
+        if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
+            s.transpose();
         }
+        d->mMozWindow->setSize(s);
     }
+    d->mSize = newGeometry.size().toSize();
+    QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
 
 void QuickMozView::createThreadRenderObject()
@@ -214,9 +185,17 @@ void QuickMozView::createView()
 {
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
+        if (d->mSize.isEmpty()) {
+            d->mSize = window()->size();
+        }
         mozWindow = new QMozWindow(d->mSize.toSize());
         d->mContext->registerWindow(mozWindow);
     }
+
+    if (window()) {
+        mozWindow->setContentOrientation(window()->contentOrientation());
+    }
+
     d->setMozWindow(mozWindow);
     d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
     d->mView->SetListener(d);
@@ -244,7 +223,8 @@ QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
 #else
         n = new TextureNodeType(this);
 #endif
-        connect(this, SIGNAL(textureReady(int, QSize)), n, SLOT(newTexture(int, QSize)), Qt::DirectConnection);
+        connect(this, SIGNAL(textureReady(int,QSize,int)),
+                n, SLOT(newTexture(int,QSize,int)), Qt::DirectConnection);
         connect(window(), SIGNAL(beforeRendering()), n, SLOT(prepareNode()), Qt::DirectConnection);
     }
     n->update();
@@ -278,8 +258,10 @@ void QuickMozView::refreshNodeTexture()
         glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
         void *image = d->mMozWindow->getPlatformImage(&width, &height);
         if (image) {
+            // Texture size is kept in sync with d->mSize in geometryChanged. So we can use
+            // d->Size directly as a source size as that is in correct orientation.
             extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-            Q_EMIT textureReady(mConsTex, QSize(width, height));
+            Q_EMIT textureReady(mConsTex, d->mSize.toSize(), window()->contentOrientation());
         }
 #else
 #warning "Implement me for non ES2 platform"

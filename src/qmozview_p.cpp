@@ -93,7 +93,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mOffsetX(0.0)
     , mOffsetY(0.0)
     , mHasCompositor(false)
-    , mSizeDirty(false)
+    , mDirtyState(0)
 {
 }
 
@@ -260,11 +260,10 @@ void QMozViewPrivate::ResetPainted()
 void QMozViewPrivate::setSize(const QSizeF &size)
 {
     mSize = size;
-
     if (mViewInitialized && mMozWindow) {
         mMozWindow->setSize(mSize.toSize());
     } else {
-        mSizeDirty = true;
+        mDirtyState |= DirtySize;
     }
 }
 
@@ -465,13 +464,6 @@ void QMozViewPrivate::onCompositorCreated()
     mHasCompositor = true;
 }
 
-void QMozViewPrivate::UpdateViewSize()
-{
-    if (mMozWindow) {
-        mSize = mMozWindow->size();
-    }
-}
-
 void QMozViewPrivate::ViewInitialized()
 {
     mViewInitialized = true;
@@ -491,17 +483,23 @@ void QMozViewPrivate::ViewInitialized()
         mPendingUrl.clear();
     }
 
+    if (mDirtyState & DirtySize) {
+        setSize(mSize);
+        mDirtyState &= ~DirtySize;
+    } else if (mMozWindow) {
+        mSize = mMozWindow->size();
+    }
+
+    if (mDirtyState & DirtyMargin) {
+        mView->SetMargins(mMargins.top(), mMargins.right(), mMargins.bottom(), mMargins.left());
+        mViewIface->marginsChanged();
+        mDirtyState &= ~DirtyMargin;
+    }
+
     // This is currently part of official API, so let's subscribe to these messages by default
     mViewIface->viewInitialized();
     mViewIface->canGoBackChanged();
     mViewIface->canGoForwardChanged();
-
-    if (mSizeDirty) {
-        setSize(mSize);
-    } else {
-        UpdateViewSize();
-    }
-    mSizeDirty = false;
 }
 
 void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
@@ -515,8 +513,12 @@ void QMozViewPrivate::SetMargins(const QMargins &margins)
 {
     if (margins != mMargins) {
         mMargins = margins;
-        mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
-        mViewIface->marginsChanged();
+        if (mViewInitialized) {
+            mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
+            mViewIface->marginsChanged();
+        } else {
+            mDirtyState |= DirtyMargin;
+        }
     }
 }
 

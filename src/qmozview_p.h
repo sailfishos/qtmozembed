@@ -32,6 +32,13 @@ class QMozViewPrivate : public QObject,
 {
     Q_OBJECT
 public:
+    enum DirtyStateBit {
+        DirtySize = 0x0001,
+        DirtyMargin = 0x0002
+    };
+
+    Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
+
     QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr);
     virtual ~QMozViewPrivate();
 
@@ -68,7 +75,6 @@ public:
     void ResetState();
     void UpdateMoving(bool moving);
     void ResetPainted();
-    void UpdateViewSize();
     void ReceiveInputEvent(const mozilla::InputData &event);
 
     void setSize(const QSizeF &size);
@@ -165,8 +171,7 @@ protected:
     qreal mOffsetY;
     bool mHasCompositor;
 
-    // Add enum flags for dirty if more similar flags needed
-    bool mSizeDirty;
+    DirtyState mDirtyState;
 
     QString mPendingUrl;
     QStringList mPendingMessageListeners;
