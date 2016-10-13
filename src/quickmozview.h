@@ -44,6 +44,11 @@ public:
     bool background() const;
     bool loaded() const;
 
+    bool followItemGeometry() const;
+    void setFollowItemGeometry(bool follow);
+
+    Q_INVOKABLE void updateContentSize(const QSizeF &size);
+
 private:
     QObject *getChild()
     {
@@ -64,6 +69,7 @@ Q_SIGNALS:
     void activeChanged();
     void backgroundChanged();
     void loadedChanged();
+    void followItemGeometryChanged();
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -115,6 +121,7 @@ private:
     bool mActive;
     bool mBackground;
     bool mLoaded;
+    bool mFollowItemGeometry;
     GLuint mConsTex;
     QMutex mRenderMutex;
 };
