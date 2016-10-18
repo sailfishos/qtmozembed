@@ -33,6 +33,18 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
+QSizeF webContentWindowSize(const QQuickWindow *window, const QSizeF &size) {
+    Q_ASSERT(window);
+
+    // Set size for EmbedLiteWindow in "portrait"
+    QSizeF s = size;
+    Qt::ScreenOrientation orientation = window->contentOrientation();
+    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
+        s.transpose();
+    }
+    return s;
+}
+
 QuickMozView::QuickMozView(QQuickItem *parent)
     : QQuickItem(parent)
     , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
@@ -147,7 +159,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    if (d->mMozWindow && mFollowItemGeometry) {
+    if (mFollowItemGeometry) {
         updateContentSize(newGeometry.size());
     }
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
@@ -178,13 +190,16 @@ void QuickMozView::clearThreadRenderObject()
 
 void QuickMozView::createView()
 {
+    if (d->mSize.isEmpty()) {
+        d->mSize = window()->size();
+    }
+
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
-        if (d->mSize.isEmpty()) {
-            d->mSize = window()->size();
-        }
-        mozWindow = new QMozWindow(d->mSize.toSize());
+        mozWindow = new QMozWindow(webContentWindowSize(window(), d->mSize).toSize());
         d->mContext->registerWindow(mozWindow);
+    } else if (d->mDirtyState & QMozViewPrivate::DirtySize) {
+        updateContentSize(d->mSize);
     }
 
     if (window()) {
@@ -351,19 +366,12 @@ void QuickMozView::updateContentSize(const QSizeF &size)
     // Skip noise coming from rotation change as width and height is updated
     // separately. Downside is that this breaks intentional resizing to square but
     // I think that this is less evil.
-    if (size.width() != size.height()) {
-        // Set size for EmbedLiteWindow in "portrait"
-        QSizeF s = size;
-        Qt::ScreenOrientation orientation = window()->contentOrientation();
-        if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-            s.transpose();
-        }
 
-        if (d->mViewInitialized && d->mMozWindow) {
-            d->mMozWindow->setSize(s.toSize());
-            d->mSize = size;
-        }
+    if (d->mMozWindow && (size.width() != size.height())) {
+        QSizeF s = webContentWindowSize(window(), size);
+        d->mMozWindow->setSize(s.toSize());
     }
+    d->setSize(size);
 }
 
 void QuickMozView::compositingFinished()

@@ -200,6 +200,11 @@ QMozWindow *QOpenGLWebPage::mozWindow() const
 void QOpenGLWebPage::setMozWindow(QMozWindow *window)
 {
     d->setMozWindow(window);
+
+    if (window) {
+        window->setSize(d->mSize.toSize());
+    }
+
     connect(window, &QMozWindow::drawOverlay,
             this, &QOpenGLWebPage::onDrawOverlay, Qt::DirectConnection);
 }
