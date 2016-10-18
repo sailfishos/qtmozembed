@@ -42,6 +42,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mActive(false)
     , mBackground(false)
     , mLoaded(false)
+    , mFollowItemGeometry(true)
     , mConsTex(0)
 {
     setFlag(ItemHasContents, true);
@@ -121,7 +122,7 @@ void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
     }
 }
 
-void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
+void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
 {
     if (change == ItemSceneChange) {
         QQuickWindow *win = window();
@@ -141,20 +142,14 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &)
             d->mSize = win->size();
         }
     }
+    QQuickItem::itemChange(change, data);
 }
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    if (d->mMozWindow) {
-        // Set size for EmbedLiteWindow in "portrait"
-        QSize s = newGeometry.size().toSize();
-        Qt::ScreenOrientation orientation = window()->contentOrientation();
-        if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-            s.transpose();
-        }
-        d->mMozWindow->setSize(s);
+    if (d->mMozWindow && mFollowItemGeometry) {
+        updateContentSize(newGeometry.size());
     }
-    d->mSize = newGeometry.size().toSize();
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
 
@@ -319,6 +314,56 @@ bool QuickMozView::background() const
 bool QuickMozView::loaded() const
 {
     return mLoaded;
+}
+
+bool QuickMozView::followItemGeometry() const
+{
+    return mFollowItemGeometry;
+}
+
+/*!
+ * \fn QuickMozView::setFollowItemGeometry(bool follow)
+ * Set this to false when you need to control content size manually.
+ * For instance virtual keyboard opening should not resize the content
+ * rather you should set margins for the content when opening virtual keyboard.
+ * Remember to set this back to true after you have finished manual content size
+ * manipulation and/or virtual is lowered.
+ */
+void QuickMozView::setFollowItemGeometry(bool follow)
+{
+    if (mFollowItemGeometry != follow) {
+        mFollowItemGeometry = follow;
+        Q_EMIT followItemGeometryChanged();
+    }
+}
+
+/*!
+ * \fn QuickMozView::updateContentSize(const QSize &size)
+ * Updates web content size to given \a size. Web content size can be
+ * also smaller or greater than QuickMozView size.
+ *
+ * NB: We are omitting square size as that introduces glitches when
+ * rotating item. Downside is that by doing this we break intentional
+ * resizing to square.
+ */
+void QuickMozView::updateContentSize(const QSizeF &size)
+{
+    // Skip noise coming from rotation change as width and height is updated
+    // separately. Downside is that this breaks intentional resizing to square but
+    // I think that this is less evil.
+    if (size.width() != size.height()) {
+        // Set size for EmbedLiteWindow in "portrait"
+        QSizeF s = size;
+        Qt::ScreenOrientation orientation = window()->contentOrientation();
+        if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
+            s.transpose();
+        }
+
+        if (d->mViewInitialized && d->mMozWindow) {
+            d->mMozWindow->setSize(s.toSize());
+            d->mSize = size;
+        }
+    }
 }
 
 void QuickMozView::compositingFinished()
