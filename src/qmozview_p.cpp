@@ -260,9 +260,7 @@ void QMozViewPrivate::ResetPainted()
 void QMozViewPrivate::setSize(const QSizeF &size)
 {
     mSize = size;
-    if (mViewInitialized && mMozWindow) {
-        mMozWindow->setSize(mSize.toSize());
-    } else {
+    if (!mViewInitialized) {
         mDirtyState |= DirtySize;
     }
 }
@@ -453,7 +451,6 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
-        mMozWindow->setSize(mSize.toSize());
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
     }
