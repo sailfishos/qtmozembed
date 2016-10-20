@@ -557,6 +557,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
     Q_UNUSED(aLocation);
 
     ResetPainted();
+    UpdateScrollArea(0, 0, 0.0, 0.0);
 
     if (!mIsLoading) {
         mIsLoading = true;
