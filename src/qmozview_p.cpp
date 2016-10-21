@@ -557,7 +557,6 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
     Q_UNUSED(aLocation);
 
     ResetPainted();
-    UpdateScrollArea(0, 0, 0.0, 0.0);
 
     if (!mIsLoading) {
         mIsLoading = true;
@@ -645,6 +644,12 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
     LOGT();
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
+}
+
+void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
+{
+    UpdateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
+                     mScrollableOffset.x(), mScrollableOffset.y());
 }
 
 void QMozViewPrivate::SetIsFocused(bool aIsFocused)
@@ -756,7 +761,6 @@ bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const
             mMoveDelta = qAbs(currentDelta);
         }
     }
-
 
     UpdateScrollArea(aScrollableSize.width * mContentResolution, aScrollableSize.height * mContentResolution,
                      aContentRect.x * mContentResolution, aContentRect.y * mContentResolution);
