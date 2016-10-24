@@ -280,6 +280,22 @@ void QMozViewPrivate::load(const QString &url)
     mView->LoadURL(url.toUtf8().data());
 }
 
+void QMozViewPrivate::scrollTo(int x, int y)
+{
+    if (mViewInitialized) {
+        // Map to CSS pixels.
+        mView->ScrollTo(x / mContentResolution, y / mContentResolution);
+    }
+}
+
+void QMozViewPrivate::scrollBy(int x, int y)
+{
+    if (mViewInitialized) {
+        // Map to CSS pixels.
+        mView->ScrollBy(x / mContentResolution, y / mContentResolution);
+    }
+}
+
 void QMozViewPrivate::loadFrameScript(const QString &frameScript)
 {
     if (!mViewInitialized) {
