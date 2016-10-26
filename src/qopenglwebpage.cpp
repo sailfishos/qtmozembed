@@ -557,6 +557,16 @@ void QOpenGLWebPage::load(const QString &url)
     d->load(url);
 }
 
+void QOpenGLWebPage::scrollTo(int x, int y)
+{
+    d->scrollTo(x, y);
+}
+
+void QOpenGLWebPage::scrollBy(int x, int y)
+{
+    d->scrollBy(x, y);
+}
+
 void QOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value)
 {
     d->sendAsyncMessage(name, value);

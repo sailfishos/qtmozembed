@@ -123,7 +123,10 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     qreal chromeGestureThreshold() const; \
     void setChromeGestureThreshold(qreal value); \
     QMargins margins() const; \
-    void setMargins(QMargins);
+    void setMargins(QMargins); \
+    Q_INVOKABLE void scrollTo(int x, int y); \
+    Q_INVOKABLE void scrollBy(int x, int y); \
+
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \

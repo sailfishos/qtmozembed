@@ -78,6 +78,9 @@ public:
     void ResetPainted();
     void ReceiveInputEvent(const mozilla::InputData &event);
 
+    void scrollTo(int x, int y);
+    void scrollBy(int x, int y);
+
     void setSize(const QSizeF &size);
 
     void load(const QString &url);

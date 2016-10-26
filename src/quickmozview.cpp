@@ -681,6 +681,16 @@ void QuickMozView::load(const QString &url)
     d->load(url);
 }
 
+void QuickMozView::scrollTo(int x, int y)
+{
+    d->scrollTo(x, y);
+}
+
+void QuickMozView::scrollBy(int x, int y)
+{
+    d->scrollBy(x, y);
+}
+
 void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant)
 {
     d->sendAsyncMessage(name, variant);
