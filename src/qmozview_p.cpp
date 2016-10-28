@@ -690,16 +690,25 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     hints = aIstate == 2 ? Qt::ImhHiddenText : Qt::ImhPreferLowercase;
 
     QString imType((QChar *)inputType);
-    if (imType.contains("number", Qt::CaseInsensitive)) {
+    imType = imType.toLower();
+    if (imType == QLatin1String("number")) {
         //hints |= Qt::ImhDigitsOnly;
         hints |= Qt::ImhFormattedNumbersOnly;
-    } else if (imType.contains("tel", Qt::CaseInsensitive)) {
+    } else if (imType == QLatin1String("tel")) {
         hints |= Qt::ImhDialableCharactersOnly;
-    } else if (imType.contains("email", Qt::CaseInsensitive)) {
+    } else if (imType == QLatin1String("email")) {
         hints |= Qt::ImhEmailCharactersOnly;
-    } else if (imType.contains("url", Qt::CaseInsensitive)) {
+    } else if (imType == QLatin1String("url")) {
         hints |= Qt::ImhUrlCharactersOnly;
+    } else if (imType == QLatin1String("date")) {
+        hints |= Qt::ImhDate;
+    } else if (imType == QLatin1String("datetime") || imType == QLatin1String("datetime-local")) {
+        hints |= Qt::ImhDate;
+        hints |= Qt::ImhTime;
+    } else if (imType == QLatin1String("time")) {
+        hints |= Qt::ImhTime;
     }
+
     mViewIface->setInputMethodHints(hints);
     if (aFocusChange || aIstate) {
         mIsInputFieldFocused = aIstate;
