@@ -48,6 +48,18 @@ qint64 current_timestamp(QTouchEvent *aEvent)
     return milliseconds;
 }
 
+// Map window size to orientation.
+QSize contentWindowSize(const QMozWindow *window) {
+    Q_ASSERT(window);
+
+    Qt::ScreenOrientation orientation = window->pendingOrientation();
+    QSize s = window->size();
+    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
+        s.transpose();
+    }
+    return s;
+}
+
 QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     : mViewIface(aViewIface)
     , q(publicPtr)
@@ -746,7 +758,7 @@ void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
 
 bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
-    mContentResolution = mMozWindow->size().width() / aContentRect.width;
+    mContentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
 
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
             mContentRect.width() != aContentRect.width ||
