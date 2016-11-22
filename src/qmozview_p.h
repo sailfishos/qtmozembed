@@ -99,6 +99,9 @@ public:
     void sendAsyncMessage(const QString &name, const QVariant &value);
     void setMozWindow(QMozWindow *);
 
+    mozilla::ScreenIntPoint createScreenPoint(const QPointF &point) const;
+    mozilla::ScreenIntPoint createScreenPoint(const int &posX, const int &posY) const;
+
 public Q_SLOTS:
     void onCompositorCreated();
 

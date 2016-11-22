@@ -23,16 +23,16 @@ public Q_SLOTS:
 
     // This function gets called on the FBO rendering thread and will store the
     // texture id and size and schedule an update on the window.
-    void newTexture(int id, const QSize &size, int orientation);
+    void newTexture(int id, const QRectF &bounds, int orientation);
 
     // Before the scene graph starts to render, we update to the pending texture
     void prepareNode();
 
 private:
-    void updateGeometry(const QSize &size, Qt::ScreenOrientation orientation);
+    void updateGeometry(const QRectF &rect, Qt::ScreenOrientation orientation);
 
     int m_id;
-    QSize m_size;
+    QRectF m_bounds;
     Qt::ScreenOrientation m_orientation;
 };
 

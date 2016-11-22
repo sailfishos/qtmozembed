@@ -10,7 +10,7 @@
 
 MozTextureNode::MozTextureNode(QuickMozView *aView)
     : m_id(0)
-    , m_size(0, 0)
+    , m_bounds(0, 0, 0, 0)
     , m_texture(0)
     , m_view(aView)
 {
@@ -21,12 +21,12 @@ MozTextureNode::MozTextureNode(QuickMozView *aView)
 }
 
 void
-MozTextureNode::newTexture(int id, const QSize &size, int orientation)
+MozTextureNode::newTexture(int id, const QRectF &bounds, int orientation)
 {
     Q_UNUSED(orientation);
     m_mutex.lock();
     m_id = id;
-    m_size = size;
+    m_bounds = bounds;
     m_mutex.unlock();
 
     // We cannot call QQuickWindow::update directly here, as this is only allowed
@@ -40,18 +40,18 @@ MozTextureNode::prepareNode()
 {
     m_mutex.lock();
     int newId = m_id;
-    QSize size = m_size;
+    QRectF bounds = m_bounds;
     m_id = 0;
     m_mutex.unlock();
     if (newId) {
         delete m_texture;
-        m_texture = m_view->window()->createTextureFromId(newId, size);
+        m_texture = m_view->window()->createTextureFromId(newId, bounds.size().toSize());
         setTexture(m_texture);
     }
 }
 
 void MozTextureNode::update()
 {
-    setRect(QRectF(0, 0, m_size.width(), m_size.height()));
+    setRect(m_bounds);
     markDirty(QSGNode::DirtyMaterial);
 }

@@ -233,8 +233,8 @@ QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
 #else
         n = new TextureNodeType(this);
 #endif
-        connect(this, SIGNAL(textureReady(int,QSize,int)),
-                n, SLOT(newTexture(int,QSize,int)), Qt::DirectConnection);
+        connect(this, SIGNAL(textureReady(int,QRectF,int)),
+                n, SLOT(newTexture(int,QRectF,int)), Qt::DirectConnection);
         connect(window(), SIGNAL(beforeRendering()), n, SLOT(prepareNode()), Qt::DirectConnection);
     }
     n->update();
@@ -271,7 +271,7 @@ void QuickMozView::refreshNodeTexture()
             // Texture size is kept in sync with d->mSize in geometryChanged. So we can use
             // d->Size directly as a source size as that is in correct orientation.
             extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-            Q_EMIT textureReady(mConsTex, d->mSize.toSize(), window()->contentOrientation());
+            Q_EMIT textureReady(mConsTex, QRectF(d->mMargins.left(), d->mMargins.top(), d->mSize.width(), d->mSize.height()), window()->contentOrientation());
         }
 #else
 #warning "Implement me for non ES2 platform"
