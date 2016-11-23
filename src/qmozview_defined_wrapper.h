@@ -86,7 +86,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
-    Q_PROPERTY(QMargins margins READ margins WRITE setMargins NOTIFY marginsChanged)
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
