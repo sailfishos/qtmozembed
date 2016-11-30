@@ -79,6 +79,7 @@ private Q_SLOTS:
     void updateLoaded();
     void resumeRendering();
     void compositingFinished();
+    void updateMargins();
 
 // INTERNAL
 protected:

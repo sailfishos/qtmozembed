@@ -14,6 +14,7 @@
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
 #include "qmozcontext.h"
+#include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
 #include "InputData.h"
 #include "mozilla/embedlite/EmbedLiteApp.h"
@@ -68,6 +69,8 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mView(NULL)
     , mViewInitialized(false)
     , mBgColor(Qt::white)
+    , mTopMargin(0.0)
+    , mBottomMargin(0.0)
     , mTempTexture(NULL)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
@@ -486,12 +489,28 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 
 mozilla::ScreenIntPoint QMozViewPrivate::createScreenPoint(const QPointF &point) const
 {
-    return mozilla::ScreenIntPoint(point.x() - mMargins.left(), point.y() - mMargins.top());
+    return createScreenPoint(point.x(), point.y());
 }
 
 mozilla::ScreenIntPoint QMozViewPrivate::createScreenPoint(const int &posX, const int &posY) const
 {
-    return mozilla::ScreenIntPoint(posX - mMargins.left(), posY - mMargins.top());
+    QPointF offset = QPointF(0, 0);
+    if (mDragging || mPinching) {
+        // While dragging or pinching do not use rendering offset to avoid
+        // unwanted jumping content.
+        offset.setY(mTopMargin);
+    } else {
+        // precise coordinate
+        offset = renderingOffset();
+    }
+    return mozilla::ScreenIntPoint(posX - offset.x(), posY - offset.y());
+}
+
+QPointF QMozViewPrivate::renderingOffset() const
+{
+    qreal y = mScrollableOffset.y() * QMozEngineSettings::instance()->pixelRatio();
+    qreal dy = mTopMargin - std::min(mTopMargin, y);
+    return QPointF(0.0f, std::max(0.0f, dy));
 }
 
 void QMozViewPrivate::onCompositorCreated()
@@ -544,10 +563,16 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
     mViewIface->bgColorChanged();
 }
 
-void QMozViewPrivate::SetMargins(const QMargins &margins)
+void QMozViewPrivate::SetMargins(const QMargins &margins, bool updateTopBottom)
 {
     if (margins != mMargins) {
         mMargins = margins;
+
+        if (updateTopBottom) {
+            mTopMargin = mMargins.top();
+            mBottomMargin = mMargins.bottom();
+        }
+
         if (mViewInitialized) {
             mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
             mViewIface->marginsChanged();

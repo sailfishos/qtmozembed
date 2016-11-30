@@ -515,7 +515,7 @@ QMargins QOpenGLWebPage::margins() const
 
 void QOpenGLWebPage::setMargins(QMargins margins)
 {
-    d->SetMargins(margins);
+    d->SetMargins(margins, true);
 }
 
 void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)

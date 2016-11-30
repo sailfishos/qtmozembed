@@ -59,7 +59,6 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
-    setFlag(ItemClipsChildrenToShape, true);
     setFlag(ItemIsFocusScope, true);
     setFlag(ItemAcceptsDrops, true);
     setFlag(ItemAcceptsInputMethod, true);
@@ -71,6 +70,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(dispatchItemUpdate()), this, SLOT(update()));
     connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
+    connect(this, SIGNAL(scrollableOffsetChanged()), this, SLOT(updateMargins()));
     updateEnabled();
 }
 
@@ -271,7 +271,7 @@ void QuickMozView::refreshNodeTexture()
             // Texture size is kept in sync with d->mSize in geometryChanged. So we can use
             // d->Size directly as a source size as that is in correct orientation.
             extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-            Q_EMIT textureReady(mConsTex, QRectF(d->mMargins.left(), d->mMargins.top(), d->mSize.width(), d->mSize.height()), window()->contentOrientation());
+            Q_EMIT textureReady(mConsTex, QRectF(d->renderingOffset(), d->mSize), window()->contentOrientation());
         }
 #else
 #warning "Implement me for non ES2 platform"
@@ -377,6 +377,27 @@ void QuickMozView::updateContentSize(const QSizeF &size)
 void QuickMozView::compositingFinished()
 {
     Q_EMIT dispatchItemUpdate();
+}
+
+void QuickMozView::updateMargins()
+{
+    if (d->mViewInitialized) {
+        QPointF offset = scrollableOffset();
+        QMargins m = margins();
+        if (offset.y() > m.top()) {
+            m.setTop(0);
+        } else {
+            m.setTop(d->mTopMargin);
+        }
+
+        if ((offset.y() + height() + d->mBottomMargin) < contentHeight()) {
+            m.setBottom(0);
+        } else {
+            m.setBottom(d->mBottomMargin);
+        }
+
+        d->SetMargins(m, false);
+    }
 }
 
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
@@ -634,7 +655,7 @@ QMargins QuickMozView::margins() const
 
 void QuickMozView::setMargins(QMargins margins)
 {
-    d->SetMargins(margins);
+    d->SetMargins(margins, true);
 }
 
 void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
