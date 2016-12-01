@@ -146,29 +146,6 @@ function shared_3viewLoadURL()
     mozContext.dumpTS("test_3viewLoadURL end")
 }
 
-function shared_TestDownloadMgrPage()
-{
-    mozContext.dumpTS("test_TestLoginMgrPage start")
-    testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.setPref("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
-    mozContext.instance.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
-    mozContext.instance.setPref("browser.download.manager.retention", 2);
-    mozContext.instance.setPref("browser.helperApps.deleteTempFileOnExit", false);
-    mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
-    mozContext.instance.addObserver("embed:download");
-    testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = false
-    webViewport.url = "about:mozilla";
-    testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
-    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
-    testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
-    mozContext.dumpTS("test_TestDownloadMgrPage end");
-}
-
 function shared_TestFaviconPage()
 {
     mozContext.dumpTS("test_TestFaviconPage start")
