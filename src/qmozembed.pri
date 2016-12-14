@@ -24,7 +24,13 @@ DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1
     DEFINES += ENABLE_GLX
 }
 
-INCLUDEPATH += $$GECKO_INCLUDE_DIR/nspr /usr/include/nspr4
+#INCLUDEPATH += $$GECKO_INCLUDE_DIR/nspr /usr/include/nspr4
+contains(CONFIG, with-system-nspr) {
+    INCLUDEPATH += $$system(pkg-config --cflags-only-I nspr)
+} else {
+    INCLUDEPATH += $$system(pkg-config --cflags-only-I libxul)
+}
+
 LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue -lmemory
 LIBS += -Wl,--no-whole-archive -rdynamic -ldl
 PKGCONFIG += nspr pixman-1

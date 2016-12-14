@@ -11,18 +11,18 @@
 #include <QJsonParseError>
 #include <QTouchEvent>
 
+#include <InputData.h>
+#include <mozilla/embedlite/EmbedLiteApp.h>
+#include <mozilla/gfx/Tools.h>
+#include <sys/time.h>
+#include <mozilla/TimeStamp.h>
+
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
-#include "InputData.h"
-#include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/gfx/Tools.h"
-#include "mozilla/WidgetUtils.h"
 #include "qmozembedlog.h"
-#include <sys/time.h>
-#include "mozilla/TimeStamp.h"
 
 #ifndef MOZVIEW_FLICK_THRESHOLD
 #define MOZVIEW_FLICK_THRESHOLD 200

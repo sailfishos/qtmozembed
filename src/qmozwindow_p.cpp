@@ -30,21 +30,21 @@ GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
 
 namespace {
 
-mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
+mozilla::embedlite::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
 {
     switch (orientation) {
     case Qt::PrimaryOrientation:
     case Qt::PortraitOrientation:
-        return mozilla::ROTATION_0;
+        return mozilla::embedlite::ROTATION_0;
     case Qt::LandscapeOrientation:
-        return mozilla::ROTATION_90;
+        return mozilla::embedlite::ROTATION_90;
     case Qt::InvertedLandscapeOrientation:
-        return mozilla::ROTATION_270;
+        return mozilla::embedlite::ROTATION_270;
     case Qt::InvertedPortraitOrientation:
-        return mozilla::ROTATION_180;
+        return mozilla::embedlite::ROTATION_180;
     default:
         Q_UNREACHABLE();
-        return mozilla::ROTATION_0;
+        return mozilla::embedlite::ROTATION_0;
     }
 }
 
