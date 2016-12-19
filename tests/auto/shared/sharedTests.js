@@ -146,29 +146,6 @@ function shared_3viewLoadURL()
     mozContext.dumpTS("test_3viewLoadURL end")
 }
 
-function shared_TestDownloadMgrPage()
-{
-    mozContext.dumpTS("test_TestLoginMgrPage start")
-    testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.setPref("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
-    mozContext.instance.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
-    mozContext.instance.setPref("browser.download.manager.retention", 2);
-    mozContext.instance.setPref("browser.helperApps.deleteTempFileOnExit", false);
-    mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
-    mozContext.instance.addObserver("embed:download");
-    testcaseid.verify(MyScript.waitMozView())
-    appWindow.promptReceived = false
-    webViewport.url = "about:mozilla";
-    testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
-    webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
-    testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!appWindow.promptReceived); }))
-    mozContext.dumpTS("test_TestDownloadMgrPage end");
-}
-
 function shared_TestFaviconPage()
 {
     mozContext.dumpTS("test_TestFaviconPage start")
@@ -354,32 +331,6 @@ function shared_TestCheckDefaultSearch()
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.compare(webViewport.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
     mozContext.dumpTS("TestCheckDefaultSearch end");
-}
-
-function shared_SelectionInit()
-{
-    mozContext.dumpTS("test_SelectionInit start")
-    testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.addObserver("clipboard:setdata");
-    testcaseid.verify(MyScript.waitMozView())
-    webViewport.url = "data:text/html,hello test selection";
-    testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.loadProgress, 100);
-    testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
-    webViewport.sendAsyncMessage("Browser:SelectionStart", {
-                                        xPos: 56,
-                                        yPos: 16
-                                      })
-    webViewport.sendAsyncMessage("Browser:SelectionMoveStart", {
-                                        change: "start"
-                                      })
-    webViewport.sendAsyncMessage("Browser:SelectionCopy", {
-                                        xPos: 56,
-                                        yPos: 16
-                                      })
-    testcaseid.verify(wrtWait(function() { return (appWindow.selectedContent == ""); }))
-    testcaseid.compare(appWindow.selectedContent, "test");
-    mozContext.dumpTS("test_SelectionInit end")
 }
 
 function shared_Test1LoadSimpleBlank()

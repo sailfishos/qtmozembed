@@ -15,6 +15,15 @@ Item {
     QmlMozContext {
         id: mozContext
     }
+
+    Component.onCompleted: {
+        mozContext.instance.setPref("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
+        mozContext.instance.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
+        mozContext.instance.setPref("browser.download.manager.retention", 2);
+        mozContext.instance.setPref("browser.helperApps.deleteTempFileOnExit", false);
+        mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
+    }
+
     Connections {
         target: mozContext.instance
         onOnInitialized: {
@@ -64,7 +73,20 @@ Item {
 
         function test_TestDownloadMgrPage()
         {
-            SharedTests.shared_TestDownloadMgrPage()
+            mozContext.dumpTS("test_TestLoginMgrPage start")
+            testcaseid.verify(MyScript.waitMozContext())
+            mozContext.instance.addObserver("embed:download");
+            testcaseid.verify(MyScript.waitMozView())
+            appWindow.promptReceived = false
+            webViewport.url = "about:mozilla";
+            testcaseid.verify(MyScript.waitLoadFinished(webViewport))
+            testcaseid.compare(webViewport.loadProgress, 100);
+            testcaseid.verify(SharedTests.wrtWait(function() { return (!webViewport.painted); }))
+            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
+            testcaseid.verify(MyScript.waitLoadFinished(webViewport))
+            testcaseid.compare(webViewport.loadProgress, 100);
+            testcaseid.verify(SharedTests.wrtWait(function() { return (!appWindow.promptReceived); }))
+            mozContext.dumpTS("test_TestDownloadMgrPage end");
         }
     }
 }

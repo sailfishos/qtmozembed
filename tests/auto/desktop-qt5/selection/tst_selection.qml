@@ -31,7 +31,6 @@ Item {
         anchors.fill: parent
         onViewInitialized: {
             webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
-            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
             appWindow.mozViewInitialized = true
             webViewport.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
         }
@@ -52,7 +51,28 @@ Item {
 
         function test_SelectionInit()
         {
-            SharedTests.shared_SelectionInit()
+            mozContext.dumpTS("test_SelectionInit start")
+            testcaseid.verify(MyScript.waitMozContext())
+            mozContext.instance.addObserver("clipboard:setdata");
+            testcaseid.verify(MyScript.waitMozView())
+            webViewport.url = "data:text/html,hello test selection";
+            testcaseid.verify(MyScript.waitLoadFinished(webViewport))
+            testcaseid.compare(webViewport.loadProgress, 100);
+            testcaseid.verify(SharedTests.wrtWait(function() { return (!webViewport.painted); }))
+            webViewport.sendAsyncMessage("Browser:SelectionStart", {
+                                                xPos: 56,
+                                                yPos: 16
+                                              })
+            webViewport.sendAsyncMessage("Browser:SelectionMoveStart", {
+                                                change: "start"
+                                              })
+            webViewport.sendAsyncMessage("Browser:SelectionCopy", {
+                                                xPos: 56,
+                                                yPos: 16
+                                              })
+            testcaseid.verify(SharedTests.wrtWait(function() { return (appWindow.selectedContent == ""); }))
+            testcaseid.compare(appWindow.selectedContent, "test");
+            mozContext.dumpTS("test_SelectionInit end")
         }
     }
 }

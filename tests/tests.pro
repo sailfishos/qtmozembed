@@ -29,13 +29,12 @@ shared.files = auto/shared/componentCreation.js \
     auto/shared/promptbasic/prompt.html \
     auto/shared/searchengine/test.xml
 
-OTHER_FILES = $$test.files $$shared.files
+OTHER_FILES = $$test.files $$shared.files components/* components/tests/content/*
 
 auto.files = auto/*
 auto.path = /opt/tests/qtmozembed/auto
 
-components.files = components/TestHelpers.manifest \
-    components/tests/content/testHelper.js
+components.files = components/*
 components.path = /opt/tests/qtmozembed/components
 
 definition.files = test-definition/tests.xml
