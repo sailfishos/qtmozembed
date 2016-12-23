@@ -66,7 +66,7 @@ public:
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
     bool SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
-    void SetMargins(const QMargins &margins);
+    void SetMargins(const QMargins &margins, bool updateTopBottom);
     QColor GetBackgroundColor() const;
     void SetIsFocused(bool aIsFocused);
     void SetThrottlePainting(bool aThrottle);
@@ -99,6 +99,11 @@ public:
     void sendAsyncMessage(const QString &name, const QVariant &value);
     void setMozWindow(QMozWindow *);
 
+    mozilla::ScreenIntPoint createScreenPoint(const QPointF &point) const;
+    mozilla::ScreenIntPoint createScreenPoint(const int &posX, const int &posY) const;
+
+    QPointF renderingOffset() const;
+
 public Q_SLOTS:
     void onCompositorCreated();
 
@@ -120,6 +125,8 @@ protected:
     mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
     QColor mBgColor;
+    qreal mTopMargin;
+    qreal mBottomMargin;
     QMargins mMargins;
     mutable QMutex mBgColorMutex;
     QImage mTempBufferImage;

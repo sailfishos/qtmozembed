@@ -63,7 +63,7 @@ Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
     void dispatchItemUpdate();
-    void textureReady(int id, const QSize &size, int orientation);
+    void textureReady(int id, const QRectF &bounds, int orientation);
     void parentIdChanged();
     void privateModeChanged();
     void activeChanged();
@@ -79,6 +79,7 @@ private Q_SLOTS:
     void updateLoaded();
     void resumeRendering();
     void compositingFinished();
+    void updateMargins();
 
 // INTERNAL
 protected:

@@ -77,32 +77,31 @@ public:
 
 void MozExtMaterialNode::update()
 {
-    updateGeometry(m_size, m_orientation);
+    updateGeometry(m_bounds, m_orientation);
 }
 
-void MozExtMaterialNode::updateGeometry(const QSize &size, Qt::ScreenOrientation orientation)
+void MozExtMaterialNode::updateGeometry(const QRectF &rect, Qt::ScreenOrientation orientation)
 {
     // Follow orientation for the sourceRect.
     const QRectF textureRect(0, 1, 1, -1);
-    const QRectF sourceRect(0, 0, size.width(), size.height());
 
     // and then texture coordinates
     switch (orientation) {
     case Qt::LandscapeOrientation:
-        updateRectGeometry(geometry(), sourceRect, textureRect.topRight(), textureRect.topLeft(),
+        updateRectGeometry(geometry(), rect, textureRect.topRight(), textureRect.topLeft(),
                            textureRect.bottomRight(), textureRect.bottomLeft());
         break;
     case Qt::InvertedPortraitOrientation:
-        updateRectGeometry(geometry(), sourceRect, textureRect.bottomRight(), textureRect.topRight(),
+        updateRectGeometry(geometry(), rect, textureRect.bottomRight(), textureRect.topRight(),
                            textureRect.bottomLeft(), textureRect.topLeft());
         break;
     case Qt::InvertedLandscapeOrientation:
-        updateRectGeometry(geometry(), sourceRect, textureRect.bottomLeft(), textureRect.bottomRight(),
+        updateRectGeometry(geometry(), rect, textureRect.bottomLeft(), textureRect.bottomRight(),
                            textureRect.topLeft(), textureRect.topRight());
         break;
     default:
         // Portrait / PrimaryOrientation
-        updateRectGeometry(geometry(), sourceRect, textureRect.topLeft(), textureRect.bottomLeft(),
+        updateRectGeometry(geometry(), rect, textureRect.topLeft(), textureRect.bottomLeft(),
                            textureRect.topRight(), textureRect.bottomRight());
         break;
     }
@@ -123,7 +122,7 @@ MozExtMaterialNode::MozExtMaterialNode()
 }
 
 void
-MozExtMaterialNode::newTexture(int id, const QSize &size, int orientation)
+MozExtMaterialNode::newTexture(int id, const QRectF &bounds, int orientation)
 {
     m_id = id;
     m_orientation = static_cast<Qt::ScreenOrientation>(orientation);
@@ -132,11 +131,11 @@ MozExtMaterialNode::newTexture(int id, const QSize &size, int orientation)
     // QuickMozView::updatePaintNode() gets called before a new texture with new
     // geometry has been created. In this case it's safer to reset node's
     // geometry again.
-    if (m_size != size && m_size.width() > 0 && m_size.height() > 0) {
-        updateGeometry(size, m_orientation);
+    if (m_bounds != bounds && m_bounds.width() > 0 && m_bounds.height() > 0) {
+        updateGeometry(bounds, m_orientation);
     }
 
-    m_size = size;
+    m_bounds = bounds;
 }
 
 // Before the scene graph starts to render, we update to the pending texture
