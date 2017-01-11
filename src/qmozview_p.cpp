@@ -186,27 +186,33 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
 
 void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
 {
-    QPointF touchPoint = event->touchPoints().size() == 1 ? event->touchPoints().at(0).pos() : QPointF();
+    QTouchEvent::TouchPoint tp;
+    QPointF touchPos;
+    if (event->touchPoints().size() == 1) {
+        tp = event->touchPoints().at(0);
+        touchPos = tp.pos();
+    }
+
     // Only for single press point
-    if (!touchPoint.isNull()) {
+    if (!touchPos.isNull()) {
         if (event->type() == QEvent::TouchBegin) {
             mLastTimestamp = mLastStationaryTimestamp = current_timestamp(event);
             mCanFlick = true;
         } else if (event->type() == QEvent::TouchUpdate && !mLastPos.isNull()) {
-            QRectF pressArea = event->touchPoints().at(0).rect();
+            QRectF pressArea = tp.rect();
             qreal touchHorizontalThreshold = pressArea.width() * 2;
             qreal touchVerticalThreshold = pressArea.height() * 2;
-            if (!mLastStationaryPos.isNull() && (qAbs(mLastStationaryPos.x() - touchPoint.x()) > touchHorizontalThreshold
-                                                 || qAbs(mLastStationaryPos.y() - touchPoint.y()) > touchVerticalThreshold)) {
+            if (!mLastStationaryPos.isNull() && (qAbs(mLastStationaryPos.x() - touchPos.x()) > touchHorizontalThreshold
+                                                 || qAbs(mLastStationaryPos.y() - touchPos.y()) > touchVerticalThreshold)) {
                 // Threshold exceeded. Reset stationary position and time.
                 mLastStationaryTimestamp = current_timestamp(event);
-                mLastStationaryPos = touchPoint;
-            } else if (qAbs(mLastPos.x() - touchPoint.x()) <= touchHorizontalThreshold
-                       && qAbs(mLastPos.y() - touchPoint.y()) <= touchVerticalThreshold) {
-                // Handle stationary position when panning stops and continues. Eventually mCanFlick is based on timestamps between events, see touch end block.
+                mLastStationaryPos = touchPos;
+            } else if (qAbs(mLastPos.x() - touchPos.x()) <= touchHorizontalThreshold
+                       && qAbs(mLastPos.y() - touchPos.y()) <= touchVerticalThreshold) {
+                // Handle stationary position when panning stops and continues. Eventually mCanFlick is based on timestamps + positions between events, see touch end block.
                 if (mCanFlick) {
                     mLastStationaryTimestamp = current_timestamp(event);
-                    mLastStationaryPos = touchPoint;
+                    mLastStationaryPos = touchPos;
                 }
                 mCanFlick = false;
             } else {
@@ -214,12 +220,16 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
             }
             mLastTimestamp = current_timestamp(event);
         } else if (event->type() == QEvent::TouchEnd) {
+            // TouchBegin -> TouchEnd renders to state where we do not move. Thus, take
+            // that into account in mCanFlick.
+            bool hasMoved = !((tp.pos() - tp.lastPos()).isNull() && tp.velocity().isNull());
             mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                        (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD);
+                        (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
+                        hasMoved;
             mLastStationaryPos = QPointF();
         }
     }
-    mLastPos = touchPoint;
+    mLastPos = touchPos;
 }
 
 void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
