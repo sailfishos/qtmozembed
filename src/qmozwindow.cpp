@@ -89,6 +89,11 @@ bool QMozWindow::readyToPaint() const
     return d->PreRender();
 }
 
+bool QMozWindow::isCompositorCreated()
+{
+    return d->mCompositorCreated;
+}
+
 void QMozWindow::timerEvent(QTimerEvent *event)
 {
     d->timerEvent(event);

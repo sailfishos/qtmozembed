@@ -48,6 +48,7 @@ private:
 
     QMozWindow &q;
     mozilla::embedlite::EmbedLiteWindow *mWindow;
+    bool mCompositorCreated;
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
     QSize mSize;

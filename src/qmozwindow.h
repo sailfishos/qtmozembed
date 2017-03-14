@@ -34,6 +34,8 @@ public:
     bool setReadyToPaint(bool ready);
     bool readyToPaint() const;
 
+    bool isCompositorCreated();
+
 Q_SIGNALS:
     void pendingOrientationChanged(Qt::ScreenOrientation orientation);
     void orientationChangeFiltered(Qt::ScreenOrientation orientation);
