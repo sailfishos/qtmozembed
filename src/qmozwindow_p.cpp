@@ -112,7 +112,7 @@ bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface)
 
     QString platform = qApp->platformName().toLower();
 
-    if (platform == "wayland" || platform == "wayland-egl") {
+    if (platform == "wayland" || platform == "wayland-egl" || platform == "eglfs") {
         getEGLContext(context, surface);
         return true;
     }
