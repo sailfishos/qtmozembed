@@ -53,6 +53,7 @@ mozilla::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
 QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     : q(window)
     , mWindow(nullptr)
+    , mCompositorCreated(false)
     , mReadyToPaint(true)
     , mSize(size)
     , mOrientation(Qt::PrimaryOrientation)
@@ -194,6 +195,7 @@ void QMozWindowPrivate::DrawOverlay(const nsIntRect &aRect)
 
 void QMozWindowPrivate::CompositorCreated()
 {
+    mCompositorCreated = true;
     q.compositorCreated();
 }
 

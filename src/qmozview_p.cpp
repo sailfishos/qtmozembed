@@ -492,6 +492,7 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
+        mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
     }
