@@ -521,7 +521,7 @@ QPointF QMozViewPrivate::renderingOffset() const
 {
     qreal y = mScrollableOffset.y() * QMozEngineSettings::instance()->pixelRatio();
     qreal dy = mTopMargin - std::min(mTopMargin, y);
-    return QPointF(0.0f, std::max(0.0f, dy));
+    return QPointF(0.0f, std::max(qreal(0.0f), dy));
 }
 
 void QMozViewPrivate::onCompositorCreated()
