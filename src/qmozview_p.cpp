@@ -82,6 +82,9 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mPinching(false)
     , mLastTimestamp(0)
     , mLastStationaryTimestamp(0)
+    , mLastPos(0.0, 0.0)
+    , mSecondLastPos(0.0, 0.0)
+    , mLastStationaryPos(0.0, 0.0)
     , mCanFlick(false)
     , mPendingTouchEvent(false)
     , mProgress(0)
@@ -231,6 +234,8 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
         if (event->type() == QEvent::TouchBegin) {
             mLastTimestamp = mLastStationaryTimestamp = current_timestamp(event);
             mCanFlick = true;
+            mLastPos = QPointF();
+            mSecondLastPos = QPointF();
         } else if (event->type() == QEvent::TouchUpdate && !mLastPos.isNull()) {
             QRectF pressArea = tp.rect();
             qreal touchHorizontalThreshold = pressArea.width() * 2;
@@ -253,9 +258,15 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
             }
             mLastTimestamp = current_timestamp(event);
         } else if (event->type() == QEvent::TouchEnd) {
-            // TouchBegin -> TouchEnd renders to state where we do not move. Thus, take
-            // that into account in mCanFlick.
-            bool hasMoved = !((tp.pos() - tp.lastPos()).isNull() && tp.velocity().isNull());
+            // TouchBegin -> TouchEnd renders to state where we do not move. Take
+            // that into account in mCanFlick. Evaluate movement from second last touch point
+            // to avoid last update being at the touch end position. Ignore touch velocity and
+            // use just flick threshold.
+            bool hasMoved = false;
+            if (!mSecondLastPos.isNull()) {
+                hasMoved = !((tp.pos() - mSecondLastPos).isNull());
+            }
+
             mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
                     (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
                     hasMoved;
@@ -263,6 +274,7 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
         }
     }
     mLastPos = touchPos;
+    mSecondLastPos = tp.lastPos();
 }
 
 void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged)

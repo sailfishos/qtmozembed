@@ -143,6 +143,7 @@ protected:
     qint64 mLastTimestamp;
     qint64 mLastStationaryTimestamp;
     QPointF mLastPos;
+    QPointF mSecondLastPos;
     QPointF mLastStationaryPos;
     QMap<int, QPointF> mActiveTouchPoints;
     bool mCanFlick;
