@@ -82,6 +82,9 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mPinching(false)
     , mLastTimestamp(0)
     , mLastStationaryTimestamp(0)
+    , mLastPos(0.0, 0.0)
+    , mSecondLastPos(0.0, 0.0)
+    , mLastStationaryPos(0.0, 0.0)
     , mCanFlick(false)
     , mPendingTouchEvent(false)
     , mProgress(0)
@@ -159,6 +162,39 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
             tmpValue = mScrollableOffset.x() * xSizeRatio;
             mHorizontalScrollDecorator.setPosition(tmpValue);
         }
+
+        // chrome, chromeGestureEnabled, and chromeGestureThreshold can be used
+        // to control chrome/chromeless mode.
+        // When chromeGestureEnabled is false, no actions are taken
+        // When chromeGestureThreshold is true, chrome is set false when chromeGestrureThreshold is exceeded (pan/flick)
+        // and set to true when flicking/panning the same amount to the the opposite direction.
+        // This do not have relationship to HTML5 fullscreen API.
+        if (mEnabled && mChromeGestureEnabled && mDragStartY >= 0.0) {
+            // In MozView coordinates
+            qreal offset = aPosY;
+            qreal currentDelta = offset - mDragStartY;
+            LOGT("dragStartY: %f, %f, %f, %f, %d", mDragStartY, offset, currentDelta, mMoveDelta,
+                 (qAbs(currentDelta) < mMoveDelta));
+
+            if (qAbs(currentDelta) < mMoveDelta) {
+                mDragStartY = offset;
+            }
+
+            if (currentDelta > mChromeGestureThreshold) {
+                LOGT("currentDelta > mChromeGestureThreshold: %d", mChrome);
+                if (mChrome) {
+                    mChrome = false;
+                    mViewIface->chromeChanged();
+                }
+            } else if (currentDelta < -mChromeGestureThreshold) {
+                LOGT("currentDelta < -mChromeGestureThreshold: %d", mChrome);
+                if (!mChrome) {
+                    mChrome = true;
+                    mViewIface->chromeChanged();
+                }
+            }
+            mMoveDelta = qAbs(currentDelta);
+        }
     }
 
     // determine if the viewport is panned to any edges
@@ -198,6 +234,8 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
         if (event->type() == QEvent::TouchBegin) {
             mLastTimestamp = mLastStationaryTimestamp = current_timestamp(event);
             mCanFlick = true;
+            mLastPos = QPointF();
+            mSecondLastPos = QPointF();
         } else if (event->type() == QEvent::TouchUpdate && !mLastPos.isNull()) {
             QRectF pressArea = tp.rect();
             qreal touchHorizontalThreshold = pressArea.width() * 2;
@@ -220,16 +258,23 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
             }
             mLastTimestamp = current_timestamp(event);
         } else if (event->type() == QEvent::TouchEnd) {
-            // TouchBegin -> TouchEnd renders to state where we do not move. Thus, take
-            // that into account in mCanFlick.
-            bool hasMoved = !((tp.pos() - tp.lastPos()).isNull() && tp.velocity().isNull());
+            // TouchBegin -> TouchEnd renders to state where we do not move. Take
+            // that into account in mCanFlick. Evaluate movement from second last touch point
+            // to avoid last update being at the touch end position. Ignore touch velocity and
+            // use just flick threshold.
+            bool hasMoved = false;
+            if (!mSecondLastPos.isNull()) {
+                hasMoved = !((tp.pos() - mSecondLastPos).isNull());
+            }
+
             mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                        (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                        hasMoved;
+                    (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
+                    hasMoved;
             mLastStationaryPos = QPointF();
         }
     }
     mLastPos = touchPos;
+    mSecondLastPos = tp.lastPos();
 }
 
 void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
@@ -811,38 +856,6 @@ bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const
             mContentRect.height() != aContentRect.height) {
         mContentRect.setRect(aContentRect.x, aContentRect.y, aContentRect.width, aContentRect.height);
         mViewIface->viewAreaChanged();
-        // chrome, chromeGestureEnabled, and chromeGestureThreshold can be used
-        // to control chrome/chromeless mode.
-        // When chromeGestureEnabled is false, no actions are taken
-        // When chromeGestureThreshold is true, chrome is set false when chromeGestrureThreshold is exceeded (pan/flick)
-        // and set to true when flicking/panning the same amount to the the opposite direction.
-        // This do not have relationship to HTML5 fullscreen API.
-        if (mEnabled && mChromeGestureEnabled && mDragStartY >= 0.0) {
-            // In MozView coordinates
-            qreal offset = aContentRect.y * mContentResolution;
-            qreal currentDelta = offset - mDragStartY;
-            LOGT("dragStartY: %f, %f, %f, %f, %d", mDragStartY, offset, currentDelta, mMoveDelta,
-                 (qAbs(currentDelta) < mMoveDelta));
-
-            if (qAbs(currentDelta) < mMoveDelta) {
-                mDragStartY = offset;
-            }
-
-            if (currentDelta > mChromeGestureThreshold) {
-                LOGT("currentDelta > mChromeGestureThreshold: %d", mChrome);
-                if (mChrome) {
-                    mChrome = false;
-                    mViewIface->chromeChanged();
-                }
-            } else if (currentDelta < -mChromeGestureThreshold) {
-                LOGT("currentDelta < -mChromeGestureThreshold: %d", mChrome);
-                if (!mChrome) {
-                    mChrome = true;
-                    mViewIface->chromeChanged();
-                }
-            }
-            mMoveDelta = qAbs(currentDelta);
-        }
     }
 
     UpdateScrollArea(aScrollableSize.width * mContentResolution, aScrollableSize.height * mContentResolution,
