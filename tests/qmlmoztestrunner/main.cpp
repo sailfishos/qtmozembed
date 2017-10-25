@@ -62,6 +62,8 @@ int main(int argc, char **argv)
             QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
             // These components must be loaded before app start
             QString componentPath(DEFAULT_COMPONENTS_PATH);
+
+            QMozContext::instance()->setProfile(QLatin1String("mozembed-testrunner"));
             QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                           QString("/EmbedLiteBinComponents.manifest"));
             QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +
