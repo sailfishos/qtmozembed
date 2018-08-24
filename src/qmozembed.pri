@@ -1,6 +1,3 @@
-QMAKE_CXXFLAGS += -include mozilla-config.h
-unix:QMAKE_CXXFLAGS += -fno-short-wchar -std=c++0x -fPIC
-DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1
 
 isEmpty(OBJ_PATH) {
   message(OBJ_PATH not defined)
@@ -19,11 +16,15 @@ isEmpty(OBJ_PATH) {
   message($$BIN_DIR - binary dir)
 }
 
+QMAKE_CXXFLAGS += -I $$GECKO_INCLUDE_DIR -include mozilla-config.h
+unix:QMAKE_CXXFLAGS += -fno-short-wchar -std=c++0x -fPIC
+DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1
+
 !isEmpty(ENABLE_GLX) {
     DEFINES += ENABLE_GLX
 }
 
-INCLUDEPATH += $$GECKO_INCLUDE_DIR $$GECKO_INCLUDE_DIR/nspr /usr/include/nspr4
+INCLUDEPATH += $$GECKO_INCLUDE_DIR/nspr /usr/include/nspr4
 LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue -lmemory
 LIBS += -Wl,--no-whole-archive -rdynamic -ldl
 PKGCONFIG += nspr pixman-1
