@@ -60,7 +60,7 @@ public:
     void OnSecurityChanged(const char *aStatus, unsigned int aState) override;
     void OnFirstPaint(int32_t aX, int32_t aY) override;
     void OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight) override;
-    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext) override;
+    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen) override;
     void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
                          const char16_t *inputType, const char16_t *inputMode) override;
     void OnTitleChanged(const char16_t *aTitle) override;

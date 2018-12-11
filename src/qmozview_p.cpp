@@ -836,9 +836,12 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }
 
-void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext)
+void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen)
 {
-    *aNativeIMEContext = (intptr_t)qApp->inputMethod();
+    QInputMethod *inputContext = qGuiApp->inputMethod();
+    if (aIMEOpen) {
+        *aIMEOpen = inputContext->isVisible();
+    }
 }
 
 void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
