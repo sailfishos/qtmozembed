@@ -17,9 +17,12 @@
 #include <QMap>
 #include <QSGSimpleTextureNode>
 #include <QKeyEvent>
+
+#include <mozilla/embedlite/EmbedLiteView.h>
+#include <Units.h>
+
 #include "qmozwindow.h"
 #include "qmozscrolldecorator.h"
-#include "mozilla/embedlite/EmbedLiteView.h"
 #include "qmozview_templated_wrapper.h"
 #include "qmozview_defined_wrapper.h"
 
@@ -64,7 +67,7 @@ public:
     bool HandleLongTap(const nsIntPoint &aPoint) override;
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
-    bool SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
+    bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
     void SetMargins(const QMargins &margins, bool updateTopBottom);
     QColor GetBackgroundColor() const;

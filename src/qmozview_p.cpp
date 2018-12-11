@@ -847,8 +847,13 @@ void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
     mViewIface->titleChanged();
 }
 
-bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
+bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
+    // aIsRootScrollFrame makes it possible to handle chrome gesture also in case that we have
+    // an iframe that is of the size of the screen. We may need to add still a scrollable layer id or similar.
+    if (!aIsRootScrollFrame)
+        return false;
+
     mContentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
 
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
