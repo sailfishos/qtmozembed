@@ -739,10 +739,16 @@ char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t 
 
     mViewIface->recvSyncMessage(message.get(), vdata, &response);
 
-    QJsonDocument respdoc = QJsonDocument::fromVariant(response.getMessage());
-    QByteArray array = respdoc.toJson();
-
-    LOGT("msg:%s, response:%s", message.get(), array.constData());
+    QVariant responseMessage = response.getMessage();
+    QJsonDocument responseDocument;
+    if (responseMessage.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(responseMessage);
+        responseDocument = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        responseDocument = QJsonDocument::fromVariant(responseMessage);
+    }
+    QByteArray array = responseDocument.toJson();
     return strdup(array.constData());
 }
 
