@@ -11,18 +11,18 @@
 #include <QJsonParseError>
 #include <QTouchEvent>
 
+#include <InputData.h>
+#include <mozilla/embedlite/EmbedLiteApp.h>
+#include <mozilla/gfx/Tools.h>
+#include <sys/time.h>
+#include <mozilla/TimeStamp.h>
+
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
-#include "InputData.h"
-#include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/gfx/Tools.h"
-#include "mozilla/WidgetUtils.h"
 #include "qmozembedlog.h"
-#include <sys/time.h>
-#include "mozilla/TimeStamp.h"
 
 #ifndef MOZVIEW_FLICK_THRESHOLD
 #define MOZVIEW_FLICK_THRESHOLD 200
@@ -739,10 +739,16 @@ char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t 
 
     mViewIface->recvSyncMessage(message.get(), vdata, &response);
 
-    QJsonDocument respdoc = QJsonDocument::fromVariant(response.getMessage());
-    QByteArray array = respdoc.toJson();
-
-    LOGT("msg:%s, response:%s", message.get(), array.constData());
+    QVariant responseMessage = response.getMessage();
+    QJsonDocument responseDocument;
+    if (responseMessage.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(responseMessage);
+        responseDocument = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        responseDocument = QJsonDocument::fromVariant(responseMessage);
+    }
+    QByteArray array = responseDocument.toJson();
     return strdup(array.constData());
 }
 
@@ -836,9 +842,12 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }
 
-void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext)
+void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen)
 {
-    *aNativeIMEContext = (intptr_t)qApp->inputMethod();
+    QInputMethod *inputContext = qGuiApp->inputMethod();
+    if (aIMEOpen) {
+        *aIMEOpen = inputContext->isVisible();
+    }
 }
 
 void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
@@ -847,8 +856,13 @@ void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
     mViewIface->titleChanged();
 }
 
-bool QMozViewPrivate::SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
+bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
+    // aIsRootScrollFrame makes it possible to handle chrome gesture also in case that we have
+    // an iframe that is of the size of the screen. We may need to add still a scrollable layer id or similar.
+    if (!aIsRootScrollFrame)
+        return false;
+
     mContentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
 
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||

@@ -1,5 +1,8 @@
 %global min_xulrunner_version 38.8.0.15
 
+%define system_nspr       1
+%define system_pixman     1
+
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
 Version:    1.13.23
@@ -14,8 +17,13 @@ BuildRequires:  pkgconfig(Qt5Network)
 BuildRequires:  pkgconfig(Qt5OpenGL)
 BuildRequires:  pkgconfig(Qt5Quick)
 BuildRequires:  pkgconfig(Qt5QuickTest)
-BuildRequires:  pkgconfig(nspr)
-BuildRequires:  pkgconfig(pixman-1)
+%if %{system_nspr}
+BuildRequires:  pkgconfig(nspr) >= 4.13.1
+%endif
+
+%if %{system_pixman}
+BuildRequires:  pkgconfig(pixman-1) >= 0.19.2
+%endif
 BuildRequires:  xulrunner-qt5-devel >= %{min_xulrunner_version}
 BuildRequires:  qt5-default
 BuildRequires:  qt5-qttools
@@ -48,7 +56,14 @@ This package contains QML unit tests for QtMozEmbed library
 %setup -q -n %{name}-%{version}
 
 %build
-%qtc_qmake5 -r VERSION=%{version}
+
+CONFIGURE_VARIABLE=""
+
+%if %{system_nspr}
+  CONFIGURE_VARIABLE="with-system-nspr"
+%endif
+
+%qtc_qmake5 -r VERSION=%{version} CONFIG+=${CONFIGURE_VARIABLE}
 %qtc_make %{?_smp_mflags}
 
 %install

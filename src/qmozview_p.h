@@ -17,9 +17,12 @@
 #include <QMap>
 #include <QSGSimpleTextureNode>
 #include <QKeyEvent>
+
+#include <mozilla/embedlite/EmbedLiteView.h>
+#include <Units.h>
+
 #include "qmozwindow.h"
 #include "qmozscrolldecorator.h"
-#include "mozilla/embedlite/EmbedLiteView.h"
 #include "qmozview_templated_wrapper.h"
 #include "qmozview_defined_wrapper.h"
 
@@ -57,14 +60,14 @@ public:
     void OnSecurityChanged(const char *aStatus, unsigned int aState) override;
     void OnFirstPaint(int32_t aX, int32_t aY) override;
     void OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight) override;
-    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen, intptr_t *aNativeIMEContext) override;
+    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen) override;
     void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
                          const char16_t *inputType, const char16_t *inputMode) override;
     void OnTitleChanged(const char16_t *aTitle) override;
     bool HandleLongTap(const nsIntPoint &aPoint) override;
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
-    bool SendAsyncScrollDOMEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
+    bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
     void SetMargins(const QMargins &margins, bool updateTopBottom);
     QColor GetBackgroundColor() const;
