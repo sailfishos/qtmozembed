@@ -284,7 +284,7 @@ void QOpenGLWebPage::update()
         return;
     }
 
-    d->mMozWindow->scheduleUpdate();
+    d->mView->ScheduleUpdate();
 }
 
 void QOpenGLWebPage::forceActiveFocus()
