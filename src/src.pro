@@ -3,6 +3,9 @@ QT += openglextensions
 TARGET = qt5embedwidget
 TEMPLATE = lib
 
+# Avoid X11 header collision
+DEFINES += MESA_EGL_NO_X11_HEADERS
+
 isEmpty(VERSION) {
     GIT_TAG = $$system(git describe --tags --abbrev=0)
     GIT_VERSION = $$system(echo $$GIT_TAG | sed 's/nemo[/]//')
