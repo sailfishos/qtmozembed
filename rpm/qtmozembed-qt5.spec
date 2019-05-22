@@ -8,8 +8,8 @@ Summary:    Qt embeddings for Gecko
 Version:    1.13.23
 Release:    1
 Group:      Applications/Internet
-License:    MPLv2
-URL:        https://github.com/tmeshkova/qtmozembed.git
+License:    MPLv2.0
+URL:        https://git.sailfishos.org/mer-core/qtmozembed
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
