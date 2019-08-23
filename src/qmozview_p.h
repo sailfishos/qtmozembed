@@ -25,6 +25,7 @@
 #include "qmozscrolldecorator.h"
 #include "qmozview_templated_wrapper.h"
 #include "qmozview_defined_wrapper.h"
+#include "qmozsecurity.h"
 
 class QTouchEvent;
 class QMozContext;
@@ -185,6 +186,7 @@ protected:
     qreal mOffsetX;
     qreal mOffsetY;
     bool mHasCompositor;
+    QMozSecurity mSecurity;
 
     DirtyState mDirtyState;
 

@@ -14,6 +14,7 @@
 
 class QMozViewPrivate;
 class QMozWindow;
+class QMozSecurity;
 
 class QuickMozView : public QQuickItem
 {

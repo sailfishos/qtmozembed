@@ -10,6 +10,7 @@
 #include "qmozcontext.h"
 #include "qmozscrolldecorator.h"
 #include "qmlmozcontext.h"
+#include "qmozsecurity.h"
 
 class QtMozEmbedPlugin : public QQmlExtensionPlugin
 {
@@ -24,6 +25,7 @@ public:
         qmlRegisterType<QmlMozContext>("Qt5Mozilla", 1, 0, "QmlMozContext");
         qmlRegisterUncreatableType<QMozScrollDecorator>("Qt5Mozilla", 1, 0, "QmlMozScrollDecorator", "");
         qmlRegisterUncreatableType<QMozReturnValue>("Qt5Mozilla", 1, 0, "QMozReturnValue", "");
+        qmlRegisterType<QMozSecurity>("Qt5Mozilla", 1, 0, "QMozSecurity");
         setenv("EMBED_COMPONENTS_PATH", DEFAULT_COMPONENTS_PATH, 1);
     }
 };

@@ -682,6 +682,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
         mProgress = 1;
         mViewIface->loadingChanged();
     }
+    mSecurity.reset();
 }
 
 void QMozViewPrivate::OnLoadFinished(void)
@@ -761,7 +762,7 @@ void QMozViewPrivate::OnLoadRedirect(void)
 void QMozViewPrivate::OnSecurityChanged(const char *aStatus, unsigned int aState)
 {
     LOGT();
-    mViewIface->securityChanged(aStatus, aState);
+    mSecurity.setSecurityRaw(aStatus, aState);
 }
 
 void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)

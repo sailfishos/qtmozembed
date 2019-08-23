@@ -713,6 +713,13 @@ void QuickMozView::scrollBy(int x, int y)
     d->scrollBy(x, y);
 }
 
+// This should be a const method returning a pointer to a const object
+// but unfortunately this conflicts with it being exposed as a Q_PROPERTY
+QMozSecurity *QuickMozView::security()
+{
+    return &d->mSecurity;
+}
+
 void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant)
 {
     d->sendAsyncMessage(name, variant);

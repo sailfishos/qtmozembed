@@ -23,6 +23,7 @@
 class QMozViewPrivate;
 class QMozGrabResult;
 class QMozWindow;
+class QMozSecurity;
 
 class QOpenGLWebPage : public QObject
 {

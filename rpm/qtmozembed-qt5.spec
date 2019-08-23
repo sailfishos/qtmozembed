@@ -27,7 +27,9 @@ BuildRequires:  pkgconfig(pixman-1) >= 0.19.2
 BuildRequires:  xulrunner-qt5-devel >= %{min_xulrunner_version}
 BuildRequires:  qt5-default
 BuildRequires:  qt5-qttools
+BuildRequires:  pkgconfig(systemsettings) >= 0.5.25
 Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
+Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
 
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}
