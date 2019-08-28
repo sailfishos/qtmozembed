@@ -72,7 +72,6 @@ QMAKE_PKGCONFIG_DESCRIPTION = Model that emits process info
 QMAKE_PKGCONFIG_LIBDIR = $$target.path
 QMAKE_PKGCONFIG_INCDIR = $$target.path
 QMAKE_PKGCONFIG_DESTDIR = pkgconfig
-QMAKE_PKGCONFIG_REQUIRES = systemsettings
 
 # install forwarding headers
 # match only the camel case forwarding headers here

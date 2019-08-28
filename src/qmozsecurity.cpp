@@ -1,9 +1,11 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <QDebug>
 #include <QQueue>
 
 #include <nsIWebProgressListener.h>
@@ -14,6 +16,7 @@
 #include <nsStringAPI.h>
 #include <systemsettings/certificatemodel.h>
 
+#include "qmozembedlog.h"
 #include "qmozsecurity.h"
 
 // Ensure the enum values in QMozSecurity match the enum values in nsISSLStatus
@@ -236,7 +239,7 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
         rv = serialHelper->DeserializeObject(serSSLStatus, getter_AddRefs(infoObj));
 
         if (!NS_SUCCEEDED(rv)) {
-            qDebug() << "Security state change: deserialisation failed";
+            qCDebug(lcEmbedLiteExt) << "Security state change: deserialisation failed";
         }
     }
 

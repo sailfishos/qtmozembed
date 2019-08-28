@@ -1,5 +1,9 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-*/
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2015 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -173,21 +177,22 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
             // In MozView coordinates
             qreal offset = aPosY;
             qreal currentDelta = offset - mDragStartY;
-            LOGT("dragStartY: %f, %f, %f, %f, %d", mDragStartY, offset, currentDelta, mMoveDelta,
-                 (qAbs(currentDelta) < mMoveDelta));
+            qCDebug(lcEmbedLiteExt) << "dragStartY:" << mDragStartY << "," << offset
+                                    << "," << currentDelta << "," << mMoveDelta
+                                    << "," << (qAbs(currentDelta) < mMoveDelta);
 
             if (qAbs(currentDelta) < mMoveDelta) {
                 mDragStartY = offset;
             }
 
             if (currentDelta > mChromeGestureThreshold) {
-                LOGT("currentDelta > mChromeGestureThreshold: %d", mChrome);
+                qCDebug(lcEmbedLiteExt) << "currentDelta > mChromeGestureThreshold:" << mChrome;
                 if (mChrome) {
                     mChrome = false;
                     mViewIface->chromeChanged();
                 }
             } else if (currentDelta < -mChromeGestureThreshold) {
-                LOGT("currentDelta < -mChromeGestureThreshold: %d", mChrome);
+                qCDebug(lcEmbedLiteExt) << "currentDelta < -mChromeGestureThreshold:" << mChrome;
                 if (!mChrome) {
                     mChrome = true;
                     mViewIface->chromeChanged();
@@ -344,7 +349,9 @@ void QMozViewPrivate::load(const QString &url)
         mPendingUrl = url;
         return;
     }
-    LOGT("url: %s", url.toUtf8().data());
+#ifdef DEVELOPMENT_BUILD
+    qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
+#endif
     mProgress = 0;
     ResetPainted();
     mView->LoadURL(url.toUtf8().data());
@@ -442,8 +449,13 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
 
 void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 {
-    LOGT("cStr:%s, preStr:%s, replLen:%i, replSt:%i", event->commitString().toUtf8().data(),
-         event->preeditString().toUtf8().data(), event->replacementLength(), event->replacementStart());
+#ifdef DEVELOPMENT_BUILD
+    qCDebug(lcEmbedLiteExt) << "cStr:" << event->commitString().toUtf8().data()
+                            << ", preStr:" << event->preeditString().toUtf8().data()
+                            << ", replLen:" << event->replacementLength()
+                            << ", replSt:" << event->replacementStart();
+#endif
+
     mPreedit = !event->preeditString().isEmpty();
     if (mViewInitialized) {
         if (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly) {
@@ -702,7 +714,9 @@ void QMozViewPrivate::OnWindowCloseRequested()
 // View finally destroyed and deleted
 void QMozViewPrivate::ViewDestroyed()
 {
-    LOGT();
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     mView = NULL;
     mViewInitialized = false;
     mViewIface->viewDestroyed();
@@ -720,10 +734,15 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
     QVariant vdata = doc.toVariant();
 
     if (ok) {
-        LOGT("mesg:%s, data:%s", message.get(), data.get());
+#ifdef DEVELOPMENT_BUILD
+        qCDebug(lcEmbedLiteExt) << "mesg:" << message.get() << ", data:" << data.get();
+#endif
         mViewIface->recvAsyncMessage(message.get(), vdata);
     } else {
-        LOGT("parse: err:%s, errLine:%i", error.errorString().toUtf8().data(), error.offset);
+        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString().toUtf8().data();
+#ifdef DEVELOPMENT_BUILD
+        qCDebug(lcEmbedLiteExt) << "parse: s:'" << data.get() << "', errLine:" << error.offset;
+#endif
     }
 }
 
@@ -755,19 +774,25 @@ char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t 
 
 void QMozViewPrivate::OnLoadRedirect(void)
 {
-    LOGT();
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     mViewIface->loadRedirect();
 }
 
 void QMozViewPrivate::OnSecurityChanged(const char *aStatus, unsigned int aState)
 {
-    LOGT();
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     mSecurity.setSecurityRaw(aStatus, aState);
 }
 
 void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 {
-    LOGT();
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
 }
@@ -826,7 +851,7 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
 #ifndef QT_NO_IM
             QInputMethod *inputContext = qGuiApp->inputMethod();
             if (!inputContext) {
-                LOGT("Requesting SIP: but no input context");
+                qCWarning(lcEmbedLiteExt) << "Requesting SIP: but no input context";
                 return;
             }
             inputContext->update(Qt::ImEnabled);
@@ -838,7 +863,6 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
             inputContext->update(Qt::ImQueryAll);
 #endif
         }
-
     }
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }

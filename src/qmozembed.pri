@@ -33,7 +33,7 @@ contains(CONFIG, with-system-nspr) {
 
 LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue -lmemory
 LIBS += -Wl,--no-whole-archive -rdynamic -ldl
-PKGCONFIG += nspr pixman-1
+PKGCONFIG += nspr pixman-1 systemsettings
 
 DEFINES += BUILD_GRE_HOME=\"\\\"$$BIN_DIR\\\"\"
 

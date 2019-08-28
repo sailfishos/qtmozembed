@@ -1,5 +1,9 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-*/
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2013 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -26,6 +30,8 @@
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedInitGlue.h"
 
+Q_LOGGING_CATEGORY(lcEmbedLiteExt, "org.sailfishos.embedliteext", QtWarningMsg)
+
 using namespace mozilla::embedlite;
 
 Q_GLOBAL_STATIC(QMozContext, mozContextInstance)
@@ -47,7 +53,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mViewCreator(NULL)
     , mMozWindow(NULL)
 {
-    LOGT("Create new Context: %p, parent:%p", (void *)this, (void *)parent);
+    qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent;
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
     LoadEmbedLite();
     mApp = XRE_GetEmbedLite();
@@ -65,7 +71,7 @@ QMozContextPrivate::~QMozContextPrivate()
 bool QMozContextPrivate::ExecuteChildThread()
 {
     if (!getenv("GECKO_THREAD")) {
-        LOGT("Execute in child Native thread: %p", (void *)mThread);
+        qCDebug(lcEmbedLiteExt) << "Execute in child Native thread:" << (void *)mThread;
         GeckoWorker *worker = new GeckoWorker(mApp);
 
         connect(mThread, SIGNAL(started()), worker, SLOT(doWork()));
@@ -83,7 +89,7 @@ bool QMozContextPrivate::ExecuteChildThread()
 bool QMozContextPrivate::StopChildThread()
 {
     if (mThread && !mThread->isFinished()) {
-        LOGT("Stop Native thread: %p", (void *)mThread);
+        qCDebug(lcEmbedLiteExt) << "Stop Native thread:" << (void *)mThread;
         mThread->exit(0);
         mThread->wait();
         return true;
@@ -114,7 +120,9 @@ void QMozContextPrivate::Initialized()
 // App Destroyed, and ready to delete and program exit
 void QMozContextPrivate::Destroyed()
 {
-    LOGT("");
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     mApp->SetListener(nullptr);
 
     if (!mThread->isFinished()) {
@@ -130,7 +138,7 @@ void QMozContextPrivate::Destroyed()
 
 void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
 {
-    // LOGT("aTopic: %s, data: %s", aTopic, NS_ConvertUTF16toUTF8(aData).get());
+    //qCDebug(lcEmbedLiteExt) << "aTopic:" << aTopic << ", data:" << NS_ConvertUTF16toUTF8(aData).get();
     QString data((QChar *)aData);
     if (!data.startsWith('{') && !data.startsWith('[') && !data.startsWith('"')) {
         QVariant vdata = QVariant::fromValue(data);
@@ -143,10 +151,13 @@ void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
     ok = error.error == QJsonParseError::NoError;
     QVariant vdata = doc.toVariant();
     if (ok) {
-        // LOGT("mesg:%s, data:%s", aTopic, data.toUtf8().data());
+        //qCDebug(lcEmbedLiteExt) << "mesg:" << aTopic << ", data:" << data.toUtf8().data();
         Q_EMIT recvObserve(aTopic, vdata);
     } else {
-        LOGT("parse: s:'%s', err:%s, errLine:%i", data.toUtf8().data(), error.errorString().toUtf8().data(), error.offset);
+        qCDebug(lcEmbedLiteExt) << "JSON parse error:" << error.errorString().toUtf8().data();
+#ifdef DEVELOPMENT_BUILD
+        qCDebug(lcEmbedLiteExt) << "parse: s:'" << data.toUtf8().data() << "', errLine:" << error.offset;
+#endif
     }
 }
 
@@ -168,7 +179,7 @@ bool QMozContextPrivate::IsInitialized()
 uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags, const char *uri, const uint32_t &contextFlags,
                                                       EmbedLiteView *aParentView)
 {
-    LOGT("QtMozEmbedContext new Window requested: parent:%p", (void *)aParentView);
+    qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView;
     uint32_t viewId = QMozContext::instance()->createView(QString(uri), aParentView ? aParentView->GetUniqueID() : 0);
     return viewId;
 }
@@ -334,13 +345,13 @@ QMozContext::GetApp()
 
 void QMozContext::setPixelRatio(float ratio)
 {
-    qDebug() << "QMozContext::setPixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPixelRatio instead.";
+    qCWarning(lcEmbedLiteExt) << "QMozContext::setPixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPixelRatio instead.";
     QMozEngineSettings::instance()->setPixelRatio(ratio);
 }
 
 float QMozContext::pixelRatio() const
 {
-    qDebug() << "QMozContext::pixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::pixelRatio instead.";
+    qCWarning(lcEmbedLiteExt) << "QMozContext::pixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::pixelRatio instead.";
     return QMozEngineSettings::instance()->pixelRatio();
 }
 

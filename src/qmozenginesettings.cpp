@@ -1,11 +1,9 @@
-/****************************************************************************
-**
-** Copyright (C) 2016 Jolla Ltd.
-** Contact: Raine Makelainen <raine.makelainen@jolla.com>
-**
-****************************************************************************/
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-*/
-/* This Source Code Form is subject to the terms of the Mozilla Public
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2016 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
@@ -118,10 +116,10 @@ void QMozEngineSettingsPrivate::enableLowPrecisionBuffers(bool enabled)
 
 void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value)
 {
-    LOGT("name:%s, type:%i", key.toUtf8().data(), value.type());
+    qCDebug(lcEmbedLiteExt) << "name:" << key.toUtf8().data() << ", type:" << value.type();
 
     if (!isInitialized()) {
-        LOGT("Error: context not yet initialized");
+        qCDebug(lcEmbedLiteExt) << "Error: context not yet initialized";
         mPreferences.insert(key, value);
         return;
     }
@@ -149,7 +147,7 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
         }
         break;
     default:
-        LOGT("Unknown pref type: %i", value.type());
+        qCWarning(lcEmbedLiteExt) << "Unknown pref type:" << value.type();
     }
 }
 

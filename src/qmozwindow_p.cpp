@@ -1,13 +1,17 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2015 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "qmozembedlog.h"
 #include "qmozwindow_p.h"
 
 #include "qmozwindow.h"
 
-#include <QDebug>
 #include <QGuiApplication>
 #include <dlfcn.h>
 #include <EGL/egl.h>
@@ -69,7 +73,7 @@ QMozWindowPrivate::~QMozWindowPrivate()
 void QMozWindowPrivate::setSize(const QSize &size)
 {
     if (size.isEmpty()) {
-        qDebug() << "Trying to set empty size: " << size;
+        qCDebug(lcEmbedLiteExt) << "Trying to set empty size: " << size;
     } else if (size != mSize) {
         mSize = size;
         mWindow->SetSize(size.width(), size.height());

@@ -1,7 +1,11 @@
-/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */
-/* This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2013 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "quickmozview.h"
 
@@ -108,7 +112,9 @@ void QuickMozView::updateLoaded()
 void
 QuickMozView::contextInitialized()
 {
-    LOGT("QuickMozView");
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
     createView();
 }
 
@@ -661,7 +667,9 @@ void QuickMozView::setMargins(QMargins margins)
 
 void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
 {
-    LOGT();
+#ifdef DEVELOPMENT_BUILD
+    qCInfo(lcEmbedLiteExt);
+#endif
 }
 
 void QuickMozView::goBack()
@@ -742,7 +750,9 @@ void QuickMozView::loadFrameScript(const QString &name)
 
 void QuickMozView::newWindow(const QString &url)
 {
-    LOGT("New Window: %s", url.toUtf8().data());
+#ifdef DEVELOPMENT_BUILD
+    qCDebug(lcEmbedLiteExt) << "New Window:" << url.toUtf8().data();
+#endif
 }
 
 quint32 QuickMozView::uniqueID() const
