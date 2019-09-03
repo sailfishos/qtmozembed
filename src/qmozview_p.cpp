@@ -177,40 +177,6 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
             tmpValue = mScrollableOffset.x() * xSizeRatio;
             mHorizontalScrollDecorator.setPosition(tmpValue);
         }
-
-        // chrome, chromeGestureEnabled, and chromeGestureThreshold can be used
-        // to control chrome/chromeless mode.
-        // When chromeGestureEnabled is false, no actions are taken
-        // When chromeGestureThreshold is true, chrome is set false when chromeGestrureThreshold is exceeded (pan/flick)
-        // and set to true when flicking/panning the same amount to the the opposite direction.
-        // This do not have relationship to HTML5 fullscreen API.
-        if (mEnabled && mChromeGestureEnabled && mDragStartY >= 0.0) {
-            // In MozView coordinates
-            qreal offset = aPosY;
-            qreal currentDelta = offset - mDragStartY;
-            qCDebug(lcEmbedLiteExt) << "dragStartY:" << mDragStartY << "," << offset
-                                    << "," << currentDelta << "," << mMoveDelta
-                                    << "," << (qAbs(currentDelta) < mMoveDelta);
-
-            if (qAbs(currentDelta) < mMoveDelta) {
-                mDragStartY = offset;
-            }
-
-            if (currentDelta > mChromeGestureThreshold) {
-                qCDebug(lcEmbedLiteExt) << "currentDelta > mChromeGestureThreshold:" << mChrome;
-                if (mChrome) {
-                    mChrome = false;
-                    mViewIface->chromeChanged();
-                }
-            } else if (currentDelta < -mChromeGestureThreshold) {
-                qCDebug(lcEmbedLiteExt) << "currentDelta < -mChromeGestureThreshold:" << mChrome;
-                if (!mChrome) {
-                    mChrome = true;
-                    mViewIface->chromeChanged();
-                }
-            }
-            mMoveDelta = qAbs(currentDelta);
-        }
     }
 
     // determine if the viewport is panned to any edges
@@ -1010,9 +976,46 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         ResetState();
     } else if (event->type() == QEvent::TouchUpdate) {
         Q_ASSERT(touchPointsCount > 0);
-        if (!mDragging) {
+
+
+        // chrome, chromeGestureEnabled, and chromeGestureThreshold can be used
+        // to control chrome/chromeless mode.
+        // When chromeGestureEnabled is false, no actions are taken
+        // When chromeGestureThreshold is true, chrome is set false when chromeGestrureThreshold is exceeded (pan/flick)
+        // and set to true when flicking/panning the same amount to the the opposite direction.
+        // This do not have relationship to HTML5 fullscreen API.
+        qreal offset = event->touchPoints().at(0).pos().y();
+
+        if (mEnabled && mChromeGestureEnabled && mDragStartY >= 0.0) {
+            // In MozView coordinates
+            qreal currentDelta = mDragStartY - offset;
+            qCDebug(lcEmbedLiteExt) << "dragStartY:" << mDragStartY << "," << offset
+                                    << "," << currentDelta << "," << mMoveDelta
+                                    << "," << (qAbs(currentDelta) < mMoveDelta);
+
+            if (qAbs(currentDelta) < mMoveDelta) {
+                mDragStartY = offset;
+            }
+
+            if (currentDelta > mChromeGestureThreshold) {
+                qCDebug(lcEmbedLiteExt) << "currentDelta > mChromeGestureThreshold:" << mChrome;
+                if (mChrome) {
+                    mChrome = false;
+                    mViewIface->chromeChanged();
+                }
+            } else if (currentDelta < -mChromeGestureThreshold) {
+                qCDebug(lcEmbedLiteExt) << "currentDelta < -mChromeGestureThreshold:" << mChrome;
+                if (!mChrome) {
+                    mChrome = true;
+                    mViewIface->chromeChanged();
+                }
+            }
+            mMoveDelta = qAbs(currentDelta);
+        } else if (!mDragging) {
             mDragging = true;
-            mDragStartY = mContentRect.y() * mContentResolution;
+            //mDragStartY = mContentRect.y() * mContentResolution;
+            mDragStartY = offset;
+            qDebug() << "mDragStartY set:" << mDragStartY;
             mMoveDelta = 0;
             draggingChanged = true;
         }
