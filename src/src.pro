@@ -25,6 +25,7 @@ SOURCES += qmozcontext.cpp \
            qmozscrolldecorator.cpp \
            qmessagepump.cpp \
            EmbedQtKeyUtils.cpp \
+           qmozsecurity.cpp \
            qmozview_p.cpp \
            geckoworker.cpp \
            qopenglwebpage.cpp \
@@ -36,6 +37,7 @@ HEADERS += qmozcontext.h \
            qmozenginesettings.h \
            qmozenginesettings_p.h \
            qmozgrabresult.h \
+           qmozsecurity.h \
            qmozviewcreator.h \
            qmozscrolldecorator.h \
            qmessagepump.h \

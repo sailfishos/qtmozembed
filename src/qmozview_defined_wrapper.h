@@ -1,3 +1,12 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (c) 2013 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #ifndef qmozview_defined_wrapper_h
 #define qmozview_defined_wrapper_h
 
@@ -86,6 +95,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
+    Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL)
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -125,7 +135,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setMargins(QMargins); \
     Q_INVOKABLE void scrollTo(int x, int y); \
     Q_INVOKABLE void scrollBy(int x, int y); \
-
+    QMozSecurity *security();
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
@@ -188,6 +198,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void chromeGestureEnabledChanged(); \
     void chromeChanged(); \
     void chromeGestureThresholdChanged(); \
-    void marginsChanged();
+    void marginsChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

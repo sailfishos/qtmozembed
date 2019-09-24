@@ -1,5 +1,8 @@
 /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  *
+ * Copyright (c) 2013 - 2019 Jolla Ltd.
+ * Copyright (c) 2019 Open Mobile Platform LLC.
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
@@ -10,6 +13,7 @@
 #include "qmozcontext.h"
 #include "qmozscrolldecorator.h"
 #include "qmlmozcontext.h"
+#include "qmozsecurity.h"
 
 class QtMozEmbedPlugin : public QQmlExtensionPlugin
 {
@@ -24,6 +28,7 @@ public:
         qmlRegisterType<QmlMozContext>("Qt5Mozilla", 1, 0, "QmlMozContext");
         qmlRegisterUncreatableType<QMozScrollDecorator>("Qt5Mozilla", 1, 0, "QmlMozScrollDecorator", "");
         qmlRegisterUncreatableType<QMozReturnValue>("Qt5Mozilla", 1, 0, "QMozReturnValue", "");
+        qmlRegisterType<QMozSecurity>("Qt5Mozilla", 1, 0, "QMozSecurity");
         setenv("EMBED_COMPONENTS_PATH", DEFAULT_COMPONENTS_PATH, 1);
     }
 };

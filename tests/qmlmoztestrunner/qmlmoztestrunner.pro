@@ -9,7 +9,7 @@ VDEPTH_PATH=tests/qmlmoztestrunner
 include($$RELATIVE_PATH/relative-objdir.pri)
 
 INCLUDEPATH+=$$RELATIVE_PATH/src
-LIBS+= -L$$RELATIVE_PATH/$$OBJ_BUILD_PATH/src -lqt5embedwidget
+LIBS+= -L$$RELATIVE_PATH/$$OBJ_BUILD_PATH/src -lqt5embedwidget -lsystemsettings
 
 isEmpty(DEFAULT_COMPONENT_PATH) {
   DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"/usr/lib/mozembedlite/\\\"\"
