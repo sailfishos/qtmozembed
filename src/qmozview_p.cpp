@@ -41,6 +41,10 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
+#define CONTENT_LOADED "chrome:contentloaded"
+#define DOCURI_KEY "docuri"
+#define ABOUT_URL_PREFIX "about:"
+
 qint64 current_timestamp(QTouchEvent *aEvent)
 {
     if (aEvent) {
@@ -732,6 +736,12 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
     QJsonDocument doc = QJsonDocument::fromJson(QByteArray(data.get()), &error);
     ok = error.error == QJsonParseError::NoError;
     QVariant vdata = doc.toVariant();
+
+    // Check docuri if this is an error page
+    if (message == CONTENT_LOADED && vdata.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
+        // Mark security invalid, not used in error pages
+        mSecurity.setSecurityRaw(NULL, 0);
+    }
 
     if (ok) {
 #ifdef DEVELOPMENT_BUILD
