@@ -116,7 +116,7 @@ void QMozEngineSettingsPrivate::enableLowPrecisionBuffers(bool enabled)
 
 void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value)
 {
-    qCDebug(lcEmbedLiteExt) << "name:" << key.toUtf8().data() << ", type:" << value.type();
+    qCDebug(lcEmbedLiteExt) << "name:" << key.toUtf8().data() << ", type:" << value.type() << ", user type:" << value.userType();
 
     if (!isInitialized()) {
         qCDebug(lcEmbedLiteExt) << "Error: context not yet initialized";
@@ -126,28 +126,24 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
 
     mozilla::embedlite::EmbedLiteApp *app = QMozContext::instance()->GetApp();
 
-    switch (value.type()) {
-    case QVariant::String:
+    int type = value.type();
+    switch (type) {
+    case QMetaType::QString:
+    case QMetaType::Float:
+    case QMetaType::Double:
         app->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
         break;
-    case QVariant::Int:
-    case QVariant::UInt:
-    case QVariant::LongLong:
-    case QVariant::ULongLong:
+    case QMetaType::Int:
+    case QMetaType::UInt:
+    case QMetaType::LongLong:
+    case QMetaType::ULongLong:
         app->SetIntPref(key.toUtf8().data(), value.toInt());
         break;
-    case QVariant::Bool:
+    case QMetaType::Bool:
         app->SetBoolPref(key.toUtf8().data(), value.toBool());
         break;
-    case QVariant::Double:
-        if (value.canConvert<int>()) {
-            app->SetIntPref(key.toUtf8().data(), value.toInt());
-        } else {
-            app->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
-        }
-        break;
     default:
-        qCWarning(lcEmbedLiteExt) << "Unknown pref type:" << value.type();
+        qCWarning(lcEmbedLiteExt) << "Unknown pref" << key << "value" << value << "type:" << value.type() << "userType:" << value.userType();
     }
 }
 
