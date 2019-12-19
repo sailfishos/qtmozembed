@@ -524,10 +524,16 @@ void QOpenGLWebPage::setMargins(QMargins margins)
 
 void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 {
-#ifdef DEVELOPMENT_BUILD
-    qCInfo(lcEmbedLiteExt);
-#endif
+    Q_UNUSED(baseUrl);
+
+    loadText(html, QStringLiteral("text/html"));
 }
+
+void QOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
+{
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))));
+}
+
 
 void QOpenGLWebPage::goBack()
 {

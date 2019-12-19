@@ -667,9 +667,14 @@ void QuickMozView::setMargins(QMargins margins)
 
 void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
 {
-#ifdef DEVELOPMENT_BUILD
-    qCInfo(lcEmbedLiteExt);
-#endif
+    Q_UNUSED(baseUrl)
+
+    loadText(html, QStringLiteral("text/html"));
+}
+
+void QuickMozView::loadText(const QString &text, const QString &mimeType)
+{
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))));
 }
 
 void QuickMozView::goBack()
