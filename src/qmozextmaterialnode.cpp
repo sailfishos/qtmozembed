@@ -88,21 +88,21 @@ void MozExtMaterialNode::updateGeometry(const QRectF &rect, Qt::ScreenOrientatio
     // and then texture coordinates
     switch (orientation) {
     case Qt::LandscapeOrientation:
-        updateRectGeometry(geometry(), rect, textureRect.topRight(), textureRect.topLeft(),
-                           textureRect.bottomRight(), textureRect.bottomLeft());
+        updateRectGeometry(geometry(), rect, textureRect.bottomRight(), textureRect.bottomLeft(),
+                           textureRect.topRight(), textureRect.topLeft());
         break;
     case Qt::InvertedPortraitOrientation:
-        updateRectGeometry(geometry(), rect, textureRect.bottomRight(), textureRect.topRight(),
-                           textureRect.bottomLeft(), textureRect.topLeft());
+        updateRectGeometry(geometry(), rect, textureRect.topRight(), textureRect.bottomRight(),
+                           textureRect.topLeft(), textureRect.bottomLeft());
         break;
     case Qt::InvertedLandscapeOrientation:
-        updateRectGeometry(geometry(), rect, textureRect.bottomLeft(), textureRect.bottomRight(),
-                           textureRect.topLeft(), textureRect.topRight());
+        updateRectGeometry(geometry(), rect, textureRect.topLeft(), textureRect.topRight(),
+                           textureRect.bottomLeft(), textureRect.bottomRight());
         break;
     default:
         // Portrait / PrimaryOrientation
-        updateRectGeometry(geometry(), rect, textureRect.topLeft(), textureRect.bottomLeft(),
-                           textureRect.topRight(), textureRect.bottomRight());
+        updateRectGeometry(geometry(), rect, textureRect.bottomLeft(), textureRect.topLeft(),
+                           textureRect.bottomRight(), textureRect.topRight());
         break;
     }
     markDirty(QSGNode::DirtyGeometry);
