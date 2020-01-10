@@ -16,6 +16,10 @@
 #include <QtGui/QOpenGLShaderProgram>
 #include "qmozview_defined_wrapper.h"
 
+QT_BEGIN_NAMESPACE
+class QSGTexture;
+QT_END_NAMESPACE
+
 class QMozViewPrivate;
 class QMozWindow;
 class QMozSecurity;
@@ -67,8 +71,6 @@ public Q_SLOTS:
 Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
-    void dispatchItemUpdate();
-    void textureReady(int id, const QRectF &bounds, int orientation);
     void parentIdChanged();
     void privateModeChanged();
     void activeChanged();
@@ -103,6 +105,7 @@ protected:
     void touchEvent(QTouchEvent *) override;
     void timerEvent(QTimerEvent *) override;
     void componentComplete() override;
+    void releaseResources() override;
 
 public Q_SLOTS:
     void setInputMethodHints(Qt::InputMethodHints hints);
@@ -113,23 +116,22 @@ private Q_SLOTS:
     void clearThreadRenderObject();
     void contextInitialized();
     void updateEnabled();
-    void refreshNodeTexture();
     void windowVisibleChanged(bool visible);
 
 private:
     void createView();
 
     QMozViewPrivate *d;
+    QSGTexture *mTexture;
     friend class QMozViewPrivate;
     unsigned mParentID;
     bool mPrivateMode;
     bool mUseQmlMouse;
+    bool mComposited;
     bool mActive;
     bool mBackground;
     bool mLoaded;
     bool mFollowItemGeometry;
-    GLuint mConsTex;
-    QMutex mRenderMutex;
 };
 
 #endif // QuickMozView_H

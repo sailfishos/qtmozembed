@@ -50,8 +50,8 @@ HEADERS += qmozcontext.h \
            qmozwindow.h \
            qmozwindow_p.h
 
-SOURCES += quickmozview.cpp qmoztexturenode.cpp qmozextmaterialnode.cpp
-HEADERS += quickmozview.h qmoztexturenode.h qmozextmaterialnode.h
+SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
+HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
 
 include(qmozembed.pri)
 

@@ -16,6 +16,9 @@ isEmpty(OBJ_PATH) {
   message($$BIN_DIR - binary dir)
 }
 
+CONFIG += \
+    egl
+
 QMAKE_CXXFLAGS += -I $$GECKO_INCLUDE_DIR -include mozilla-config.h
 unix:QMAKE_CXXFLAGS += -fno-short-wchar -std=c++0x -fPIC
 DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1

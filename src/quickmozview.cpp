@@ -30,12 +30,34 @@
 #include "qmozview_p.h"
 #include "qmozextmaterialnode.h"
 #include "qmozscrolldecorator.h"
-#include "qmoztexturenode.h"
+#include "qmozexttexture.h"
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
 
 using namespace mozilla;
 using namespace mozilla::embedlite;
+
+
+namespace {
+
+class ObjectCleanup : public QRunnable
+{
+public:
+    ObjectCleanup(QObject *object)
+        : m_object(object)
+    {
+    }
+
+    void run()
+    {
+        delete m_object;
+    }
+
+private:
+    QObject * const m_object;
+};
+
+}
 
 QSizeF webContentWindowSize(const QQuickWindow *window, const QSizeF &size) {
     Q_ASSERT(window);
@@ -52,14 +74,15 @@ QSizeF webContentWindowSize(const QQuickWindow *window, const QSizeF &size) {
 QuickMozView::QuickMozView(QQuickItem *parent)
     : QQuickItem(parent)
     , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
+    , mTexture(nullptr)
     , mParentID(0)
     , mPrivateMode(false)
     , mUseQmlMouse(false)
+    , mComposited(false)
     , mActive(false)
     , mBackground(false)
     , mLoaded(false)
     , mFollowItemGeometry(true)
-    , mConsTex(0)
 {
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
@@ -71,16 +94,16 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(setIsActive(bool)), this, SLOT(SetIsActive(bool)));
     connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
     connect(this, SIGNAL(enabledChanged()), this, SLOT(updateEnabled()));
-    connect(this, SIGNAL(dispatchItemUpdate()), this, SLOT(update()));
     connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(scrollableOffsetChanged()), this, SLOT(updateMargins()));
+    connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
 }
 
 QuickMozView::~QuickMozView()
 {
-    QMutexLocker locker(&mRenderMutex);
+    releaseResources();
 
     if (d->mView) {
         d->mView->SetListener(NULL);
@@ -147,7 +170,6 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
         if (!win)
             return;
         // All of these signals are emitted from scene graph rendering thread.
-        connect(win, SIGNAL(beforeRendering()), this, SLOT(refreshNodeTexture()), Qt::DirectConnection);
         connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
         connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
         connect(win, SIGNAL(visibleChanged(bool)), this, SLOT(windowVisibleChanged(bool)));
@@ -182,13 +204,6 @@ void QuickMozView::clearThreadRenderObject()
     QOpenGLContext *ctx = QOpenGLContext::currentContext();
     Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
 
-#if defined(QT_OPENGL_ES_2)
-    if (mConsTex) {
-        glDeleteTextures(1, &mConsTex);
-        mConsTex = 0;
-    }
-#endif
-
     QQuickWindow *win = window();
     if (!win) return;
     connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
@@ -221,69 +236,88 @@ void QuickMozView::createView()
 }
 
 QSGNode *
-QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *data)
+QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
-#if defined(QT_OPENGL_ES_2)
-#define TextureNodeType MozExtMaterialNode
-#else
-#define TextureNodeType MozTextureNode
-#endif
+    // If the dimensions are entirely invalid return no node.
     if (width() <= 0 || height() <= 0) {
         delete oldNode;
-        return 0;
+
+        delete mTexture;
+        mTexture = nullptr;
+
+        return nullptr;
     }
 
-    TextureNodeType *n = static_cast<TextureNodeType *>(oldNode);
-    if (!n) {
+    const bool invalidTexture = !mComposited
+            || !d->mIsPainted
+            || !d->mViewInitialized
+            || !d->mHasCompositor
+            || !d->mContext->registeredWindow()
+            || !d->mMozWindow;
+
+    if (mTexture && invalidTexture) {
+        delete oldNode;
+        oldNode = nullptr;
+
+        delete mTexture;
+        mTexture = nullptr;
+    }
+
+    QRectF boundingRect(d->renderingOffset(), d->mSize);
+
+    if (!mTexture && invalidTexture) {
+        QSGSimpleRectNode *node = static_cast<QSGSimpleRectNode *>(oldNode);
+        if (!node) {
+            node = new QSGSimpleRectNode;
+        }
+        node->setColor(d->mBgColor);
+        node->setRect(boundingRect);
+
+        return node;
+    }
+
+    if (!mTexture) {
+        delete oldNode;
+        oldNode = nullptr;
+    }
+
+    MozMaterialNode *node = static_cast<MozMaterialNode *>(oldNode);
+
+    if (!node) {
 #if defined(QT_OPENGL_ES_2)
-        n = new TextureNodeType();
-#else
-        n = new TextureNodeType(this);
-#endif
-        connect(this, SIGNAL(textureReady(int,QRectF,int)),
-                n, SLOT(newTexture(int,QRectF,int)), Qt::DirectConnection);
-        connect(window(), SIGNAL(beforeRendering()), n, SLOT(prepareNode()), Qt::DirectConnection);
-    }
-    n->update();
-    return n;
-}
+        QMozExtTexture * const texture = new QMozExtTexture;
+        mTexture = texture;
 
-void QuickMozView::refreshNodeTexture()
-{
-    QMutexLocker locker(&mRenderMutex);
+        connect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage, Qt::DirectConnection);
 
-    if (!d->mViewInitialized || !d->mHasCompositor
-            || !mActive || !d->mContext->registeredWindow() || !d->mMozWindow) {
-        return;
-    }
-
-    if (d && d->mView) {
-#if defined(QT_OPENGL_ES_2)
-        int width = 0, height = 0;
-        static QOpenGLExtension_OES_EGL_image *extension = nullptr;
-        if (!extension) {
-            extension = new QOpenGLExtension_OES_EGL_image();
-            extension->initializeOpenGLFunctions();
-        }
-        Q_ASSERT(extension);
-
-        if (!mConsTex) {
-            glGenTextures(1, &mConsTex);
-            // Call resumeRendering() from the main thread
-            QMetaObject::invokeMethod(this, "resumeRendering", Qt::QueuedConnection);
-        }
-        glBindTexture(GL_TEXTURE_EXTERNAL_OES, mConsTex);
-        void *image = d->mMozWindow->getPlatformImage(&width, &height);
-        if (image) {
-            // Texture size is kept in sync with d->mSize in geometryChanged. So we can use
-            // d->Size directly as a source size as that is in correct orientation.
-            extension->glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
-            Q_EMIT textureReady(mConsTex, QRectF(d->renderingOffset(), d->mSize), window()->contentOrientation());
-        }
+        node = new MozExtMaterialNode;
 #else
 #warning "Implement me for non ES2 platform"
-        Q_ASSERT(false);
+//        node = new MozRgbMaterialNode;
+        return nullptr;
 #endif
+
+        node->setTexture(mTexture);
+    }
+
+    node->setRect(QRectF(d->renderingOffset(), d->mSize));
+    node->setOrientation(window()->contentOrientation());
+    node->markDirty(QSGNode::DirtyMaterial);
+
+    return node;
+}
+
+void QuickMozView::releaseResources()
+{
+#if defined(QT_OPENGL_ES_2)
+    if (QMozExtTexture * const texture = d->mMozWindow ? qobject_cast<QMozExtTexture *>(mTexture) : nullptr) {
+        disconnect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage);
+    }
+#endif
+
+    if (QQuickWindow * const window = mTexture ? QQuickItem::window() : nullptr) {
+        window->scheduleRenderJob(new ObjectCleanup(mTexture), QQuickWindow::AfterSynchronizingStage);
+        mTexture = nullptr;
     }
 }
 
@@ -319,6 +353,9 @@ void QuickMozView::setActive(bool active)
             SetIsActive(active);
             if (active) {
                 resumeRendering();
+            } else {
+                mComposited = false;
+                update();
             }
             Q_EMIT activeChanged();
         }
@@ -383,7 +420,10 @@ void QuickMozView::updateContentSize(const QSizeF &size)
 
 void QuickMozView::compositingFinished()
 {
-    Q_EMIT dispatchItemUpdate();
+    if (mActive) {
+        mComposited = true;
+        update();
+    }
 }
 
 void QuickMozView::updateMargins()
