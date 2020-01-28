@@ -59,12 +59,10 @@ private:
 
 }
 
-QSizeF webContentWindowSize(const QQuickWindow *window, const QSizeF &size) {
-    Q_ASSERT(window);
-
+QSizeF webContentWindowSize(Qt::ScreenOrientation orientation, const QSizeF &size)
+{
     // Set size for EmbedLiteWindow in "portrait"
     QSizeF s = size;
-    Qt::ScreenOrientation orientation = window->contentOrientation();
     if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
         s.transpose();
     }
@@ -76,11 +74,14 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
     , mTexture(nullptr)
     , mParentID(0)
+    , mOrientation(Qt::PrimaryOrientation)
+    , mExplicitViewportWidth(false)
+    , mExplicitViewportHeight(false)
+    , mExplicitOrientation(false)
     , mPrivateMode(false)
     , mUseQmlMouse(false)
     , mComposited(false)
     , mActive(false)
-    , mBackground(false)
     , mLoaded(false)
     , mFollowItemGeometry(true)
 {
@@ -154,32 +155,13 @@ void QuickMozView::updateEnabled()
     d->mEnabled = QQuickItem::isEnabled();
 }
 
-void QuickMozView::updateGLContextInfo(QOpenGLContext *ctx)
-{
-    d->mHasContext = ctx != nullptr && ctx->surface() != nullptr;
-    if (!d->mHasContext) {
-        printf("ERROR: QuickMozView not supposed to work without GL context\n");
-        return;
-    }
-}
-
 void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
 {
     if (change == ItemSceneChange) {
-        QQuickWindow *win = window();
-        if (!win)
-            return;
-        // All of these signals are emitted from scene graph rendering thread.
-        connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
-        connect(win, SIGNAL(sceneGraphInvalidated()), this, SLOT(clearThreadRenderObject()), Qt::DirectConnection);
-        connect(win, SIGNAL(visibleChanged(bool)), this, SLOT(windowVisibleChanged(bool)));
-        connect(win, &QQuickWindow::contentOrientationChanged, this, [=](Qt::ScreenOrientation orientation) {
-            if (d->mMozWindow) {
-                d->mMozWindow->setContentOrientation(orientation);
-            }
-        });
-        if (d->mSize.isEmpty()) {
-            d->mSize = win->size();
+        if (data.window) {
+            connect(data.window, &QQuickWindow::contentOrientationChanged, this, &QuickMozView::updateOrientation);
+
+            updateOrientation(data.window->contentOrientation());
         }
     }
     QQuickItem::itemChange(change, data);
@@ -187,26 +169,11 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
 
 void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry)
 {
-    if (mFollowItemGeometry) {
-        updateContentSize(newGeometry.size());
-    }
+    updateContentSize(QSizeF(
+                mExplicitViewportWidth ? d->mSize.width() : newGeometry.width(),
+                mExplicitViewportHeight ? d->mSize.height() : newGeometry.height()));
+
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
-}
-
-void QuickMozView::createThreadRenderObject()
-{
-    updateGLContextInfo(QOpenGLContext::currentContext());
-    disconnect(window(), SIGNAL(beforeSynchronizing()), this, 0);
-}
-
-void QuickMozView::clearThreadRenderObject()
-{
-    QOpenGLContext *ctx = QOpenGLContext::currentContext();
-    Q_ASSERT(ctx != NULL && ctx->makeCurrent(ctx->surface()));
-
-    QQuickWindow *win = window();
-    if (!win) return;
-    connect(win, SIGNAL(beforeSynchronizing()), this, SLOT(createThreadRenderObject()), Qt::DirectConnection);
 }
 
 void QuickMozView::createView()
@@ -217,14 +184,14 @@ void QuickMozView::createView()
 
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
-        mozWindow = new QMozWindow(webContentWindowSize(window(), d->mSize).toSize());
+        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
         d->mContext->registerWindow(mozWindow);
-    } else if (d->mDirtyState & QMozViewPrivate::DirtySize) {
-        updateContentSize(d->mSize);
+    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && mActive) {
+        mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
 
-    if (window()) {
-        mozWindow->setContentOrientation(window()->contentOrientation());
+    if (mActive) {
+        mozWindow->setContentOrientation(mOrientation);
     }
 
     d->setMozWindow(mozWindow);
@@ -300,8 +267,8 @@ QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         node->setTexture(mTexture);
     }
 
-    node->setRect(QRectF(d->renderingOffset(), d->mSize));
-    node->setOrientation(window()->contentOrientation());
+    node->setRect(boundingRect);
+    node->setOrientation(mOrientation);
     node->markDirty(QSGNode::DirtyMaterial);
 
     return node;
@@ -318,14 +285,6 @@ void QuickMozView::releaseResources()
     if (QQuickWindow * const window = mTexture ? QQuickItem::window() : nullptr) {
         window->scheduleRenderJob(new ObjectCleanup(mTexture), QQuickWindow::AfterSynchronizingStage);
         mTexture = nullptr;
-    }
-}
-
-void QuickMozView::windowVisibleChanged(bool visible)
-{
-    if (visible == mBackground) {
-        mBackground = !visible;
-        Q_EMIT backgroundChanged();
     }
 }
 
@@ -353,6 +312,7 @@ void QuickMozView::setActive(bool active)
             SetIsActive(active);
             if (active) {
                 resumeRendering();
+                polish();
             } else {
                 mComposited = false;
                 update();
@@ -365,35 +325,9 @@ void QuickMozView::setActive(bool active)
     }
 }
 
-bool QuickMozView::background() const
-{
-    return mBackground;
-}
-
 bool QuickMozView::loaded() const
 {
     return mLoaded;
-}
-
-bool QuickMozView::followItemGeometry() const
-{
-    return mFollowItemGeometry;
-}
-
-/*!
- * \fn QuickMozView::setFollowItemGeometry(bool follow)
- * Set this to false when you need to control content size manually.
- * For instance virtual keyboard opening should not resize the content
- * rather you should set margins for the content when opening virtual keyboard.
- * Remember to set this back to true after you have finished manual content size
- * manipulation and/or virtual is lowered.
- */
-void QuickMozView::setFollowItemGeometry(bool follow)
-{
-    if (mFollowItemGeometry != follow) {
-        mFollowItemGeometry = follow;
-        Q_EMIT followItemGeometryChanged();
-    }
 }
 
 /*!
@@ -407,15 +341,18 @@ void QuickMozView::setFollowItemGeometry(bool follow)
  */
 void QuickMozView::updateContentSize(const QSizeF &size)
 {
-    // Skip noise coming from rotation change as width and height is updated
-    // separately. Downside is that this breaks intentional resizing to square but
-    // I think that this is less evil.
+    const QSizeF originalSize = d->mSize;
 
-    if (d->mMozWindow && (size.width() != size.height())) {
-        QSizeF s = webContentWindowSize(window(), size);
-        d->mMozWindow->setSize(s.toSize());
-    }
+    polish();
+
     d->setSize(size);
+
+    if (d->mSize.width() != originalSize.width()) {
+        Q_EMIT viewportWidthChanged();
+    }
+    if (d->mSize.height() != originalSize.height()) {
+        Q_EMIT viewportHeightChanged();
+    }
 }
 
 void QuickMozView::compositingFinished()
@@ -700,6 +637,78 @@ QMargins QuickMozView::margins() const
     return d->mMargins;
 }
 
+Qt::ScreenOrientation QuickMozView::orientation() const
+{
+    return mOrientation;
+}
+
+void QuickMozView::setOrientation(Qt::ScreenOrientation orientation)
+{
+    mExplicitOrientation = true;
+    if (mOrientation != orientation && orientation != Qt::PrimaryOrientation) {
+        polish();
+
+        mOrientation = orientation;
+
+        Q_EMIT orientationChanged();
+    }
+}
+
+void QuickMozView::resetOrientation()
+{
+    mExplicitOrientation = false;
+    if (QQuickWindow *window = this->window()) {
+        updateOrientation(window->contentOrientation());
+    }
+}
+
+void QuickMozView::updateOrientation(Qt::ScreenOrientation orientation)
+{
+    if (!mExplicitOrientation) {
+        polish();
+
+        if (mOrientation != orientation) {
+            mOrientation = orientation;
+
+            Q_EMIT orientationChanged();
+        }
+    }
+}
+
+qreal QuickMozView::viewportWidth() const
+{
+    return d->mSize.width();
+}
+
+void QuickMozView::setViewportWidth(qreal width)
+{
+    mExplicitViewportWidth = true;
+    updateContentSize(QSize(width, d->mSize.height()));
+}
+
+void QuickMozView::resetViewportWidth()
+{
+    mExplicitViewportWidth = false;
+    updateContentSize(QSize(width(), d->mSize.height()));
+}
+
+qreal QuickMozView::viewportHeight() const
+{
+    return d->mSize.height();
+}
+
+void QuickMozView::setViewportHeight(qreal height)
+{
+    mExplicitViewportHeight = true;
+    updateContentSize(QSize(d->mSize.width(), height));
+}
+
+void QuickMozView::resetViewportHeight()
+{
+    mExplicitViewportHeight = false;
+    updateContentSize(QSize(d->mSize.width(), height()));
+}
+
 void QuickMozView::setMargins(QMargins margins)
 {
     d->SetMargins(margins, true);
@@ -907,4 +916,12 @@ void QuickMozView::componentComplete()
 void QuickMozView::resumeRendering()
 {
     d->mMozWindow->resumeRendering();
+}
+
+void QuickMozView::updatePolish()
+{
+    if (d->mMozWindow && mActive) {
+        d->mMozWindow->setContentOrientation(mOrientation);
+        d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
+    }
 }
