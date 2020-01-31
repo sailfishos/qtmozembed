@@ -809,6 +809,17 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
 {
+    // Normally these come from HandleScrollEvent but for some documents no such event is generated.
+
+    const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
+    if (qFuzzyIsNull(mContentResolution) && !qFuzzyIsNull(contentResoution)) {
+        mContentResolution = contentResoution;
+    }
+
+    if (mContentRect.isEmpty()) {
+        mContentRect.setSize(QSizeF(aWidth, aHeight));
+    }
+
     UpdateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
                      mScrollableOffset.x(), mScrollableOffset.y());
 }
@@ -898,8 +909,6 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
     if (!aIsRootScrollFrame)
         return false;
 
-    mContentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
-
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
             mContentRect.width() != aContentRect.width ||
             mContentRect.height() != aContentRect.height) {
@@ -907,8 +916,16 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
         mViewIface->viewAreaChanged();
     }
 
-    UpdateScrollArea(aScrollableSize.width * mContentResolution, aScrollableSize.height * mContentResolution,
-                     aContentRect.x * mContentResolution, aContentRect.y * mContentResolution);
+    float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
+    if (!qFuzzyIsNull(contentResoution)) {
+        mContentResolution = contentResoution;
+        UpdateScrollArea(
+                    aScrollableSize.width * mContentResolution,
+                    aScrollableSize.height * mContentResolution,
+                    aContentRect.x * mContentResolution,
+                    aContentRect.y * mContentResolution);
+    }
+
     return false;
 }
 
