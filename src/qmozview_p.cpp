@@ -37,6 +37,7 @@
 #endif
 
 #define SCROLL_EPSILON 0.001
+#define SCROLL_BOUNDARY_EPSILON 0.05
 
 using namespace mozilla;
 using namespace mozilla::embedlite;
@@ -210,10 +211,10 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
     bool oldAXE = mAtXEnd;
     bool oldAYB = mAtYBeginning;
     bool oldAYE = mAtYEnd;
-    mAtXBeginning = aPosX == 0 || gfx::FuzzyEqual(0+1.0, aPosX+1.0, SCROLL_EPSILON);
-    mAtXEnd = (aPosX + (mContentResolution * mContentRect.width()) + SCROLL_EPSILON) >= mScrollableSize.width();
-    mAtYBeginning = aPosY == 0 || gfx::FuzzyEqual(0+1.0, aPosY+1.0, SCROLL_EPSILON);
-    mAtYEnd = (aPosY + (mContentResolution * mContentRect.height()) + SCROLL_EPSILON) >= mScrollableSize.height();
+    mAtXBeginning = aPosX == 0 || gfx::FuzzyEqual(0+1.0, aPosX+1.0, SCROLL_BOUNDARY_EPSILON);
+    mAtXEnd = (aPosX + (mContentResolution * mContentRect.width()) + SCROLL_BOUNDARY_EPSILON) >= mScrollableSize.width();
+    mAtYBeginning = aPosY == 0 || gfx::FuzzyEqual(0+1.0, aPosY+1.0, SCROLL_BOUNDARY_EPSILON);
+    mAtYEnd = (aPosY + (mContentResolution * mContentRect.height()) + SCROLL_BOUNDARY_EPSILON) >= mScrollableSize.height();
     if (oldAXB != mAtXBeginning) mViewIface->atXBeginningChanged();
     if (oldAXE != mAtXEnd)       mViewIface->atXEndChanged();
     if (oldAYB != mAtYBeginning) mViewIface->atYBeginningChanged();
