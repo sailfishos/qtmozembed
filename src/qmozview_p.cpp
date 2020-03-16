@@ -356,6 +356,7 @@ void QMozViewPrivate::load(const QString &url)
 #ifdef DEVELOPMENT_BUILD
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
+    mPendingUrl.clear();
     mProgress = 0;
     ResetPainted();
     mView->LoadURL(url.toUtf8().data());
@@ -592,23 +593,6 @@ void QMozViewPrivate::onCompositorCreated()
 
 void QMozViewPrivate::ViewInitialized()
 {
-    mViewInitialized = true;
-
-    Q_FOREACH (const QString &listener, mPendingMessageListeners) {
-        addMessageListener(listener);
-    }
-    mPendingMessageListeners.clear();
-
-    Q_FOREACH (const QString &frameScript, mPendingFrameScripts) {
-        loadFrameScript(frameScript);
-    }
-    mPendingFrameScripts.clear();
-
-    if (!mPendingUrl.isEmpty()) {
-        load(mPendingUrl);
-        mPendingUrl.clear();
-    }
-
     if (mDirtyState & DirtySize) {
         setSize(mSize);
         mDirtyState &= ~DirtySize;
@@ -624,6 +608,30 @@ void QMozViewPrivate::ViewInitialized()
 
     // This is currently part of official API, so let's subscribe to these messages by default
     mViewIface->viewInitialized();
+
+    const QStringList messageListeners = mPendingMessageListeners;
+    mPendingMessageListeners.clear();
+
+    for (const QString &listener : messageListeners) {
+        mView->AddMessageListener(listener.toUtf8().data());
+    }
+
+    const QStringList frameScripts = mPendingFrameScripts;
+    mPendingFrameScripts.clear();
+
+    for (const QString &frameScript : frameScripts) {
+        mView->LoadFrameScript(frameScript.toUtf8().data());
+    }
+
+    mViewInitialized = true;
+
+    const QString url = mPendingUrl;
+    mPendingUrl.clear();
+
+    if (!url.isEmpty()) {
+        mView->LoadURL(url.toUtf8().data());
+    }
+
     mViewIface->canGoBackChanged();
     mViewIface->canGoForwardChanged();
 }

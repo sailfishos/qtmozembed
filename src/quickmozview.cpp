@@ -144,9 +144,6 @@ QuickMozView::contextInitialized()
 
 void QuickMozView::processViewInitialization()
 {
-    // This is connected to view initialization. View must be initialized
-    // over here.
-    Q_ASSERT(d->mViewInitialized);
     SetIsActive(mActive);
 }
 

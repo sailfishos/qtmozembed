@@ -106,10 +106,6 @@ void QOpenGLWebPage::createView()
 
 void QOpenGLWebPage::processViewInitialization()
 {
-    // This is connected to view initialization. View must be initialized
-    // over here.
-    Q_ASSERT(d->mViewInitialized);
-
     mCompleted = true;
     setActive(true);
     Q_EMIT completedChanged();
