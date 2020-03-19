@@ -139,6 +139,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
+    void loadText(const QString &text, const QString &mimeType); \
     void goBack(); \
     void goForward(); \
     void stop(); \

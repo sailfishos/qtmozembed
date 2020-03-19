@@ -37,6 +37,7 @@
 #endif
 
 #define SCROLL_EPSILON 0.001
+#define SCROLL_BOUNDARY_EPSILON 0.05
 
 using namespace mozilla;
 using namespace mozilla::embedlite;
@@ -111,7 +112,6 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mIsInputFieldFocused(false)
     , mPreedit(false)
     , mViewIsFocused(false)
-    , mHasContext(false)
     , mPressed(false)
     , mDragging(false)
     , mFlicking(false)
@@ -211,10 +211,10 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
     bool oldAXE = mAtXEnd;
     bool oldAYB = mAtYBeginning;
     bool oldAYE = mAtYEnd;
-    mAtXBeginning = aPosX == 0 || gfx::FuzzyEqual(0+1.0, aPosX+1.0, SCROLL_EPSILON);
-    mAtXEnd = (aPosX + (mContentResolution * mContentRect.width()) + SCROLL_EPSILON) >= mScrollableSize.width();
-    mAtYBeginning = aPosY == 0 || gfx::FuzzyEqual(0+1.0, aPosY+1.0, SCROLL_EPSILON);
-    mAtYEnd = (aPosY + (mContentResolution * mContentRect.height()) + SCROLL_EPSILON) >= mScrollableSize.height();
+    mAtXBeginning = aPosX == 0 || gfx::FuzzyEqual(0+1.0, aPosX+1.0, SCROLL_BOUNDARY_EPSILON);
+    mAtXEnd = (aPosX + (mContentResolution * mContentRect.width()) + SCROLL_BOUNDARY_EPSILON) >= mScrollableSize.width();
+    mAtYBeginning = aPosY == 0 || gfx::FuzzyEqual(0+1.0, aPosY+1.0, SCROLL_BOUNDARY_EPSILON);
+    mAtYEnd = (aPosY + (mContentResolution * mContentRect.height()) + SCROLL_BOUNDARY_EPSILON) >= mScrollableSize.height();
     if (oldAXB != mAtXBeginning) mViewIface->atXBeginningChanged();
     if (oldAXE != mAtXEnd)       mViewIface->atXEndChanged();
     if (oldAYB != mAtYBeginning) mViewIface->atYBeginningChanged();
@@ -809,6 +809,17 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
 {
+    // Normally these come from HandleScrollEvent but for some documents no such event is generated.
+
+    const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
+    if (qFuzzyIsNull(mContentResolution) && !qFuzzyIsNull(contentResoution)) {
+        mContentResolution = contentResoution;
+    }
+
+    if (mContentRect.isEmpty()) {
+        mContentRect.setSize(QSizeF(aWidth, aHeight));
+    }
+
     UpdateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
                      mScrollableOffset.x(), mScrollableOffset.y());
 }
@@ -898,8 +909,6 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
     if (!aIsRootScrollFrame)
         return false;
 
-    mContentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
-
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
             mContentRect.width() != aContentRect.width ||
             mContentRect.height() != aContentRect.height) {
@@ -907,8 +916,16 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
         mViewIface->viewAreaChanged();
     }
 
-    UpdateScrollArea(aScrollableSize.width * mContentResolution, aScrollableSize.height * mContentResolution,
-                     aContentRect.x * mContentResolution, aContentRect.y * mContentResolution);
+    float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
+    if (!qFuzzyIsNull(contentResoution)) {
+        mContentResolution = contentResoution;
+        UpdateScrollArea(
+                    aScrollableSize.width * mContentResolution,
+                    aScrollableSize.height * mContentResolution,
+                    aContentRect.x * mContentResolution,
+                    aContentRect.y * mContentResolution);
+    }
+
     return false;
 }
 

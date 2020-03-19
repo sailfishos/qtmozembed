@@ -12,6 +12,8 @@
 #include <QScopedPointer>
 #include <QSize>
 
+#include <functional>
+
 class QMozWindowPrivate;
 
 class QMozWindow: public QObject
@@ -27,7 +29,7 @@ public:
     void setContentOrientation(Qt::ScreenOrientation);
     Qt::ScreenOrientation contentOrientation() const;
     Qt::ScreenOrientation pendingOrientation() const;
-    void *getPlatformImage(int *width, int *height);
+    void getPlatformImage(const std::function<void(void *image, int width, int height)> &callback);
     void suspendRendering();
     void resumeRendering();
     void scheduleUpdate();

@@ -181,7 +181,6 @@ protected:
     bool mIsInputFieldFocused;
     bool mPreedit;
     bool mViewIsFocused;
-    bool mHasContext;
     bool mPressed;
     bool mDragging;
     bool mFlicking;

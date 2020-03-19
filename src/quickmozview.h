@@ -16,6 +16,10 @@
 #include <QtGui/QOpenGLShaderProgram>
 #include "qmozview_defined_wrapper.h"
 
+QT_BEGIN_NAMESPACE
+class QSGTexture;
+QT_END_NAMESPACE
+
 class QMozViewPrivate;
 class QMozWindow;
 class QMozSecurity;
@@ -26,9 +30,11 @@ class QuickMozView : public QQuickItem
     Q_PROPERTY(int parentId READ parentId WRITE setParentID NOTIFY parentIdChanged FINAL)
     Q_PROPERTY(bool privateMode READ privateMode WRITE setPrivateMode NOTIFY privateModeChanged FINAL)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
-    Q_PROPERTY(bool background READ background NOTIFY backgroundChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
     Q_PROPERTY(QObject *child READ getChild NOTIFY childChanged)
+    Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged RESET resetOrientation FINAL)
+    Q_PROPERTY(qreal viewportWidth READ viewportWidth WRITE setViewportWidth NOTIFY viewportWidthChanged RESET resetViewportWidth)
+    Q_PROPERTY(qreal viewportHeight READ viewportHeight WRITE setViewportHeight NOTIFY viewportHeightChanged RESET resetViewportHeight)
 
     Q_MOZ_VIEW_PRORERTIES
 
@@ -46,13 +52,19 @@ public:
     void setActive(bool active);
     void setPrivateMode(bool);
 
-    bool background() const;
     bool loaded() const;
 
-    bool followItemGeometry() const;
-    void setFollowItemGeometry(bool follow);
+    Qt::ScreenOrientation orientation() const;
+    void setOrientation(Qt::ScreenOrientation orientation);
+    void resetOrientation();
 
-    Q_INVOKABLE void updateContentSize(const QSizeF &size);
+    qreal viewportWidth() const;
+    void setViewportWidth(qreal width);
+    void resetViewportWidth();
+
+    qreal viewportHeight() const;
+    void setViewportHeight(qreal height);
+    void resetViewportHeight();
 
 private:
     QObject *getChild()
@@ -67,14 +79,14 @@ public Q_SLOTS:
 Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
-    void dispatchItemUpdate();
-    void textureReady(int id, const QRectF &bounds, int orientation);
     void parentIdChanged();
     void privateModeChanged();
     void activeChanged();
-    void backgroundChanged();
     void loadedChanged();
     void followItemGeometryChanged();
+    void orientationChanged();
+    void viewportWidthChanged();
+    void viewportHeightChanged();
 
     Q_MOZ_VIEW_SIGNALS
 
@@ -103,33 +115,37 @@ protected:
     void touchEvent(QTouchEvent *) override;
     void timerEvent(QTimerEvent *) override;
     void componentComplete() override;
+    void releaseResources() override;
+
+    void updatePolish() override;
 
 public Q_SLOTS:
     void setInputMethodHints(Qt::InputMethodHints hints);
-    void updateGLContextInfo(QOpenGLContext *);
 
 private Q_SLOTS:
-    void createThreadRenderObject();
-    void clearThreadRenderObject();
+
     void contextInitialized();
     void updateEnabled();
-    void refreshNodeTexture();
-    void windowVisibleChanged(bool visible);
+    void updateOrientation(Qt::ScreenOrientation orientation);
 
 private:
     void createView();
+    void updateContentSize(const QSizeF &size);
 
     QMozViewPrivate *d;
+    QSGTexture *mTexture;
     friend class QMozViewPrivate;
     unsigned mParentID;
+    Qt::ScreenOrientation mOrientation;
+    bool mExplicitViewportWidth;
+    bool mExplicitViewportHeight;
+    bool mExplicitOrientation;
     bool mPrivateMode;
     bool mUseQmlMouse;
+    bool mComposited;
     bool mActive;
-    bool mBackground;
     bool mLoaded;
     bool mFollowItemGeometry;
-    GLuint mConsTex;
-    QMutex mRenderMutex;
 };
 
 #endif // QuickMozView_H

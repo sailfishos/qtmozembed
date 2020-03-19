@@ -9,31 +9,89 @@
 #include <QtQuick/QSGGeometryNode>
 #include <QObject>
 
-class MozExtMaterialNode : public QObject, public QSGGeometryNode
+#include <QSGTextureMaterial>
+
+QT_BEGIN_NAMESPACE
+class QSGTexture;
+QT_END_NAMESPACE
+
+class MozMaterialNode : public QSGGeometryNode
 {
-    Q_OBJECT
 public:
-    MozExtMaterialNode();
+    MozMaterialNode();
+    ~MozMaterialNode();
 
-    ~MozExtMaterialNode() {}
+    QRectF rect() const;
+    void setRect(const QRectF &rect);
 
-    void update();
+    Qt::ScreenOrientation orientation() const;
+    void setOrientation(Qt::ScreenOrientation orientation);
 
-public Q_SLOTS:
+    QSGTexture *texture() const;
+    virtual void setTexture(QSGTexture *texture);
 
-    // This function gets called on the FBO rendering thread and will store the
-    // texture id and size and schedule an update on the window.
-    void newTexture(int id, const QRectF &bounds, int orientation);
-
-    // Before the scene graph starts to render, we update to the pending texture
-    void prepareNode();
+    void preprocess() override;
 
 private:
-    void updateGeometry(const QRectF &rect, Qt::ScreenOrientation orientation);
-
-    int m_id;
-    QRectF m_bounds;
-    Qt::ScreenOrientation m_orientation;
+    QSGGeometry m_geometry { QSGGeometry::defaultAttributes_TexturedPoint2D(), 4 };
+    QRectF m_rect { 0, 0, 0, 0 };
+    QRectF m_normalizedTextureSubRect { 0, 0, 1, 1 };
+    QSGTexture *m_texture = nullptr;
+    Qt::ScreenOrientation m_orientation = Qt::PortraitOrientation;
+    bool m_geometryChanged = true;
+    bool m_textureChanged = true;
 };
+
+class MozRgbMaterialNode : public MozMaterialNode
+{
+public:
+    MozRgbMaterialNode();
+    ~MozRgbMaterialNode();
+
+    void setTexture(QSGTexture *texture) override;
+
+private:
+    QSGOpaqueTextureMaterial m_opaqueMaterial;
+    QSGTextureMaterial m_material;
+};
+
+#if defined(QT_OPENGL_ES_2)
+
+class MozOpaqueExtTextureMaterial : public QSGMaterial
+{
+public:
+    QSGMaterialShader *createShader() const;
+    QSGMaterialType *type() const;
+    int compare(const QSGMaterial *other) const;
+
+    QSGTexture *texture() const;
+    void setTexture(QSGTexture *texture);
+
+private:
+    QSGTexture *m_texture = nullptr;
+};
+
+
+class MozExtTextureMaterial : public MozOpaqueExtTextureMaterial
+{
+public:
+    QSGMaterialShader *createShader() const;
+    QSGMaterialType *type() const;
+};
+
+class MozExtMaterialNode : public MozMaterialNode
+{
+public:
+    MozExtMaterialNode();
+    ~MozExtMaterialNode();
+
+    void setTexture(QSGTexture *texture) override;
+
+private:
+    MozOpaqueExtTextureMaterial m_opaqueMaterial;
+    MozExtTextureMaterial m_material;
+};
+
+#endif
 
 #endif /* qMozExtMaterialNode_h */
