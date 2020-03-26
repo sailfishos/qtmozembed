@@ -812,7 +812,7 @@ void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aH
     // Normally these come from HandleScrollEvent but for some documents no such event is generated.
 
     const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
-    if (qFuzzyIsNull(mContentResolution) && !qFuzzyIsNull(contentResoution)) {
+    if (!qFuzzyIsNull(contentResoution)) {
         mContentResolution = contentResoution;
     }
 
