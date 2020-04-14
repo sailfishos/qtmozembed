@@ -50,8 +50,9 @@ public:
     virtual void OnObserve(const char *aTopic, const char16_t *aData) override;
     virtual void LastViewDestroyed() override;
     virtual void LastWindowDestroyed() override;
-    virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags, const char *uri,
-                                              const uint32_t &contextFlags, EmbedLiteView *aParentView) override;
+    virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
+                                              const uint32_t &contextFlags,
+                                              EmbedLiteView *aParentView) override;
 
     bool IsInitialized();
     EmbedLiteMessagePump *EmbedLoop();
