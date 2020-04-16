@@ -21,6 +21,8 @@
 #include <sys/time.h>
 #include <mozilla/TimeStamp.h>
 
+#include <nsPoint.h>
+
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
 #include "qmozcontext.h"
@@ -575,7 +577,10 @@ mozilla::ScreenIntPoint QMozViewPrivate::createScreenPoint(const int &posX, cons
         // precise coordinate
         offset = renderingOffset();
     }
-    return mozilla::ScreenIntPoint(posX - offset.x(), posY - offset.y());
+
+    nsIntPoint point = nsIntPoint(int32_t(floorf(posX - offset.x())),
+                                  int32_t(floorf(offset.y())));
+    return ScreenIntPoint::FromUnknownPoint(point);
 }
 
 QPointF QMozViewPrivate::renderingOffset() const
