@@ -12,7 +12,6 @@
 #include "mozilla-config.h"
 #include "qmozcontext.h"
 #include "qmozembedlog.h"
-#include "InputData.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedLiteApp.h"
 #include "mozilla/TimeStamp.h"
