@@ -15,11 +15,16 @@
 #include <QJsonParseError>
 #include <QTouchEvent>
 
+#if defined(HAS_INPUT)
 #include <InputData.h>
+#endif
+
 #include <mozilla/embedlite/EmbedLiteApp.h>
 #include <mozilla/gfx/Tools.h>
 #include <sys/time.h>
 #include <mozilla/TimeStamp.h>
+
+#include <nsPoint.h>
 
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
@@ -575,7 +580,10 @@ mozilla::ScreenIntPoint QMozViewPrivate::createScreenPoint(const int &posX, cons
         // precise coordinate
         offset = renderingOffset();
     }
-    return mozilla::ScreenIntPoint(posX - offset.x(), posY - offset.y());
+
+    nsIntPoint point = nsIntPoint(int32_t(floorf(posX - offset.x())),
+                                  int32_t(floorf(offset.y())));
+    return ScreenIntPoint::FromUnknownPoint(point);
 }
 
 QPointF QMozViewPrivate::renderingOffset() const
@@ -1033,6 +1041,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
 
     // Add active touch point to cancelled touch sequence.
     if (event->type() == QEvent::TouchCancel && touchPointsCount == 0) {
+#if defined(HAS_INPUT)
         QMapIterator<int, QPointF> i(mActiveTouchPoints);
         MultiTouchInput multiTouchInputEnd(MultiTouchInput::MULTITOUCH_END, timeStamp, TimeStamp(), 0);
         while (i.hasNext()) {
@@ -1049,6 +1058,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         ReceiveInputEvent(multiTouchInputEnd);
         // touch was canceled hence no need to generate touchstart or touchmove
         return;
+#endif
     }
 
     QList<int> pressedIds, moveIds, endIds;
@@ -1085,6 +1095,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
 
     // Produce separate event for every pressed touch points
     Q_FOREACH (int id, pressedIds) {
+#if defined(HAS_INPUT)
         MultiTouchInput multiTouchInputStart(MultiTouchInput::MULTITOUCH_START, timeStamp, TimeStamp(), 0);
         startIds.append(id);
         std::sort(startIds.begin(), startIds.end(), std::less<int>());
@@ -1098,9 +1109,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
 
         ReceiveInputEvent(multiTouchInputStart);
+#endif
     }
 
     Q_FOREACH (int id, endIds) {
+#if defined(HAS_INPUT)
         const QTouchEvent::TouchPoint &pt = event->touchPoints().at(idHash.value(id));
         MultiTouchInput multiTouchInputEnd(MultiTouchInput::MULTITOUCH_END, timeStamp, TimeStamp(), 0);
         multiTouchInputEnd.mTouches.AppendElement(SingleTouchData(pt.id(),
@@ -1109,9 +1122,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                                   180.0f,
                                                                   pt.pressure()));
         ReceiveInputEvent(multiTouchInputEnd);
+#endif
     }
 
     if (!moveIds.empty()) {
+#if defined(HAS_INPUT)
         if (!pressedIds.empty()) {
             moveIds.append(pressedIds);
         }
@@ -1129,8 +1144,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                                        pt.pressure()));
         }
         ReceiveInputEvent(multiTouchInputMove);
+#endif
     }
 }
+
+#if defined(HAS_INPUT)
 
 void QMozViewPrivate::ReceiveInputEvent(const InputData &event)
 {
@@ -1139,8 +1157,11 @@ void QMozViewPrivate::ReceiveInputEvent(const InputData &event)
     }
 }
 
+#endif
+
 void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
 {
+#if defined(HAS_INPUT)
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_START,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
@@ -1155,10 +1176,12 @@ void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
                                                            1.0f));
     }
     mView->ReceiveInputEvent(meventStart);
+#endif
 }
 
 void QMozViewPrivate::synthTouchMove(const QVariant &touches)
 {
+#if defined(HAS_INPUT)
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_MOVE,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
@@ -1173,10 +1196,12 @@ void QMozViewPrivate::synthTouchMove(const QVariant &touches)
                                                            1.0f));
     }
     mView->ReceiveInputEvent(meventStart);
+#endif
 }
 
 void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
 {
+#if defined(HAS_INPUT)
     QList<QVariant> list = touches.toList();
     MultiTouchInput meventStart(MultiTouchInput::MULTITOUCH_END,
                                 QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
@@ -1191,10 +1216,12 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
                                                            1.0f));
     }
     mView->ReceiveInputEvent(meventStart);
+#endif
 }
 
 void QMozViewPrivate::recvMouseMove(int posX, int posY)
 {
+#if defined(HAS_INPUT)
     if (mViewInitialized && !mPendingTouchEvent) {
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_MOVE,
                               QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
@@ -1205,10 +1232,12 @@ void QMozViewPrivate::recvMouseMove(int posX, int posY)
                                                      1.0f));
         ReceiveInputEvent(event);
     }
+#endif
 }
 
 void QMozViewPrivate::recvMousePress(int posX, int posY)
 {
+#if defined(HAS_INPUT)
     mViewIface->forceViewActiveFocus();
     if (mViewInitialized && !mPendingTouchEvent) {
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_START,
@@ -1220,10 +1249,12 @@ void QMozViewPrivate::recvMousePress(int posX, int posY)
                                                      1.0f));
         ReceiveInputEvent(event);
     }
+#endif
 }
 
 void QMozViewPrivate::recvMouseRelease(int posX, int posY)
 {
+#if defined(HAS_INPUT)
     if (mViewInitialized && !mPendingTouchEvent) {
         MultiTouchInput event(MultiTouchInput::MULTITOUCH_END,
                               QDateTime::currentMSecsSinceEpoch(), TimeStamp(), 0);
@@ -1237,4 +1268,5 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
     if (mPendingTouchEvent) {
         mPendingTouchEvent = false;
     }
+#endif
 }
