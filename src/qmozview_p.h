@@ -35,6 +35,13 @@ class QTouchEvent;
 class QMozContext;
 class QMozWindow;
 
+namespace mozilla {
+namespace embedlite {
+class EmbedTouchInput;
+class TouchPointF;
+}
+}
+
 class QMozViewPrivate : public QObject,
     public mozilla::embedlite::EmbedLiteViewListener
 {
@@ -84,7 +91,7 @@ public:
     void ResetState();
     void UpdateMoving(bool moving);
     void ResetPainted();
-    void ReceiveInputEvent(const mozilla::InputData &event);
+    void ReceiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
 
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);
@@ -107,8 +114,8 @@ public:
     void sendAsyncMessage(const QString &name, const QVariant &value);
     void setMozWindow(QMozWindow *);
 
-    mozilla::ScreenIntPoint createScreenPoint(const QPointF &point) const;
-    mozilla::ScreenIntPoint createScreenPoint(const int &posX, const int &posY) const;
+    mozilla::embedlite::TouchPointF createEmbedTouchPoint(const QPointF &point) const;
+    mozilla::embedlite::TouchPointF createEmbedTouchPoint(qreal posX, qreal posY) const;
 
     QPointF renderingOffset() const;
 
