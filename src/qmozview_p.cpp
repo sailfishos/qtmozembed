@@ -578,8 +578,8 @@ mozilla::embedlite::TouchPointF QMozViewPrivate::createEmbedTouchPoint(qreal pos
         offset = renderingOffset();
     }
 
-    return mozilla::embedlite::TouchPointF(posX - offset.x(),
-                                           posY - offset.y());
+    return mozilla::embedlite::TouchPointF((posX - offset.x())/QMozEngineSettings::instance()->pixelRatio(),
+                                           (posY - offset.y())/QMozEngineSettings::instance()->pixelRatio());
 }
 
 QPointF QMozViewPrivate::renderingOffset() const
