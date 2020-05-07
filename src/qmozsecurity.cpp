@@ -288,10 +288,13 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
             emissions << &QMozSecurity::protocolVersionChanged;
         }
 
+        QSslCertificate serverCertificate;
         uint32_t length;
         char *data;
-        aServerCert->GetRawDER(&length, (uint8_t **)&data);
-        QSslCertificate serverCertificate = QSslCertificate(QByteArray(data, length), QSsl::EncodingFormat::Der);
+        nsresult rv = aServerCert->GetRawDER(&length, (uint8_t **)&data);
+        if (rv == NS_OK && data) {
+            serverCertificate = QSslCertificate(QByteArray(data, length), QSsl::EncodingFormat::Der);
+        }
         if (m_serverCertificate != serverCertificate) {
             m_serverCertificate = serverCertificate;
             emissions << &QMozSecurity::serverCertificateChanged;
