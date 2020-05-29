@@ -48,9 +48,6 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     connect(context, &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
     connect(context, &QMozContext::recvObserve, this, &QMozEngineSettingsPrivate::onObserve);
     context->addObserver(NS_PREF_CHANGED);
-
-    // Don't force 16bit color depth
-    setPreference(QStringLiteral("gfx.qt.rgb16.force"), QVariant::fromValue<bool>(false));
 }
 
 QMozEngineSettingsPrivate::~QMozEngineSettingsPrivate()
