@@ -12,7 +12,7 @@ INCLUDEPATH+=$$RELATIVE_PATH/src
 LIBS+= -L$$RELATIVE_PATH/$$OBJ_BUILD_PATH/src -lqt5embedwidget -lsystemsettings
 
 isEmpty(DEFAULT_COMPONENT_PATH) {
-  DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"/usr/lib/mozembedlite/\\\"\"
+  DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"$$[QT_INSTALL_LIBS]/mozembedlite/\\\"\"
 } else {
   DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"$$DEFAULT_COMPONENT_PATH\\\"\"
 }
@@ -20,5 +20,5 @@ isEmpty(DEFAULT_COMPONENT_PATH) {
 PKGCONFIG += Qt5QuickTest
 QT += qml quick
 
-target.path = $$[QT_INSTALL_BINS]
+target.path = /opt/tests/qtmozembed
 INSTALLS += target

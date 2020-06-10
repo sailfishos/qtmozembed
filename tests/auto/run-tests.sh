@@ -8,7 +8,7 @@ if [ "$QTMOZEMBEDOBJDIR" != "" ]; then
   QMLMOZTESTRUNNER=$QTMOZEMBEDOBJDIR/tests/qmlmoztestrunner/qmlmoztestrunner
   export QML2_IMPORT_PATH=$QTMOZEMBEDOBJDIR/qmlplugin5
 else
-  QMLMOZTESTRUNNER=/usr/lib/qt$QTVER/bin/qmlmoztestrunner
+  QMLMOZTESTRUNNER=/opt/tests/qtmozembed/qmlmoztestrunner
   export QML_IMPORT_PATH=/opt/tests/qtmozembed/imports
 fi
 CURDIR=$PWD

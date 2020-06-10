@@ -65,7 +65,7 @@ QT += quick qml
 
 #DEFINES += Q_DEBUG_LOG
 
-target.path = $$PREFIX/lib
+target.path = $$[QT_INSTALL_LIBS]
 
 QMAKE_PKGCONFIG_NAME = qt5embedwidget
 QMAKE_PKGCONFIG_DESCRIPTION = Model that emits process info
