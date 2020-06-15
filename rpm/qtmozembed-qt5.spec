@@ -7,7 +7,6 @@ Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
 Version:    1.13.23
 Release:    1
-Group:      Applications/Internet
 License:    MPLv2.0
 URL:        https://git.sailfishos.org/mer-core/qtmozembed
 Source0:    %{name}-%{version}.tar.bz2
@@ -86,7 +85,4 @@ CONFIGURE_VARIABLE=""
 
 %files tests
 %defattr(-,root,root,-)
-# >> files tests
 /opt/tests/qtmozembed/*
-%{_libdir}/qt5/bin/*
-# << files tests
