@@ -34,7 +34,7 @@ contains(CONFIG, with-system-nspr) {
     INCLUDEPATH += $$system(pkg-config --cflags-only-I libxul)
 }
 
-LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue -lmemory
+LIBS += -L$$GECKO_LIB_DIR -lxpcomglue -Wl,--whole-archive -lmozglue
 LIBS += -Wl,--no-whole-archive -rdynamic -ldl
 PKGCONFIG += nspr pixman-1 systemsettings
 
