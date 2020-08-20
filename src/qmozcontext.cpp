@@ -177,7 +177,6 @@ bool QMozContextPrivate::IsInitialized()
 }
 
 uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags,
-                                                      const uint32_t &contextFlags,
                                                       EmbedLiteView *aParentView)
 {
     qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView;
