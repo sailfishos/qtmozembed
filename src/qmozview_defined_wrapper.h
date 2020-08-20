@@ -146,8 +146,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void reload(); \
     void load(const QString&); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
-    void addMessageListener(const QString &name); \
-    void addMessageListeners(const QStringList &messageNamesList); \
+    void addMessageListener(const std::string &name); \
+    void addMessageListeners(const std::vector<std::string> &messageNamesList); \
     void loadFrameScript(const QString &name); \
     void newWindow(const QString &url = "about:blank"); \
     quint32 uniqueID() const; \

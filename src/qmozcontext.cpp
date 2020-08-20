@@ -107,11 +107,7 @@ void QMozContextPrivate::Initialized()
     }
 #endif
     mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
-    QListIterator<QString> i(mObserversList);
-    while (i.hasNext()) {
-        const QString &str = i.next();
-        mApp->AddObserver(str.toUtf8().data());
-    }
+    mApp->AddObservers(mObserversList);
     mObserversList.clear();
 
     Q_EMIT initialized();
@@ -241,30 +237,24 @@ QMozContext::addComponentManifest(const QString &manifestPath)
 }
 
 void
-QMozContext::addObserver(const QString &aTopic)
+QMozContext::addObserver(const std::string &aTopic)
 {
     if (!d->IsInitialized()) {
-        d->mObserversList.append(aTopic);
-        d->mObserversList.removeDuplicates();
+        d->mObserversList.push_back(aTopic);
         return;
     }
 
-    d->mApp->AddObserver(aTopic.toUtf8().data());
+    d->mApp->AddObserver(aTopic.c_str());
 }
 
-void QMozContext::addObservers(const QStringList &aObserversList)
+void QMozContext::addObservers(const std::vector<std::string> &aObserversList)
 {
     if (!d->IsInitialized()) {
-        d->mObserversList.append(aObserversList);
-        d->mObserversList.removeDuplicates();
+        d->mObserversList.insert(d->mObserversList.end(), aObserversList.begin(), aObserversList.end());
         return;
     }
 
-    nsTArray<nsCString> observersList;
-    for (int i = 0; i < aObserversList.size(); i++) {
-        observersList.AppendElement(aObserversList.at(i).toUtf8().data());
-    }
-    d->mApp->AddObservers(observersList);
+    d->mApp->AddObservers(aObserversList);
 }
 
 void QMozContext::notifyObservers(const QString &topic, const QString &value)

@@ -17,7 +17,7 @@
 Q_GLOBAL_STATIC(QMozEngineSettings, engineSettingsInstance)
 Q_GLOBAL_STATIC(QMozEngineSettingsPrivate, engineSettingsPrivateInstance)
 
-#define NS_PREF_CHANGED QStringLiteral("embed:nsPrefChanged")
+#define NS_PREF_CHANGED "embed:nsPrefChanged"
 
 #define PREF_PERMISSIONS_DEFAULT_IMAGE QStringLiteral("permissions.default.image")
 #define PREF_JAVASCRIPT_ENABLED QStringLiteral("javascript.enabled")

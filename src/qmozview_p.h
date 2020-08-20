@@ -23,7 +23,6 @@
 #include <QKeyEvent>
 
 #include <mozilla/embedlite/EmbedLiteView.h>
-#include <Units.h>
 
 #include "qmozwindow.h"
 #include "qmozscrolldecorator.h"
@@ -100,8 +99,8 @@ public:
 
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
-    void addMessageListener(const QString &name);
-    void addMessageListeners(const QStringList &messageNamesList);
+    void addMessageListener(const std::string &name);
+    void addMessageListeners(const std::vector<std::string> &messageNamesList);
 
     void startMoveMonitor();
     void timerEvent(QTimerEvent *event);
@@ -201,7 +200,7 @@ protected:
     DirtyState mDirtyState;
 
     QString mPendingUrl;
-    QStringList mPendingMessageListeners;
+    std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };
 

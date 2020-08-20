@@ -51,7 +51,6 @@ public:
     virtual void LastViewDestroyed() override;
     virtual void LastWindowDestroyed() override;
     virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
-                                              const uint32_t &contextFlags,
                                               EmbedLiteView *aParentView) override;
 
     bool IsInitialized();
@@ -66,7 +65,7 @@ Q_SIGNALS:
 
 private:
     EmbedLiteApp *mApp;
-    QStringList mObserversList;
+    std::vector<std::string> mObserversList;
     bool mInitialized;
     QThread *mThread;
     bool mEmbedStarted;

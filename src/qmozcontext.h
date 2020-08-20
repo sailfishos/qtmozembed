@@ -56,8 +56,8 @@ Q_SIGNALS:
 public Q_SLOTS:
     void setIsAccelerated(bool aIsAccelerated);
     void addComponentManifest(const QString &manifestPath);
-    void addObserver(const QString &aTopic);
-    void addObservers(const QStringList &aObserversList);
+    void addObserver(const std::string &aTopic);
+    void addObservers(const std::vector<std::string> &aObserversList);
 
     void notifyObservers(const QString &topic, const QString &value);
     void notifyObservers(const QString &topic, const QVariant &value);
