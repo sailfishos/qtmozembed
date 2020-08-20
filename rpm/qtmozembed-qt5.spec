@@ -1,4 +1,4 @@
-%global min_xulrunner_version 45.9.1+git17
+%global min_xulrunner_version 60.9.1
 
 %define system_nspr       1
 %define system_pixman     1
