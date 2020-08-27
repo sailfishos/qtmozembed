@@ -13,7 +13,6 @@
 #include <nsServiceManagerUtils.h>
 #include <nsISSLStatus.h>
 #include <nsIX509Cert.h>
-#include <nsStringAPI.h>
 #include <systemsettings/certificatemodel.h>
 
 #include "qmozembedlog.h"
@@ -231,6 +230,8 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
         m_state = aState;
     }
 
+    // Move implementation to the embedlite (JB#50947)
+#if 0
     // If the status is empty, leave it as it was
     if (aStatus && *aStatus) {
         nsCOMPtr<nsISerializationHelper> serialHelper = do_GetService("@mozilla.org/network/serialization-helper;1");
@@ -309,6 +310,7 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
     if (allGood != this->allGood()) {
         emissions << &QMozSecurity::allGoodChanged;
     }
+#endif
 
     sendEmissions(emissions);
 }
