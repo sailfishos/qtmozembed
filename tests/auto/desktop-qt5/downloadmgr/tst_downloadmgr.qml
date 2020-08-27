@@ -21,7 +21,6 @@ Item {
         mozContext.instance.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
         mozContext.instance.setPref("browser.download.manager.retention", 2);
         mozContext.instance.setPref("browser.helperApps.deleteTempFileOnExit", false);
-        mozContext.instance.setPref("browser.download.manager.quitBehavior", 1);
     }
 
     Connections {

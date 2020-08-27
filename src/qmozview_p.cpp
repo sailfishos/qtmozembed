@@ -15,6 +15,11 @@
 #include <QJsonParseError>
 #include <QTouchEvent>
 
+#include <iostream>
+#include <locale>
+#include <string>
+#include <codecvt>
+
 #include <mozilla/embedlite/EmbedInputData.h>
 #include <mozilla/embedlite/EmbedLiteApp.h>
 #include <mozilla/gfx/Tools.h>
@@ -388,28 +393,26 @@ void QMozViewPrivate::loadFrameScript(const QString &frameScript)
     }
 }
 
-void QMozViewPrivate::addMessageListener(const QString &name)
+void QMozViewPrivate::addMessageListener(const std::string &name)
 {
     if (!mViewInitialized) {
-        mPendingMessageListeners.append(name);
+        mPendingMessageListeners.push_back(name);
         return;
     }
 
-    mView->AddMessageListener(name.toUtf8().data());
+    mView->AddMessageListener(name.c_str());
 }
 
-void QMozViewPrivate::addMessageListeners(const QStringList &messageNamesList)
+void QMozViewPrivate::addMessageListeners(const std::vector<std::string> &messageNamesList)
 {
     if (!mViewInitialized) {
-        mPendingMessageListeners.append(messageNamesList);
+        mPendingMessageListeners.insert(mPendingMessageListeners.end(),
+                                        messageNamesList.begin(),
+                                        messageNamesList.end());
         return;
     }
 
-    nsTArray<nsString> messages;
-    for (int i = 0; i < messageNamesList.size(); i++) {
-        messages.AppendElement((char16_t *)messageNamesList.at(i).data());
-    }
-    mView->AddMessageListeners(messages);
+    mView->AddMessageListeners(messageNamesList);
 }
 
 void QMozViewPrivate::timerEvent(QTimerEvent *event)
@@ -548,7 +551,9 @@ void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &valu
         doc = QJsonDocument::fromVariant(value);
     }
     QByteArray array = doc.toJson();
-    mView->SendAsyncMessage((const char16_t *)name.constData(), NS_ConvertUTF8toUTF16(array.constData()).get());
+    QString data(array);
+
+    mView->SendAsyncMessage((const char16_t *)name.utf16(), (const char16_t *)data.utf16());
 }
 
 void QMozViewPrivate::setMozWindow(QMozWindow *window)
@@ -598,9 +603,7 @@ void QMozViewPrivate::ViewInitialized()
 {
     mViewInitialized = true;
 
-    Q_FOREACH (const QString &listener, mPendingMessageListeners) {
-        addMessageListener(listener);
-    }
+    addMessageListeners(mPendingMessageListeners);
     mPendingMessageListeners.clear();
 
     Q_FOREACH (const QString &frameScript, mPendingFrameScripts) {
@@ -732,12 +735,12 @@ void QMozViewPrivate::ViewDestroyed()
 
 void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData)
 {
-    NS_ConvertUTF16toUTF8 message(aMessage);
-    NS_ConvertUTF16toUTF8 data(aData);
+    QString message = QString::fromUtf16(aMessage);
+    QString data = QString::fromUtf16(aData);
 
     bool ok = false;
     QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(QByteArray(data.get()), &error);
+    QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
     ok = error.error == QJsonParseError::NoError;
     QVariant vdata = doc.toVariant();
 
@@ -749,13 +752,13 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
 
     if (ok) {
 #ifdef DEVELOPMENT_BUILD
-        qCDebug(lcEmbedLiteExt) << "mesg:" << message.get() << ", data:" << data.get();
+        qCDebug(lcEmbedLiteExt) << "mesg:" << message << ", data:" << data;
 #endif
-        mViewIface->recvAsyncMessage(message.get(), vdata);
+        mViewIface->recvAsyncMessage(message, vdata);
     } else {
-        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString().toUtf8().data();
+        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString();
 #ifdef DEVELOPMENT_BUILD
-        qCDebug(lcEmbedLiteExt) << "parse: s:'" << data.get() << "', errLine:" << error.offset;
+        qCDebug(lcEmbedLiteExt) << "parse: s:'" << data << "', errLine:" << error.offset;
 #endif
     }
 }
@@ -763,15 +766,16 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
 char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t *aData)
 {
     QMozReturnValue response;
-    NS_ConvertUTF16toUTF8 message(aMessage);
-    NS_ConvertUTF16toUTF8 data(aData);
+
+    QString message = QString::fromUtf16(aMessage);
+    QString data = QString::fromUtf16(aData);
 
     QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(QByteArray(data.get()), &error);
+    QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
     Q_ASSERT(error.error == QJsonParseError::NoError);
     QVariant vdata = doc.toVariant();
 
-    mViewIface->recvSyncMessage(message.get(), vdata, &response);
+    mViewIface->recvSyncMessage(message, vdata, &response);
 
     QVariant responseMessage = response.getMessage();
     QJsonDocument responseDocument;
