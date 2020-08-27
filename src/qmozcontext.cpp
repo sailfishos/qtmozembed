@@ -53,7 +53,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mViewCreator(NULL)
     , mMozWindow(NULL)
 {
-    qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent;
+    qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
     LoadEmbedLite();
     mApp = XRE_GetEmbedLite();
