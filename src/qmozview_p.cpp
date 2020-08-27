@@ -756,7 +756,7 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
 #endif
         mViewIface->recvAsyncMessage(message, vdata);
     } else {
-        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString().toUtf8().data();
+        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString();
 #ifdef DEVELOPMENT_BUILD
         qCDebug(lcEmbedLiteExt) << "parse: s:'" << data << "', errLine:" << error.offset;
 #endif
