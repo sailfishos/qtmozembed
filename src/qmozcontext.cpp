@@ -237,14 +237,15 @@ QMozContext::addComponentManifest(const QString &manifestPath)
 }
 
 void
-QMozContext::addObserver(const std::string &aTopic)
+QMozContext::addObserver(const QString &aTopic)
 {
     if (!d->IsInitialized()) {
-        d->mObserversList.push_back(aTopic);
+        d->mObserversList.push_back(aTopic.toStdString());
         return;
     }
 
-    d->mApp->AddObserver(aTopic.c_str());
+    QByteArray bytes = aTopic.toUtf8();
+    d->mApp->AddObserver(bytes.constData());
 }
 
 void QMozContext::addObservers(const std::vector<std::string> &aObserversList)

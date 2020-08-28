@@ -46,6 +46,8 @@ public:
     TaskHandle PostCompositorTask(TaskCallback, void *data, int timeout = 0);
     void CancelTask(TaskHandle);
 
+    void addObservers(const std::vector<std::string> &aObserversList);
+
 Q_SIGNALS:
     void onInitialized();
     void contextDestroyed();
@@ -56,8 +58,7 @@ Q_SIGNALS:
 public Q_SLOTS:
     void setIsAccelerated(bool aIsAccelerated);
     void addComponentManifest(const QString &manifestPath);
-    void addObserver(const std::string &aTopic);
-    void addObservers(const std::vector<std::string> &aObserversList);
+    void addObserver(const QString &aTopic);
 
     void notifyObservers(const QString &topic, const QString &value);
     void notifyObservers(const QString &topic, const QVariant &value);

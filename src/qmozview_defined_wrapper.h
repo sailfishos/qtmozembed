@@ -135,7 +135,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setMargins(QMargins); \
     Q_INVOKABLE void scrollTo(int x, int y); \
     Q_INVOKABLE void scrollBy(int x, int y); \
-    QMozSecurity *security();
+    QMozSecurity *security(); \
+    void addMessageListeners(const std::vector<std::string> &messageNamesList); \
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
@@ -146,8 +147,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void reload(); \
     void load(const QString&); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
-    void addMessageListener(const std::string &name); \
-    void addMessageListeners(const std::vector<std::string> &messageNamesList); \
+    void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \
     void newWindow(const QString &url = "about:blank"); \
     quint32 uniqueID() const; \

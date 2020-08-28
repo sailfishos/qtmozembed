@@ -786,9 +786,9 @@ void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant
     d->sendAsyncMessage(name, variant);
 }
 
-void QuickMozView::addMessageListener(const std::string &name)
+void QuickMozView::addMessageListener(const QString &name)
 {
-    d->addMessageListener(name);
+    d->addMessageListener(name.toStdString());
 }
 
 void QuickMozView::addMessageListeners(const std::vector<std::string> &messageNamesList)
