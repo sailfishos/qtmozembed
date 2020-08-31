@@ -590,9 +590,9 @@ void QOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value
     d->sendAsyncMessage(name, value);
 }
 
-void QOpenGLWebPage::addMessageListener(const std::string &name)
+void QOpenGLWebPage::addMessageListener(const QString &name)
 {
-    d->addMessageListener(name);
+    d->addMessageListener(name.toStdString());
 }
 
 void QOpenGLWebPage::addMessageListeners(const std::vector<std::string> &messageNamesList)

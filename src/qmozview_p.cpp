@@ -603,13 +603,14 @@ void QMozViewPrivate::ViewInitialized()
 {
     mViewInitialized = true;
 
-    addMessageListeners(mPendingMessageListeners);
-    mPendingMessageListeners.clear();
-
+    // Load frame scripts first and then message listeners.
     Q_FOREACH (const QString &frameScript, mPendingFrameScripts) {
         loadFrameScript(frameScript);
     }
     mPendingFrameScripts.clear();
+
+    addMessageListeners(mPendingMessageListeners);
+    mPendingMessageListeners.clear();
 
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl);
