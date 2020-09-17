@@ -13,9 +13,12 @@
 #include <nsServiceManagerUtils.h>
 #include <nsISSLStatus.h>
 #include <nsIX509Cert.h>
+#include <mozilla/embedlite/EmbedLiteApp.h>
+#include <mozilla/embedlite/EmbedLiteSecurity.h>
 #include <systemsettings/certificatemodel.h>
 
 #include "qmozembedlog.h"
+#include "qmozcontext.h"
 #include "qmozsecurity.h"
 
 // Ensure the enum values in QMozSecurity match the enum values in nsISSLStatus
@@ -41,13 +44,15 @@ static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_2 == (uint16_t)nsISSLStatus:
         emissions << &QMozSecurity:: METHODNAME ## Changed; \
     }
 
-QMozSecurity::QMozSecurity(QObject *parent) : QObject(parent)
+QMozSecurity::QMozSecurity(QObject *parent)
+    : QObject(parent)
 {
     resetState(nullptr);
     resetStatus(nullptr);
 }
 
-QMozSecurity::QMozSecurity(const char *aStatus, unsigned int aState, QObject *parent) : QObject(parent)
+QMozSecurity::QMozSecurity(const char *aStatus, unsigned int aState, QObject *parent)
+    : QObject(parent)
 {
     resetState(nullptr);
     resetStatus(nullptr);
@@ -198,13 +203,11 @@ void QMozSecurity::setSecurity(QString status, uint state)
 void QMozSecurity::importState(const char *aStatus, unsigned int aState)
 {
     QQueue<void(QMozSecurity::*)()> emissions;
-    bool booleanResult;
     bool allGood;
-    nsresult rv;
-    nsCOMPtr<nsISupports> infoObj;
+    mozilla::embedlite::EmbedLiteSecurity *embedSecurity = nullptr;
+    QMozContext *context = QMozContext::instance();
 
     allGood = this->allGood();
-    rv = NS_ERROR_NOT_INITIALIZED;
 
     if (m_state != aState) {
         STATUS_EMISSION(isInsecure, STATE_IS_INSECURE)
@@ -231,86 +234,72 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
     }
 
     // Move implementation to the embedlite (JB#50947)
-#if 0
     // If the status is empty, leave it as it was
-    if (aStatus && *aStatus) {
-        nsCOMPtr<nsISerializationHelper> serialHelper = do_GetService("@mozilla.org/network/serialization-helper;1");
-
-        nsCString serSSLStatus(aStatus);
-        rv = serialHelper->DeserializeObject(serSSLStatus, getter_AddRefs(infoObj));
-
-        if (!NS_SUCCEEDED(rv)) {
-            qCDebug(lcEmbedLiteExt) << "Security state change: deserialisation failed";
+    if (aStatus && *aStatus && context) {
+        embedSecurity = context->GetApp()->CreateSecurity(aStatus, aState);
+    }
+    else {
+        if (!aStatus || !*aStatus) {
+            qDebug() << "Security state could not be imported: empty status";
+        }
+        if (!context) {
+            qDebug() << "Security state could not be imported: no app context";
         }
     }
 
-    if (NS_SUCCEEDED(rv)) {
-        nsCOMPtr<nsISSLStatus> sslStatus = do_QueryInterface(infoObj);
-
-        sslStatus->GetIsDomainMismatch(&booleanResult);
-        if (m_domainMismatch != booleanResult) {
-            m_domainMismatch = booleanResult;
+    if (embedSecurity && embedSecurity->populated()) {
+        if (m_domainMismatch != embedSecurity->domainMismatch()) {
+            m_domainMismatch = embedSecurity->domainMismatch();
             emissions << &QMozSecurity::domainMismatchChanged;
         }
 
-        nsCString resultCString;
-        sslStatus->GetCipherName(resultCString);
-        QString cipherName(resultCString.get());
+        QString cipherName = QString::fromStdString(embedSecurity->cipherName());
         if (m_cipherName != cipherName) {
             m_cipherName = cipherName;
             emissions << &QMozSecurity::cipherNameChanged;
         }
 
-        sslStatus->GetIsNotValidAtThisTime(&booleanResult);
-        if (m_notValidAtThisTime != booleanResult) {
-            m_notValidAtThisTime = booleanResult;
+        if (m_notValidAtThisTime != embedSecurity->notValidAtThisTime()) {
+            m_notValidAtThisTime = embedSecurity->notValidAtThisTime();
             emissions << &QMozSecurity::notValidAtThisTimeChanged;
         }
 
-        sslStatus->GetIsUntrusted(&booleanResult);
-        if (m_untrusted != booleanResult) {
-            m_untrusted = booleanResult;
+        if (m_untrusted != embedSecurity->untrusted()) {
+            m_untrusted = embedSecurity->untrusted();
             emissions << &QMozSecurity::untrustedChanged;
         }
 
-        sslStatus->GetIsExtendedValidation(&booleanResult);
-        if (m_extendedValidation != booleanResult) {
-            m_extendedValidation = booleanResult;
+        if (m_extendedValidation != embedSecurity->extendedValidation()) {
+            m_extendedValidation = embedSecurity->extendedValidation();
             emissions << &QMozSecurity::extendedValidationChanged;
         }
 
-        nsIX509Cert * aServerCert;
-        sslStatus->GetServerCert(&aServerCert);
-
-        uint16_t protocolVersion;
-        sslStatus->GetProtocolVersion(&protocolVersion);
-        if (m_protocolVersion != static_cast<TLS_VERSION>(protocolVersion)) {
-            m_protocolVersion = static_cast<TLS_VERSION>(protocolVersion);
+        if (m_protocolVersion != static_cast<TLS_VERSION>(embedSecurity->protocolVersion())) {
+            m_protocolVersion = static_cast<TLS_VERSION>(embedSecurity->protocolVersion());
             emissions << &QMozSecurity::protocolVersionChanged;
         }
 
-        QSslCertificate serverCertificate;
-        uint32_t length;
-        char *data;
-        nsresult rv = aServerCert->GetRawDER(&length, (uint8_t **)&data);
-        if (rv == NS_OK && data) {
-            serverCertificate = QSslCertificate(QByteArray(data, length), QSsl::EncodingFormat::Der);
-        }
+        QByteArray const rawDER(embedSecurity->rawDER().c_str(), embedSecurity->rawDER().length());
+        QSslCertificate serverCertificate = QSslCertificate(rawDER, QSsl::EncodingFormat::Der);
+
         if (m_serverCertificate != serverCertificate) {
             m_serverCertificate = serverCertificate;
             emissions << &QMozSecurity::serverCertificateChanged;
         }
     }
-
-    if (aStatus && *aStatus && !NS_SUCCEEDED(rv)) {
+    else {
         // There was a deserialisation error
         resetStatus(&emissions);
+        qCDebug(lcEmbedLiteExt) << "Security state change: deserialisation failed";
     }
 
     if (allGood != this->allGood()) {
         emissions << &QMozSecurity::allGoodChanged;
     }
-#endif
+
+    if (embedSecurity) {
+        context->GetApp()->DestroySecurity(embedSecurity);
+    }
 
     sendEmissions(emissions);
 }

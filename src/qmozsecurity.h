@@ -19,6 +19,13 @@
 #define CERT_SLOT(TYPE, NAME) \
     TYPE NAME () const;
 
+namespace mozilla {
+namespace embedlite {
+class EmbedLiteApp;
+} // namespace embedlite
+} // namespace mozilla
+
+class QMozContext;
 
 class QMozSecurity : public QObject
 {
@@ -73,6 +80,10 @@ public:
     };
     Q_ENUM(TLS_VERSION)
 
+    void setSecurityRaw(const char *aStatus, unsigned int aState);
+    void setSecurity(QString status, uint state);
+    void reset();
+
 Q_SIGNALS:
     void allGoodChanged();
     void domainMismatchChanged();
@@ -104,10 +115,6 @@ Q_SIGNALS:
     void serverCertificateChanged();
 
 public Q_SLOTS:
-    void setSecurityRaw(const char *aStatus, unsigned int aState);
-    void setSecurity(QString status, uint state);
-    void reset();
-
     bool allGood() const;
     const QSslCertificate serverCertificate() const;
     bool domainMismatch() const;
