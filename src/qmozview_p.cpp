@@ -53,6 +53,8 @@ using namespace mozilla::embedlite;
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
+static const uint32_t DOM_VK_RETURN = 13;
+
 qint64 current_timestamp(QTouchEvent *aEvent)
 {
     if (aEvent) {
@@ -509,6 +511,10 @@ void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
     int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
+    if (event->text().length() == 1 && event->text()[0] == DOM_VK_RETURN) {
+        // Pass return as event too for multiline editing
+        mView->SendTextEvent("\n", "");
+    }
     int32_t charCode = 0;
     if (event->text().length() && event->text()[0].isPrint()) {
         charCode = (int32_t)event->text()[0].unicode();
