@@ -351,6 +351,17 @@ void QMozViewPrivate::setSize(const QSizeF &size)
     }
 }
 
+void QMozViewPrivate::setDotsPerInch(qreal dpi)
+{
+    Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
+    mDpi = dpi;
+    if (!mHasCompositor) {
+        mDirtyState |= DirtyDotsPerInch;
+    } else {
+        mView->SetDPI(mDpi);
+    }
+}
+
 void QMozViewPrivate::load(const QString &url)
 {
     if (url.isEmpty())
@@ -597,6 +608,10 @@ QPointF QMozViewPrivate::renderingOffset() const
 void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
+    if (mDirtyState & DirtyDotsPerInch) {
+        mView->SetDPI(mDpi);
+        mDirtyState &= ~DirtyDotsPerInch;
+    }
 }
 
 void QMozViewPrivate::ViewInitialized()
