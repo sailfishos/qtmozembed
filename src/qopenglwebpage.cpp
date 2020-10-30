@@ -100,7 +100,7 @@ void QOpenGLWebPage::createView()
         EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
         d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode);
         d->mView->SetListener(d);
-        d->mView->SetDPI(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+        d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     }
 }
 

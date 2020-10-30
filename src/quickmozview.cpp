@@ -196,7 +196,7 @@ void QuickMozView::createView()
     d->setMozWindow(mozWindow);
     d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
     d->mView->SetListener(d);
-    d->mView->SetDPI(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+    d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
             this, &QuickMozView::compositingFinished);
 }

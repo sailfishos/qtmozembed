@@ -48,7 +48,8 @@ class QMozViewPrivate : public QObject,
 public:
     enum DirtyStateBit {
         DirtySize = 0x0001,
-        DirtyMargin = 0x0002
+        DirtyMargin = 0x0002,
+        DirtyDotsPerInch = 0x0004,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -96,6 +97,7 @@ public:
     void scrollBy(int x, int y);
 
     void setSize(const QSizeF &size);
+    void setDotsPerInch(qreal dpi);
 
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
@@ -196,6 +198,7 @@ protected:
     qreal mOffsetY;
     bool mHasCompositor;
     QMozSecurity mSecurity;
+    qreal mDpi;
 
     DirtyState mDirtyState;
 
