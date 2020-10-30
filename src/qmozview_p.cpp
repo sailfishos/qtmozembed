@@ -597,6 +597,7 @@ QPointF QMozViewPrivate::renderingOffset() const
 void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
+    Q_EMIT compositorCreated();
 }
 
 void QMozViewPrivate::ViewInitialized()

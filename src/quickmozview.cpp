@@ -98,6 +98,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
     connect(this, SIGNAL(scrollableOffsetChanged()), this, SLOT(updateMargins()));
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
+    connect(d, &QMozViewPrivate::compositorCreated, this, &QuickMozView::compositorCreated);
     updateEnabled();
 }
 
@@ -196,7 +197,6 @@ void QuickMozView::createView()
     d->setMozWindow(mozWindow);
     d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
     d->mView->SetListener(d);
-    d->mView->SetDPI(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
             this, &QuickMozView::compositingFinished);
 }
@@ -923,4 +923,10 @@ void QuickMozView::updatePolish()
         d->mMozWindow->setContentOrientation(mOrientation);
         d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
+}
+
+void QuickMozView::compositorCreated()
+{
+    // This is done after compositor is created to avoid crashes
+    d->mView->SetDPI(QGuiApplication::primaryScreen()->physicalDotsPerInch());
 }

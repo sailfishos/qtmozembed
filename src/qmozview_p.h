@@ -118,6 +118,9 @@ public:
 
     QPointF renderingOffset() const;
 
+Q_SIGNALS:
+    void compositorCreated();
+
 public Q_SLOTS:
     void onCompositorCreated();
 

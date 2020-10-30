@@ -127,6 +127,7 @@ private Q_SLOTS:
     void contextInitialized();
     void updateEnabled();
     void updateOrientation(Qt::ScreenOrientation orientation);
+    void compositorCreated();
 
 private:
     void createView();
