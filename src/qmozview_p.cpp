@@ -1019,6 +1019,13 @@ void QMozViewPrivate::setThrottlePainting(bool aThrottle)
     }
 }
 
+void QMozViewPrivate::SetVirtualKeyboardHeight(int aHeight)
+{
+    if (mViewInitialized) {
+        mView->SetVirtualKeyboardHeight(aHeight);
+    }
+}
+
 void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
                                       const char16_t *inputType, const char16_t *inputMode)
 {
