@@ -17,19 +17,26 @@
 Q_GLOBAL_STATIC(QMozEngineSettings, engineSettingsInstance)
 Q_GLOBAL_STATIC(QMozEngineSettingsPrivate, engineSettingsPrivateInstance)
 
-#define NS_PREF_CHANGED "embed:nsPrefChanged"
-
-#define PREF_PERMISSIONS_DEFAULT_IMAGE QStringLiteral("permissions.default.image")
-#define PREF_JAVASCRIPT_ENABLED QStringLiteral("javascript.enabled")
-
 #define IMAGE_LOAD_ACCEPT 1
 #define IMAGE_LOAD_DENY 2
 // Allowed, originating site only
 #define IMAGE_LOAD_DONT_ACCEPT_FOREIGN 3
 
-#define PREF_CHANGED_OBSERVERS (QStringList() \
-    << PREF_PERMISSIONS_DEFAULT_IMAGE \
-    << PREF_JAVASCRIPT_ENABLED);
+namespace {
+const auto NS_PREF_CHANGED = QStringLiteral("embed:nsPrefChanged");
+
+const auto PREF_PERMISSIONS_DEFAULT_IMAGE = QStringLiteral("permissions.default.image");
+const auto PREF_JAVASCRIPT_ENABLED = QStringLiteral("javascript.enabled");
+const auto PREF_POPUP_DISABLE_DURING_LOAD = QStringLiteral("dom.disable_open_during_load");
+const auto PREF_COOKIE_BEHAVIOR = QStringLiteral("network.cookie.cookieBehavior");
+
+const QStringList PREF_CHANGED_OBSERVERS = {
+    PREF_PERMISSIONS_DEFAULT_IMAGE,
+    PREF_JAVASCRIPT_ENABLED,
+    PREF_POPUP_DISABLE_DURING_LOAD,
+    PREF_COOKIE_BEHAVIOR
+};
+}
 
 QMozEngineSettingsPrivate *QMozEngineSettingsPrivate::instance()
 {
@@ -40,6 +47,8 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     : QObject(parent)
     , mInitialized(false)
     , mJavascriptEnabled(true)
+    , mPopupEnabled(false)
+    , mCookieBehavior(QMozEngineSettings::AcceptAll)
     , mAutoLoadImages(true)
     , mPixelRatio(1.0)
 {
@@ -81,6 +90,35 @@ void QMozEngineSettingsPrivate::setJavascriptEnabled(bool enabled)
         setPreference(QStringLiteral("javascript.enabled"), QVariant::fromValue<bool>(enabled));
         mJavascriptEnabled = enabled;
         Q_EMIT javascriptEnabledChanged();
+    }
+}
+
+bool QMozEngineSettingsPrivate::popupEnabled() const
+{
+    return mPopupEnabled;
+}
+
+void QMozEngineSettingsPrivate::setPopupEnabled(bool enabled)
+{
+    if (mPopupEnabled != enabled) {
+        setPreference(PREF_POPUP_DISABLE_DURING_LOAD, QVariant::fromValue<bool>(!enabled));
+        mPopupEnabled = enabled;
+        Q_EMIT popupEnabledChanged();
+    }
+}
+
+QMozEngineSettings::CookieBehavior QMozEngineSettingsPrivate::cookieBehavior() const
+{
+    return mCookieBehavior;
+}
+
+void QMozEngineSettingsPrivate::setCookieBehavior(QMozEngineSettings::CookieBehavior cookieBehavior)
+{
+    if (mCookieBehavior != cookieBehavior) {
+        int behavior = cookieBehaviorToInt(cookieBehavior);
+        setPreference(PREF_COOKIE_BEHAVIOR, QVariant::fromValue<int>(behavior));
+        mCookieBehavior = cookieBehavior;
+        Q_EMIT cookieBehaviorChanged();
     }
 }
 
@@ -149,14 +187,23 @@ bool QMozEngineSettingsPrivate::isInitialized() const
     return QMozContext::instance()->initialized() && mInitialized;
 }
 
+QMozEngineSettings::CookieBehavior QMozEngineSettingsPrivate::intToCookieBehavior(int cookieBehavior)
+{
+    return static_cast<QMozEngineSettings::CookieBehavior>(cookieBehavior);
+}
+
+int QMozEngineSettingsPrivate::cookieBehaviorToInt(QMozEngineSettings::CookieBehavior cookieBehavior)
+{
+    return static_cast<int>(cookieBehavior);
+}
+
 void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &data)
 {
     if (topic == NS_PREF_CHANGED) {
-        QStringList prefChangedObservers = PREF_CHANGED_OBSERVERS;
         QVariantMap dataMap = data.toMap();
         QString changedPreference = dataMap.value(QStringLiteral("name")).toString();
         QVariant preferenceValue = dataMap.value(QStringLiteral("value"));
-        if (prefChangedObservers.contains(changedPreference)) {
+        if (PREF_CHANGED_OBSERVERS.contains(changedPreference)) {
             if (changedPreference == PREF_PERMISSIONS_DEFAULT_IMAGE) {
                 bool imageLoadingAllowed = !(preferenceValue.toInt() == IMAGE_LOAD_DENY);
                 if (mAutoLoadImages != imageLoadingAllowed) {
@@ -169,6 +216,18 @@ void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &
                     mJavascriptEnabled = jsEnabled;
                     Q_EMIT javascriptEnabledChanged();
                 }
+            } else if (changedPreference == PREF_POPUP_DISABLE_DURING_LOAD) {
+                bool popupEnabled = !preferenceValue.toBool();
+                if (mPopupEnabled != popupEnabled) {
+                    mPopupEnabled = popupEnabled;
+                    Q_EMIT popupEnabledChanged();
+                }
+            } else if (changedPreference == PREF_COOKIE_BEHAVIOR) {
+                QMozEngineSettings::CookieBehavior behavior = intToCookieBehavior(preferenceValue.toInt());
+                if (mCookieBehavior != behavior) {
+                    mCookieBehavior = behavior;
+                    Q_EMIT cookieBehaviorChanged();
+                }
             }
         }
     }
@@ -178,12 +237,10 @@ void QMozEngineSettingsPrivate::initialize()
 {
     QMozContext *context = QMozContext::instance();
 
-    // Add preference change observers.
-    QStringList prefChangedObservers = PREF_CHANGED_OBSERVERS;
-    QStringList::iterator i;
-    for (i = prefChangedObservers.begin(); i != prefChangedObservers.end(); ++i) {
+    // Add preference change observers and request preference value.
+    for (const auto &pref : PREF_CHANGED_OBSERVERS) {
         QVariantMap data;
-        data.insert(QStringLiteral("name"), *i);
+        data.insert(QStringLiteral("name"), pref);
         context->notifyObservers(QStringLiteral("embed:addPrefChangedObserver"), data);
     }
 
@@ -237,6 +294,8 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     connect(d, SIGNAL(initialized()), this, SIGNAL(initialized()));
     connect(d, SIGNAL(autoLoadImagesChanged()), this, SIGNAL(autoLoadImagesChanged()));
     connect(d, SIGNAL(javascriptEnabledChanged()), this, SIGNAL(javascriptEnabledChanged()));
+    connect(d, SIGNAL(popupEnabledChanged()), this, SIGNAL(popupEnabledChanged()));
+    connect(d, SIGNAL(cookieBehaviorChanged()), this, SIGNAL(cookieBehaviorChanged()));
 }
 
 QMozEngineSettings::~QMozEngineSettings()
@@ -272,6 +331,30 @@ void QMozEngineSettings::setJavascriptEnabled(bool enabled)
 {
     Q_D(QMozEngineSettings);
     return d->setJavascriptEnabled(enabled);
+}
+
+bool QMozEngineSettings::popupEnabled() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->popupEnabled();
+}
+
+void QMozEngineSettings::setPopupEnabled(bool enabled)
+{
+    Q_D(QMozEngineSettings);
+    return d->setPopupEnabled(enabled);
+}
+
+QMozEngineSettings::CookieBehavior QMozEngineSettings::cookieBehavior() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->cookieBehavior();
+}
+
+void QMozEngineSettings::setCookieBehavior(CookieBehavior cookieBehavior)
+{
+    Q_D(QMozEngineSettings);
+    return d->setCookieBehavior(cookieBehavior);
 }
 
 void QMozEngineSettings::setTileSize(const QSize &size)

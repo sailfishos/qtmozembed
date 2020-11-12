@@ -35,6 +35,12 @@ public:
     bool javascriptEnabled() const;
     void setJavascriptEnabled(bool enabled);
 
+    bool popupEnabled() const;
+    void setPopupEnabled(bool enabled);
+
+    QMozEngineSettings::CookieBehavior cookieBehavior() const;
+    void setCookieBehavior(QMozEngineSettings::CookieBehavior cookieBehavior);
+
     void setTileSize(const QSize &size);
 
     void setPixelRatio(qreal ratio);
@@ -44,8 +50,12 @@ public:
     void enableLowPrecisionBuffers(bool enabled);
 
     void setPreference(const QString &key, const QVariant &value);
+    void requestPreference(const QString &key);
 
     bool isInitialized() const;
+
+    static QMozEngineSettings::CookieBehavior intToCookieBehavior(int cookieBehavior);
+    static int cookieBehaviorToInt(QMozEngineSettings::CookieBehavior cookieBehavior);
 
 public Q_SLOTS:
     void onObserve(const QString &topic, const QVariant &data);
@@ -54,6 +64,8 @@ public Q_SLOTS:
 Q_SIGNALS:
     void autoLoadImagesChanged();
     void javascriptEnabledChanged();
+    void popupEnabledChanged();
+    void cookieBehaviorChanged();
     void initialized();
 
 private:
@@ -61,6 +73,8 @@ private:
     QMap<QString, QVariant> mPreferences;
     bool mInitialized;
     bool mJavascriptEnabled;
+    bool mPopupEnabled;
+    QMozEngineSettings::CookieBehavior mCookieBehavior;
     bool mAutoLoadImages;
     qreal mPixelRatio;
 };

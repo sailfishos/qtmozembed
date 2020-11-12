@@ -21,6 +21,8 @@ class QMozEngineSettings : public QObject {
     Q_OBJECT
     Q_PROPERTY(bool autoLoadImages READ autoLoadImages WRITE setAutoLoadImages NOTIFY autoLoadImagesChanged FINAL)
     Q_PROPERTY(bool javascriptEnabled READ javascriptEnabled WRITE setJavascriptEnabled NOTIFY javascriptEnabledChanged FINAL)
+    Q_PROPERTY(bool popupEnabled READ popupEnabled WRITE setPopupEnabled NOTIFY popupEnabledChanged)
+    Q_PROPERTY(CookieBehavior cookieBehavior READ cookieBehavior WRITE setCookieBehavior NOTIFY cookieBehaviorChanged)
 
 public:
     // C++ API
@@ -30,6 +32,16 @@ public:
     explicit QMozEngineSettings(QObject *parent = 0);
     ~QMozEngineSettings();
 
+    // See developer.mozilla.org/en-US/docs/Mozilla/Firefox/Privacy/Storage_access_policy
+    // And git.sailfishos.org/mer-core/gecko-dev/blob/master/netwerk/cookie/nsCookieService.cpp
+    enum CookieBehavior {
+        AcceptAll = 0,
+        BlockThirdParty = 1,
+        BlockAll = 2,
+        Deprecated = 3
+    };
+    Q_ENUM(CookieBehavior)
+
     bool isInitialized() const;
 
     bool autoLoadImages() const;
@@ -37,6 +49,12 @@ public:
 
     bool javascriptEnabled() const;
     void setJavascriptEnabled(bool enabled);
+
+    bool popupEnabled() const;
+    void setPopupEnabled(bool enabled);
+
+    CookieBehavior cookieBehavior() const;
+    void setCookieBehavior(CookieBehavior cookieBehavior);
 
     void setTileSize(const QSize &size);
 
@@ -52,6 +70,8 @@ public:
 Q_SIGNALS:
     void autoLoadImagesChanged();
     void javascriptEnabledChanged();
+    void popupEnabledChanged();
+    void cookieBehaviorChanged();
     void initialized();
 
 private:
