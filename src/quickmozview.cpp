@@ -91,12 +91,12 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     setFlag(ItemAcceptsInputMethod, true);
 
     d->mContext = QMozContext::instance();
-    connect(this, SIGNAL(setIsActive(bool)), this, SLOT(SetIsActive(bool)));
-    connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
-    connect(this, SIGNAL(enabledChanged()), this, SLOT(updateEnabled()));
-    connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
-    connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
-    connect(this, SIGNAL(scrollableOffsetChanged()), this, SLOT(updateMargins()));
+    connect(this, &QuickMozView::setIsActive, this, &QuickMozView::SetIsActive);
+    connect(this, &QuickMozView::viewInitialized, this, &QuickMozView::processViewInitialization);
+    connect(this, &QuickMozView::enabledChanged, this, &QuickMozView::updateEnabled);
+    connect(this, &QuickMozView::loadProgressChanged, this, &QuickMozView::updateLoaded);
+    connect(this, &QuickMozView::loadingChanged, this, &QuickMozView::updateLoaded);
+    connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
 }
@@ -906,7 +906,7 @@ void QuickMozView::componentComplete()
     QQuickItem::componentComplete();
     // The first created view gets always parentId of 0
     if (!d->mContext->initialized()) {
-        connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(contextInitialized()));
+        connect(d->mContext, &QMozContext::onInitialized, this, &QuickMozView::contextInitialized);
     } else {
         createView();
     }

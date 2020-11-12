@@ -32,7 +32,7 @@ MessagePumpQt::MessagePumpQt(EmbedLiteApp *aApp)
     mEventLoopPrivate = mApp->CreateEmbedLiteMessagePump(this);
     // Register our custom event type, to use in qApp event loop
     sPokeEvent = QEvent::registerEventType();
-    connect(mTimer, SIGNAL(timeout()), this, SLOT(dispatchDelayed()));
+    connect(mTimer, &QTimer::timeout, this, &MessagePumpQt::dispatchDelayed);
     mTimer->setSingleShot(true);
 }
 

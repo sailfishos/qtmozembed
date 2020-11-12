@@ -291,11 +291,11 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     , d_ptr(QMozEngineSettingsPrivate::instance())
 {
     Q_D(QMozEngineSettings);
-    connect(d, SIGNAL(initialized()), this, SIGNAL(initialized()));
-    connect(d, SIGNAL(autoLoadImagesChanged()), this, SIGNAL(autoLoadImagesChanged()));
-    connect(d, SIGNAL(javascriptEnabledChanged()), this, SIGNAL(javascriptEnabledChanged()));
-    connect(d, SIGNAL(popupEnabledChanged()), this, SIGNAL(popupEnabledChanged()));
-    connect(d, SIGNAL(cookieBehaviorChanged()), this, SIGNAL(cookieBehaviorChanged()));
+    connect(d, &QMozEngineSettingsPrivate::initialized, this, &QMozEngineSettings::initialized);
+    connect(d, &QMozEngineSettingsPrivate::autoLoadImagesChanged, this, &QMozEngineSettings::autoLoadImagesChanged);
+    connect(d, &QMozEngineSettingsPrivate::javascriptEnabledChanged, this, &QMozEngineSettings::javascriptEnabledChanged);
+    connect(d, &QMozEngineSettingsPrivate::popupEnabledChanged, this, &QMozEngineSettings::popupEnabledChanged);
+    connect(d, &QMozEngineSettingsPrivate::cookieBehaviorChanged, this, &QMozEngineSettings::cookieBehaviorChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()
