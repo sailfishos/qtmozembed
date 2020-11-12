@@ -235,7 +235,7 @@ void QOpenGLWebPage::initialize()
 {
     Q_ASSERT(d->mMozWindow);
     if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::onInitialized, this, &QOpenGLWebPage::createView);
+        connect(d->mContext, &QMozContext::initialized, this, &QOpenGLWebPage::createView);
     } else {
         createView();
     }

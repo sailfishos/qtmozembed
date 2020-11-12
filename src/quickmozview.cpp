@@ -906,7 +906,7 @@ void QuickMozView::componentComplete()
     QQuickItem::componentComplete();
     // The first created view gets always parentId of 0
     if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::onInitialized, this, &QuickMozView::contextInitialized);
+        connect(d->mContext, &QMozContext::initialized, this, &QuickMozView::contextInitialized);
     } else {
         createView();
     }

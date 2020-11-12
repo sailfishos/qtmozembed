@@ -200,7 +200,7 @@ QMozContext::QMozContext(QObject *parent)
     : QObject(parent)
     , d(QMozContextPrivate::instance())
 {
-    connect(d, &QMozContextPrivate::initialized, this, &QMozContext::onInitialized);
+    connect(d, &QMozContextPrivate::initialized, this, &QMozContext::initialized);
     connect(d, &QMozContextPrivate::contextDestroyed, this, &QMozContext::contextDestroyed);
     connect(d, &QMozContextPrivate::lastViewDestroyed, this, &QMozContext::lastViewDestroyed);
     connect(d, &QMozContextPrivate::lastWindowDestroyed, this, &QMozContext::lastWindowDestroyed);

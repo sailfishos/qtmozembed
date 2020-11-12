@@ -54,7 +54,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
 {
 
     QMozContext *context = QMozContext::instance();
-    connect(context, &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
+    connect(context, &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
     connect(context, &QMozContext::recvObserve, this, &QMozEngineSettingsPrivate::onObserve);
     context->addObserver(NS_PREF_CHANGED);
 }
@@ -253,7 +253,7 @@ void QMozEngineSettingsPrivate::initialize()
         preferenceIterator.next();
         setPreference(preferenceIterator.key(), preferenceIterator.value());
     }
-    disconnect(QMozContext::instance(), &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
+    disconnect(QMozContext::instance(), &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
 
     Q_EMIT initialized();
 }

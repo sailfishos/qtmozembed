@@ -49,7 +49,7 @@ public:
     void addObservers(const std::vector<std::string> &aObserversList);
 
 Q_SIGNALS:
-    void onInitialized();
+    void initialized();
     void contextDestroyed();
     void lastViewDestroyed();
     void lastWindowDestroyed();
