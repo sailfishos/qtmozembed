@@ -184,7 +184,7 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
 
 bool QMozEngineSettingsPrivate::isInitialized() const
 {
-    return QMozContext::instance()->initialized() && mInitialized;
+    return QMozContext::instance()->isInitialized() && mInitialized;
 }
 
 QMozEngineSettings::CookieBehavior QMozEngineSettingsPrivate::intToCookieBehavior(int cookieBehavior)

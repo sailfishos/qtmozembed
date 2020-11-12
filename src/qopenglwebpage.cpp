@@ -234,7 +234,7 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 void QOpenGLWebPage::initialize()
 {
     Q_ASSERT(d->mMozWindow);
-    if (!d->mContext->initialized()) {
+    if (!d->mContext->isInitialized()) {
         connect(d->mContext, &QMozContext::onInitialized, this, &QOpenGLWebPage::createView);
     } else {
         createView();

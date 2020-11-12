@@ -323,7 +323,7 @@ void QMozContext::runEmbedding(int aDelay)
 }
 
 bool
-QMozContext::initialized() const
+QMozContext::isInitialized() const
 {
     return d->mInitialized;
 }

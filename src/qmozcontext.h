@@ -33,7 +33,7 @@ public:
     mozilla::embedlite::EmbedLiteApp *GetApp();
     void setPixelRatio(float ratio);
     float pixelRatio() const;
-    Q_INVOKABLE bool initialized() const;
+    Q_INVOKABLE bool isInitialized() const;
     Q_INVOKABLE bool isAccelerated() const;
 
     void registerWindow(QMozWindow *window);
