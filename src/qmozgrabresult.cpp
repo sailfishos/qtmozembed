@@ -41,7 +41,9 @@ QImage gl_read_framebuffer(const QRect &rect)
 
     QImage rgbaImage(size, QImage::Format_RGBX8888);
     glReadPixels(x, y, size.width(), size.height(), GL_RGBA, GL_UNSIGNED_BYTE, rgbaImage.bits());
-    return rgbaImage.mirrored();
+    if (!glGetError())
+        return rgbaImage.mirrored();
+    return QImage();
 }
 
 class QMozGrabResultPrivate
