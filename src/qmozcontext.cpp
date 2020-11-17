@@ -74,8 +74,8 @@ bool QMozContextPrivate::ExecuteChildThread()
         qCDebug(lcEmbedLiteExt) << "Execute in child Native thread:" << (void *)mThread;
         GeckoWorker *worker = new GeckoWorker(mApp);
 
-        connect(mThread, SIGNAL(started()), worker, SLOT(doWork()));
-        connect(mThread, SIGNAL(finished()), worker, SLOT(quit()));
+        connect(mThread, &QThread::started, worker, &GeckoWorker::doWork);
+        connect(mThread, &QThread::finished, worker, &GeckoWorker::quit);
         worker->moveToThread(mThread);
 
         mThread->setObjectName("GeckoWorkerThread");
@@ -200,11 +200,11 @@ QMozContext::QMozContext(QObject *parent)
     : QObject(parent)
     , d(QMozContextPrivate::instance())
 {
-    connect(d, SIGNAL(initialized()), this, SIGNAL(onInitialized()));
-    connect(d, SIGNAL(contextDestroyed()), this, SIGNAL(contextDestroyed()));
-    connect(d, SIGNAL(lastViewDestroyed()), this, SIGNAL(lastViewDestroyed()));
-    connect(d, SIGNAL(lastWindowDestroyed()), this, SIGNAL(lastWindowDestroyed()));
-    connect(d, SIGNAL(recvObserve(QString,QVariant)), this, SIGNAL(recvObserve(QString,QVariant)));
+    connect(d, &QMozContextPrivate::initialized, this, &QMozContext::initialized);
+    connect(d, &QMozContextPrivate::contextDestroyed, this, &QMozContext::contextDestroyed);
+    connect(d, &QMozContextPrivate::lastViewDestroyed, this, &QMozContext::lastViewDestroyed);
+    connect(d, &QMozContextPrivate::lastWindowDestroyed, this, &QMozContext::lastWindowDestroyed);
+    connect(d, &QMozContextPrivate::recvObserve, this, &QMozContext::recvObserve);
 }
 
 void QMozContext::setProfile(const QString &profilePath)
@@ -323,7 +323,7 @@ void QMozContext::runEmbedding(int aDelay)
 }
 
 bool
-QMozContext::initialized() const
+QMozContext::isInitialized() const
 {
     return d->mInitialized;
 }

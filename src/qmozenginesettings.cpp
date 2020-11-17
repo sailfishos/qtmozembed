@@ -54,7 +54,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
 {
 
     QMozContext *context = QMozContext::instance();
-    connect(context, &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
+    connect(context, &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
     connect(context, &QMozContext::recvObserve, this, &QMozEngineSettingsPrivate::onObserve);
     context->addObserver(NS_PREF_CHANGED);
 }
@@ -184,7 +184,7 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
 
 bool QMozEngineSettingsPrivate::isInitialized() const
 {
-    return QMozContext::instance()->initialized() && mInitialized;
+    return QMozContext::instance()->isInitialized() && mInitialized;
 }
 
 QMozEngineSettings::CookieBehavior QMozEngineSettingsPrivate::intToCookieBehavior(int cookieBehavior)
@@ -253,7 +253,7 @@ void QMozEngineSettingsPrivate::initialize()
         preferenceIterator.next();
         setPreference(preferenceIterator.key(), preferenceIterator.value());
     }
-    disconnect(QMozContext::instance(), &QMozContext::onInitialized, this, &QMozEngineSettingsPrivate::initialize);
+    disconnect(QMozContext::instance(), &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
 
     Q_EMIT initialized();
 }
@@ -291,11 +291,11 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     , d_ptr(QMozEngineSettingsPrivate::instance())
 {
     Q_D(QMozEngineSettings);
-    connect(d, SIGNAL(initialized()), this, SIGNAL(initialized()));
-    connect(d, SIGNAL(autoLoadImagesChanged()), this, SIGNAL(autoLoadImagesChanged()));
-    connect(d, SIGNAL(javascriptEnabledChanged()), this, SIGNAL(javascriptEnabledChanged()));
-    connect(d, SIGNAL(popupEnabledChanged()), this, SIGNAL(popupEnabledChanged()));
-    connect(d, SIGNAL(cookieBehaviorChanged()), this, SIGNAL(cookieBehaviorChanged()));
+    connect(d, &QMozEngineSettingsPrivate::initialized, this, &QMozEngineSettings::initialized);
+    connect(d, &QMozEngineSettingsPrivate::autoLoadImagesChanged, this, &QMozEngineSettings::autoLoadImagesChanged);
+    connect(d, &QMozEngineSettingsPrivate::javascriptEnabledChanged, this, &QMozEngineSettings::javascriptEnabledChanged);
+    connect(d, &QMozEngineSettingsPrivate::popupEnabledChanged, this, &QMozEngineSettings::popupEnabledChanged);
+    connect(d, &QMozEngineSettingsPrivate::cookieBehaviorChanged, this, &QMozEngineSettings::cookieBehaviorChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()

@@ -68,9 +68,9 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
 {
     d->mContext = QMozContext::instance();
 
-    connect(this, SIGNAL(viewInitialized()), this, SLOT(processViewInitialization()));
-    connect(this, SIGNAL(loadProgressChanged()), this, SLOT(updateLoaded()));
-    connect(this, SIGNAL(loadingChanged()), this, SLOT(updateLoaded()));
+    connect(this, &QOpenGLWebPage::viewInitialized, this, &QOpenGLWebPage::processViewInitialization);
+    connect(this, &QOpenGLWebPage::loadProgressChanged, this, &QOpenGLWebPage::updateLoaded);
+    connect(this, &QOpenGLWebPage::loadingChanged, this, &QOpenGLWebPage::updateLoaded);
 }
 
 QOpenGLWebPage::~QOpenGLWebPage()
@@ -234,8 +234,8 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 void QOpenGLWebPage::initialize()
 {
     Q_ASSERT(d->mMozWindow);
-    if (!d->mContext->initialized()) {
-        connect(d->mContext, SIGNAL(onInitialized()), this, SLOT(createView()));
+    if (!d->mContext->isInitialized()) {
+        connect(d->mContext, &QMozContext::initialized, this, &QOpenGLWebPage::createView);
     } else {
         createView();
     }
