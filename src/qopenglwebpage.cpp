@@ -64,6 +64,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     , mLoaded(false)
     , mCompleted(false)
     , mSizeUpdateScheduled(false)
+    , mDesktopMode(false)
     , mThrottlePainting(false)
 {
     d->mContext = QMozContext::instance();
@@ -100,7 +101,7 @@ void QOpenGLWebPage::createView()
     qCDebug(lcEmbedLiteExt) << "QOpenGLWebPage";
     if (!d->mView) {
         EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
-        d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode);
+        d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
         d->mView->SetListener(d);
         d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     }
@@ -212,6 +213,20 @@ void QOpenGLWebPage::setMozWindow(QMozWindow *window)
 
     connect(window, &QMozWindow::drawOverlay,
             this, &QOpenGLWebPage::onDrawOverlay, Qt::DirectConnection);
+}
+
+bool QOpenGLWebPage::desktopMode() const
+{
+    return mDesktopMode;
+}
+
+void QOpenGLWebPage::setDesktopMode(bool desktopMode)
+{
+    if (mDesktopMode != desktopMode) {
+        mDesktopMode = desktopMode;
+        d->SetDesktopMode(desktopMode);
+        Q_EMIT desktopModeChanged();
+    }
 }
 
 bool QOpenGLWebPage::throttlePainting() const

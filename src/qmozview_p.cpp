@@ -870,6 +870,13 @@ void QMozViewPrivate::SetIsFocused(bool aIsFocused)
     }
 }
 
+void QMozViewPrivate::SetDesktopMode(bool aDesktopMode)
+{
+    if (mViewInitialized) {
+        mView->SetDesktopMode(aDesktopMode);
+    }
+}
+
 void QMozViewPrivate::SetThrottlePainting(bool aThrottle)
 {
     if (mViewInitialized) {
