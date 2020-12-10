@@ -106,6 +106,7 @@ QuickMozView::~QuickMozView()
     releaseResources();
 
     if (d->mView) {
+        d->mView->SetIsActive(false);
         d->mView->SetListener(nullptr);
         d->mContext->GetApp()->DestroyView(d->mView);
     }

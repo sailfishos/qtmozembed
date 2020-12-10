@@ -133,6 +133,11 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
 QMozViewPrivate::~QMozViewPrivate()
 {
     delete mViewIface;
+    mViewIface = nullptr;
+    mViewInitialized = false;
+    // Destroyed by EmbedLiteApp::ViewDestroyed but
+    // cannot really be used after destroyed.
+    mView = nullptr;
 }
 
 void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
@@ -741,12 +746,21 @@ void QMozViewPrivate::OnWindowCloseRequested()
 // View finally destroyed and deleted
 void QMozViewPrivate::ViewDestroyed()
 {
+    // TODO : Can this be removed?
+    // Both ~QOpenGLWebPage and ~QuickMozView are
+    // setting lisnener to null. Hence, EmbedLiteView::Destroyed()
+    // will never be able to call this.
+
 #ifdef DEVELOPMENT_BUILD
     qCInfo(lcEmbedLiteExt);
 #endif
-    mView = NULL;
+
+    mView = nullptr;
     mViewInitialized = false;
-    mViewIface->viewDestroyed();
+
+    if (mViewIface)
+        mViewIface->viewDestroyed();
+    mViewIface = nullptr;
 }
 
 void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData)
