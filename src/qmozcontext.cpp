@@ -44,14 +44,14 @@ QMozContextPrivate *QMozContextPrivate::instance()
 
 QMozContextPrivate::QMozContextPrivate(QObject *parent)
     : QObject(parent)
-    , mApp(NULL)
+    , mApp(nullptr)
     , mInitialized(false)
     , mThread(new QThread())
     , mEmbedStarted(false)
-    , mQtPump(NULL)
+    , mQtPump(nullptr)
     , mAsyncContext(getenv("USE_ASYNC"))
-    , mViewCreator(NULL)
-    , mMozWindow(NULL)
+    , mViewCreator(nullptr)
+    , mMozWindow(nullptr)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
@@ -209,7 +209,7 @@ QMozContext::QMozContext(QObject *parent)
 
 void QMozContext::setProfile(const QString &profilePath)
 {
-    d->mApp->SetProfilePath(!profilePath.isEmpty() ? profilePath.toUtf8().data() : NULL);
+    d->mApp->SetProfilePath(!profilePath.isEmpty() ? profilePath.toUtf8().data() : nullptr);
 }
 
 QMozContext::~QMozContext()
@@ -401,7 +401,7 @@ QMozContext::notifyFirstUIInitialized()
 {
     static bool sCalledOnce = false;
     if (!sCalledOnce) {
-        d->mApp->SendObserve("final-ui-startup", NULL);
+        d->mApp->SendObserve("final-ui-startup", nullptr);
         sCalledOnce = true;
     }
 }

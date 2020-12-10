@@ -60,7 +60,7 @@ qint64 current_timestamp(QTouchEvent *aEvent)
     }
 
     struct timeval te;
-    gettimeofday(&te, NULL);
+    gettimeofday(&te, nullptr);
     qint64 milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
 }
@@ -80,14 +80,14 @@ QSize contentWindowSize(const QMozWindow *window) {
 QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     : mViewIface(aViewIface)
     , q(publicPtr)
-    , mMozWindow(NULL)
-    , mContext(NULL)
-    , mView(NULL)
+    , mMozWindow(nullptr)
+    , mContext(nullptr)
+    , mView(nullptr)
     , mViewInitialized(false)
     , mBgColor(Qt::white)
     , mTopMargin(0.0)
     , mBottomMargin(0.0)
-    , mTempTexture(NULL)
+    , mTempTexture(nullptr)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
     , mChromeGestureThreshold(0.0)
@@ -763,7 +763,7 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
     // Check docuri if this is an error page
     if (message == CONTENT_LOADED && vdata.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
         // Mark security invalid, not used in error pages
-        mSecurity.setSecurityRaw(NULL, 0);
+        mSecurity.setSecurityRaw(nullptr, 0);
     }
 
     if (ok) {

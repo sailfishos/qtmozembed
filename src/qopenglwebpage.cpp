@@ -76,7 +76,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
 QOpenGLWebPage::~QOpenGLWebPage()
 {
     if (d->mView) {
-        d->mView->SetListener(NULL);
+        d->mView->SetListener(nullptr);
         d->mContext->GetApp()->DestroyView(d->mView);
     }
     QMutexLocker lock(&mGrabResultListLock);

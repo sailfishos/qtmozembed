@@ -30,7 +30,7 @@ class QMozReturnValue : public QObject
 
 public:
     QMozReturnValue(QObject *parent = 0) : QObject(parent) {}
-    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL)
+    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(nullptr)
     {
         mMessage = aMsg.mMessage;
     }
@@ -58,7 +58,7 @@ class QMozReturnValue : public QObject \
     Q_PROPERTY(QVariant message READ getMessage WRITE setMessage FINAL) \
 public: \
     QMozReturnValue(QObject *parent = 0) : QObject(parent) {} \
-    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(NULL) { mMessage = aMsg.mMessage; } \
+    QMozReturnValue(const QMozReturnValue &aMsg) : QObject(nullptr) { mMessage = aMsg.mMessage; } \
     virtual ~QMozReturnValue() {} \
     QVariant getMessage() const { return mMessage; } \
     void setMessage(const QVariant &msg) { mMessage = msg; } \

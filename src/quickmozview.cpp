@@ -106,11 +106,11 @@ QuickMozView::~QuickMozView()
     releaseResources();
 
     if (d->mView) {
-        d->mView->SetListener(NULL);
+        d->mView->SetListener(nullptr);
         d->mContext->GetApp()->DestroyView(d->mView);
     }
     delete d;
-    d = 0;
+    d = nullptr;
 }
 
 void
