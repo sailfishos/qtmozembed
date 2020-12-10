@@ -120,7 +120,7 @@ void MessagePumpQt::Quit()
 {
     if (mState) {
         mState->should_quit = true;
-        mState->delegate = NULL;
+        mState->delegate = nullptr;
     }
 }
 

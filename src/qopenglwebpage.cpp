@@ -76,12 +76,14 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
 QOpenGLWebPage::~QOpenGLWebPage()
 {
     if (d->mView) {
-        d->mView->SetListener(NULL);
+        d->mView->SetIsActive(false);
+        d->mView->SetListener(nullptr);
         d->mContext->GetApp()->DestroyView(d->mView);
     }
     QMutexLocker lock(&mGrabResultListLock);
     mGrabResultList.clear();
     delete d;
+    d = nullptr;
 }
 
 void QOpenGLWebPage::updateLoaded()
@@ -180,7 +182,7 @@ void QOpenGLWebPage::setActive(bool active)
     // WebPage is in inactive state until the view is initialized.
     // ::processViewInitialization always forces active state so we
     // can just ignore early activation calls.
-    if (!d->mViewInitialized)
+    if (!d || !d->mViewInitialized)
         return;
 
     if (mActive != active) {
@@ -642,7 +644,7 @@ void QOpenGLWebPage::synthTouchEnd(const QVariant &touches)
 
 void QOpenGLWebPage::suspendView()
 {
-    if (!d->mViewInitialized) {
+    if (!d || !d->mViewInitialized) {
         return;
     }
     setActive(false);
@@ -651,7 +653,7 @@ void QOpenGLWebPage::suspendView()
 
 void QOpenGLWebPage::resumeView()
 {
-    if (!d->mViewInitialized) {
+    if (!d || !d->mViewInitialized) {
         return;
     }
     setActive(true);
