@@ -29,12 +29,16 @@ const auto PREF_PERMISSIONS_DEFAULT_IMAGE = QStringLiteral("permissions.default.
 const auto PREF_JAVASCRIPT_ENABLED = QStringLiteral("javascript.enabled");
 const auto PREF_POPUP_DISABLE_DURING_LOAD = QStringLiteral("dom.disable_open_during_load");
 const auto PREF_COOKIE_BEHAVIOR = QStringLiteral("network.cookie.cookieBehavior");
+const auto PREF_USE_DOWNLOAD_DIR = QStringLiteral("browser.download.useDownloadDir");
+const auto PREF_DOWNLOAD_DIR = QStringLiteral("browser.download.dir");
 
 const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_PERMISSIONS_DEFAULT_IMAGE,
     PREF_JAVASCRIPT_ENABLED,
     PREF_POPUP_DISABLE_DURING_LOAD,
-    PREF_COOKIE_BEHAVIOR
+    PREF_COOKIE_BEHAVIOR,
+    PREF_USE_DOWNLOAD_DIR,
+    PREF_DOWNLOAD_DIR
 };
 }
 
@@ -49,6 +53,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     , mJavascriptEnabled(true)
     , mPopupEnabled(false)
     , mCookieBehavior(QMozEngineSettings::AcceptAll)
+    , mUseDownloadDir(false)
     , mAutoLoadImages(true)
     , mPixelRatio(1.0)
 {
@@ -119,6 +124,34 @@ void QMozEngineSettingsPrivate::setCookieBehavior(QMozEngineSettings::CookieBeha
         setPreference(PREF_COOKIE_BEHAVIOR, QVariant::fromValue<int>(behavior));
         mCookieBehavior = cookieBehavior;
         Q_EMIT cookieBehaviorChanged();
+    }
+}
+
+bool QMozEngineSettingsPrivate::useDownloadDir() const
+{
+    return mUseDownloadDir;
+}
+
+void QMozEngineSettingsPrivate::setUseDownloadDir(bool useDownloadDir)
+{
+    if (mUseDownloadDir != useDownloadDir) {
+        setPreference(PREF_USE_DOWNLOAD_DIR, QVariant::fromValue<bool>(useDownloadDir));
+        mUseDownloadDir = useDownloadDir;
+        Q_EMIT useDownloadDirChanged();
+    }
+}
+
+QString QMozEngineSettingsPrivate::downloadDir() const
+{
+    return mDownloadDir;
+}
+
+void QMozEngineSettingsPrivate::setDownloadDir(const QString &downloadDir)
+{
+    if (mDownloadDir != downloadDir) {
+        setPreference(PREF_DOWNLOAD_DIR, QVariant::fromValue<QString>(downloadDir));
+        mDownloadDir = downloadDir;
+        Q_EMIT downloadDirChanged();
     }
 }
 
@@ -228,6 +261,18 @@ void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &
                     mCookieBehavior = behavior;
                     Q_EMIT cookieBehaviorChanged();
                 }
+            } else if (changedPreference == PREF_USE_DOWNLOAD_DIR) {
+                bool useDownloadDir = preferenceValue.toBool();
+                if (mUseDownloadDir != useDownloadDir) {
+                    mUseDownloadDir = useDownloadDir;
+                    Q_EMIT useDownloadDirChanged();
+                }
+            } else if (changedPreference == PREF_DOWNLOAD_DIR) {
+                QString downloadDir = preferenceValue.toString();
+                if (mDownloadDir != downloadDir) {
+                    mDownloadDir = downloadDir;
+                    Q_EMIT downloadDirChanged();
+                }
             }
         }
     }
@@ -296,6 +341,8 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     connect(d, &QMozEngineSettingsPrivate::javascriptEnabledChanged, this, &QMozEngineSettings::javascriptEnabledChanged);
     connect(d, &QMozEngineSettingsPrivate::popupEnabledChanged, this, &QMozEngineSettings::popupEnabledChanged);
     connect(d, &QMozEngineSettingsPrivate::cookieBehaviorChanged, this, &QMozEngineSettings::cookieBehaviorChanged);
+    connect(d, &QMozEngineSettingsPrivate::useDownloadDirChanged, this, &QMozEngineSettings::useDownloadDirChanged);
+    connect(d, &QMozEngineSettingsPrivate::downloadDirChanged, this, &QMozEngineSettings::downloadDirChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()
@@ -355,6 +402,30 @@ void QMozEngineSettings::setCookieBehavior(CookieBehavior cookieBehavior)
 {
     Q_D(QMozEngineSettings);
     return d->setCookieBehavior(cookieBehavior);
+}
+
+bool QMozEngineSettings::useDownloadDir() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->useDownloadDir();
+}
+
+void QMozEngineSettings::setUseDownloadDir(bool useDownloadDir)
+{
+    Q_D(QMozEngineSettings);
+    return d->setUseDownloadDir(useDownloadDir);
+}
+
+QString QMozEngineSettings::downloadDir() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->downloadDir();
+}
+
+void QMozEngineSettings::setDownloadDir(const QString &downloadDir)
+{
+    Q_D(QMozEngineSettings);
+    return d->setDownloadDir(downloadDir);
 }
 
 void QMozEngineSettings::setTileSize(const QSize &size)
