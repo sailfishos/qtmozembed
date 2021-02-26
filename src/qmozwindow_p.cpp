@@ -23,6 +23,8 @@
 
 EGLContext (EGLAPIENTRY *_eglGetCurrentContext)(void) = nullptr;
 EGLSurface (EGLAPIENTRY *_eglGetCurrentSurface)(EGLint readdraw) = nullptr;
+EGLDisplay (EGLAPIENTRY *_eglGetCurrentDisplay)(void) = nullptr;
+
 #if defined(ENABLE_GLX)
 GLXContext (*_glxGetCurrentContext)(void) = nullptr;
 GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
@@ -111,14 +113,14 @@ void QMozWindowPrivate::timerEvent(QTimerEvent *event)
     }
 }
 
-bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface)
+bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface, void *&display)
 {
     q.requestGLContext();
 
     QString platform = qApp->platformName().toLower();
 
     if (platform == "wayland" || platform == "wayland-egl" || platform == "eglfs") {
-        getEGLContext(context, surface);
+        getEGLContext(context, surface, display);
         return true;
     }
 #if defined(ENABLE_GLX)
@@ -132,7 +134,7 @@ bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface)
     return false;
 }
 
-void QMozWindowPrivate::getEGLContext(void *&context, void *&surface)
+void QMozWindowPrivate::getEGLContext(void *&context, void *&surface, void *&display)
 {
     if (!_eglGetCurrentContext || !_eglGetCurrentSurface) {
         void *handle = dlopen("libEGL.so.1", RTLD_LAZY);
@@ -141,14 +143,16 @@ void QMozWindowPrivate::getEGLContext(void *&context, void *&surface)
 
         *(void **)(&_eglGetCurrentContext) = dlsym(handle, "eglGetCurrentContext");
         *(void **)(&_eglGetCurrentSurface) = dlsym(handle, "eglGetCurrentSurface");
+        *(void **)(&_eglGetCurrentDisplay) = dlsym(handle, "eglGetCurrentDisplay");
 
-        Q_ASSERT(_eglGetCurrentContext && _eglGetCurrentSurface);
+        Q_ASSERT(_eglGetCurrentContext && _eglGetCurrentSurface && _eglGetCurrentDisplay);
 
         dlclose(handle);
     }
 
     surface = _eglGetCurrentSurface(EGL_DRAW);
     context = _eglGetCurrentContext();
+    display = _eglGetCurrentDisplay();
 }
 
 #if defined(ENABLE_GLX)

@@ -27,7 +27,7 @@ public:
 
 protected:
     // EmbedLiteWindowListener:
-    bool RequestGLContext(void *&context, void *&surface) override;
+    bool RequestGLContext(void *&context, void *&surface, void *&display) override;
     void WindowInitialized() override;
     void DrawUnderlay() override;
     void DrawOverlay(const nsIntRect &aRect) override;
@@ -40,7 +40,7 @@ private:
     friend class QOpenGLWebPage;
     friend class QuickMozView;
 
-    void getEGLContext(void *&context, void *&surface);
+    void getEGLContext(void *&context, void *&surface, void *&display);
 #if defined(ENABLE_GLX)
     void getGLXContext(void *&context, void *&surface);
 #endif
