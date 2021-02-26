@@ -41,6 +41,12 @@ public:
     QMozEngineSettings::CookieBehavior cookieBehavior() const;
     void setCookieBehavior(QMozEngineSettings::CookieBehavior cookieBehavior);
 
+    bool useDownloadDir() const;
+    void setUseDownloadDir(bool useDownloadDir);
+
+    QString downloadDir() const;
+    void setDownloadDir(const QString &downloadDir);
+
     void setTileSize(const QSize &size);
 
     void setPixelRatio(qreal ratio);
@@ -66,6 +72,8 @@ Q_SIGNALS:
     void javascriptEnabledChanged();
     void popupEnabledChanged();
     void cookieBehaviorChanged();
+    void useDownloadDirChanged();
+    void downloadDirChanged();
     void initialized();
 
 private:
@@ -75,8 +83,10 @@ private:
     bool mJavascriptEnabled;
     bool mPopupEnabled;
     QMozEngineSettings::CookieBehavior mCookieBehavior;
+    bool mUseDownloadDir;
     bool mAutoLoadImages;
     qreal mPixelRatio;
+    QString mDownloadDir;
 };
 
 #endif // QMOZENGINE_SETTINGS_P_H

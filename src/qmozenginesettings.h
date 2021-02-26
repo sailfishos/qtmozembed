@@ -23,6 +23,8 @@ class QMozEngineSettings : public QObject {
     Q_PROPERTY(bool javascriptEnabled READ javascriptEnabled WRITE setJavascriptEnabled NOTIFY javascriptEnabledChanged FINAL)
     Q_PROPERTY(bool popupEnabled READ popupEnabled WRITE setPopupEnabled NOTIFY popupEnabledChanged)
     Q_PROPERTY(CookieBehavior cookieBehavior READ cookieBehavior WRITE setCookieBehavior NOTIFY cookieBehaviorChanged)
+    Q_PROPERTY(bool useDownloadDir READ useDownloadDir WRITE setUseDownloadDir NOTIFY useDownloadDirChanged)
+    Q_PROPERTY(QString downloadDir READ downloadDir WRITE setDownloadDir NOTIFY downloadDirChanged)
 
 public:
     // C++ API
@@ -56,6 +58,12 @@ public:
     CookieBehavior cookieBehavior() const;
     void setCookieBehavior(CookieBehavior cookieBehavior);
 
+    bool useDownloadDir() const;
+    void setUseDownloadDir(bool useDownloadDir);
+
+    QString downloadDir() const;
+    void setDownloadDir(const QString &downloadDir);
+
     void setTileSize(const QSize &size);
 
     void setPixelRatio(qreal pixelRatio);
@@ -72,6 +80,8 @@ Q_SIGNALS:
     void javascriptEnabledChanged();
     void popupEnabledChanged();
     void cookieBehaviorChanged();
+    void useDownloadDirChanged();
+    void downloadDirChanged();
     void initialized();
 
 private:
