@@ -27,6 +27,7 @@
 #include <QQmlInfo>
 
 #include "qmozview_p.h"
+#include "qmozenginesettings.h"
 #include "qmozextmaterialnode.h"
 #include "qmozscrolldecorator.h"
 #include "qmozexttexture.h"
@@ -99,6 +100,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
+
+    QMozEngineSettings::instance();
 }
 
 QuickMozView::~QuickMozView()
