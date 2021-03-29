@@ -22,8 +22,8 @@ function shared_context1Init()
 {
     mozContext.dumpTS("test_context1Init start")
     testcaseid.verify(mozContext.instance !== undefined)
-    testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
-    testcaseid.verify(mozContext.instance.initialized())
+    testcaseid.verify(wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+    testcaseid.verify(mozContext.instance.isInitialized())
     mozContext.dumpTS("test_context1Init end")
 }
 function shared_context3PrefAPI()
@@ -118,16 +118,16 @@ function shared_1contextPrepareViewContext()
 {
     mozContext.dumpTS("test_1contextPrepareViewContext start")
     testcaseid.verify(mozContext.instance !== undefined)
-    testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
-    testcaseid.verify(mozContext.instance.initialized())
+    testcaseid.verify(wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+    testcaseid.verify(mozContext.instance.isInitialized())
     mozContext.dumpTS("test_1contextPrepareViewContext end")
 }
 
 function shared_2viewInit()
 {
     mozContext.dumpTS("test_2viewInit start")
-    testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
-    testcaseid.verify(mozContext.instance.initialized())
+    testcaseid.verify(wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+    testcaseid.verify(mozContext.instance.isInitialized())
     appWindow.createParentID = 0;
     MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === undefined); }))
@@ -186,15 +186,15 @@ function shared_1newcontextPrepareViewContext()
 {
     mozContext.dumpTS("test_1newcontextPrepareViewContext start")
     testcaseid.verify(mozContext.instance !== undefined)
-    testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
-    testcaseid.verify(mozContext.instance.initialized())
+    testcaseid.verify(wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+    testcaseid.verify(mozContext.instance.isInitialized())
     mozContext.dumpTS("test_1newcontextPrepareViewContext end")
 }
 function shared_2newviewInit()
 {
     mozContext.dumpTS("test_2newviewInit start")
-    testcaseid.verify(wrtWait(function() { return (mozContext.instance.initialized() === false); }, 100, 500))
-    testcaseid.verify(mozContext.instance.initialized())
+    testcaseid.verify(wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+    testcaseid.verify(mozContext.instance.isInitialized())
     MyScript.createSpriteObjects();
     testcaseid.verify(wrtWait(function() { return (mozView === null); }, 10, 500))
     testcaseid.verify(wrtWait(function() { return (mozViewInitialized !== true); }, 10, 500))
