@@ -33,49 +33,44 @@
 ****************************************************************************/
 
 #include "qmozcontext.h"
+#include "qmozenginesettings.h"
 #include "testviewcreator.h"
-#include "qtestrunner.h"
 #include <QGuiApplication>
 #include <QtCore/qstring.h>
 #include <QTimer>
 #include <QtQml>
 #include <stdio.h>
 #include <QQuickView>
+#include <QtQuickTest/quicktest.h>
 
 int main(int argc, char **argv)
 {
-    int retv = 0;
-    {
-        QGuiApplication app(argc, argv);
-        {
-            bool isOpenGL = false;
-            for (int index = 1; index < argc; ++index) {
-                if (strcmp(argv[index], "-opengl") == 0) {
-                    isOpenGL = true;
-                    break;
-                }
-            }
+    QGuiApplication app(argc, argv);
 
-            qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
+    setenv("USE_ASYNC", "1", 1);
 
-            QTestRunner runn(isOpenGL, argc, argv);
-            QTimer::singleShot(0, &runn, SLOT(DropInStartup()));
-            // These components must be loaded before app start
-            QString componentPath(DEFAULT_COMPONENTS_PATH);
+    qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
 
-            QMozContext::instance()->setProfile(QLatin1String("mozembed-testrunner"));
-            QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
-                                                          QString("/EmbedLiteBinComponents.manifest"));
-            QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +
-                                                          QString("/EmbedLiteJSScripts.manifest"));
-            QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +
-                                                          QString("/EmbedLiteOverrides.manifest"));
-            QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
-                                                          QString("/EmbedLiteJSComponents.manifest"));
-            QMozContext::instance()->runEmbedding();
-            retv = runn.GetResult();
-        }
-        app.quit();
-    }
-    return retv;
+    // These components must be loaded before app start
+    QString componentPath(DEFAULT_COMPONENTS_PATH);
+
+    QMozContext::instance()->setProfile(QLatin1String("mozembed-testrunner"));
+    QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
+                                                  QString("/EmbedLiteBinComponents.manifest"));
+    QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +
+                                                  QString("/EmbedLiteJSScripts.manifest"));
+    QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +
+                                                  QString("/EmbedLiteOverrides.manifest"));
+    QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
+                                                  QString("/EmbedLiteJSComponents.manifest"));
+
+    int ret = -1;
+    QTimer::singleShot(0, [&] {
+        QMozContext::instance()->runEmbedding();
+        QMozEngineSettings::instance();
+        ret = quick_test_main(argc, argv, "qmlmoztestrunner", 0);
+        QMozContext::instance()->stopEmbedding();
+    });
+    app.exec();
+    return ret;
 }
