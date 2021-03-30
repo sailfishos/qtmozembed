@@ -32,10 +32,6 @@ Item {
         anchors.fill: parent
 
         onViewInitialized: appWindow.mozViewInitialized = true
-        onHandleSingleTap: {
-            appWindow.clickX = point.x
-            appWindow.clickY = point.y
-        }
         onViewAreaChanged: {
             print("onViewAreaChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y)
             var offset = webViewport.scrollableOffset
