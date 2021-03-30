@@ -35,9 +35,9 @@ function shared_context3PrefAPI()
 function shared_context4ObserveAPI()
 {
     mozContext.dumpTS("test_context4ObserveAPI start")
-    mozContext.instance.sendObserve("memory-pressure", null);
+    mozContext.instance.notifyObservers("memory-pressure", null);
     mozContext.instance.addObserver("test-observe-message");
-    mozContext.instance.sendObserve("test-observe-message", {msg: "testMessage", val: 1});
+    mozContext.instance.notifyObservers("test-observe-message", {msg: "testMessage", val: 1});
     testcaseid.verify(wrtWait(function() { return (lastObserveMessage === undefined); }, 10, 500))
     testcaseid.compare(lastObserveMessage.msg, "test-observe-message");
     testcaseid.compare(lastObserveMessage.data.val, 1);
@@ -319,11 +319,11 @@ function shared_TestCheckDefaultSearch()
     mozContext.instance.addObserver("embed:search");
     mozContext.instance.setPref("keyword.enabled", true);
     testcaseid.verify(MyScript.waitMozView())
-    mozContext.instance.sendObserve("embedui:search", {msg:"remove", name: "QMOZTest"})
+    mozContext.instance.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
     testcaseid.verify(wrtWait(function() { return (!engineExistsPredicate()); }))
-    mozContext.instance.sendObserve("embedui:search", {msg:"loadxml", uri: "file://" + mozContext.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
+    mozContext.instance.notifyObservers("embedui:search", {msg:"loadxml", uri: "file://" + mozContext.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
     testcaseid.verify(wrtWait(function() { return (appWindow.testResult !== "loaded"); }))
-    mozContext.instance.sendObserve("embedui:search", {msg:"getlist"})
+    mozContext.instance.notifyObservers("embedui:search", {msg:"getlist"})
     testcaseid.verify(wrtWait(engineExistsPredicate));
     webViewport.load("linux home");
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
@@ -358,7 +358,7 @@ function shared_ActiveHyperLink()
 {
     mozContext.dumpTS("test_ActiveHyperLink start")
     testcaseid.verify(MyScript.waitMozContext())
-    mozContext.instance.sendObserve("embedui:setprefs", { prefs :
+    mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
     [
         { n: "embedlite.azpc.handle.singletap", v: false},
         { n: "embedlite.azpc.json.singletap", v: true},
@@ -383,7 +383,7 @@ function shared_ActiveHyperLink()
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
-    mozContext.instance.sendObserve("embedui:setprefs", { prefs :
+    mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
     [
         { n: "embedlite.azpc.handle.singletap", v: true},
         { n: "embedlite.azpc.json.singletap", v: false},
