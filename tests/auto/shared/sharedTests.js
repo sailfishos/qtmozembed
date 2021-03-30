@@ -349,7 +349,7 @@ function shared_Test2LoadAboutMozillaCheckTitle()
     mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle start")
     webViewport.url = "about:mozilla";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-    testcaseid.compare(webViewport.title, "The Book of Mozilla, 15:1")
+    testcaseid.compare(webViewport.title, "The Book of Mozilla, 11:14")
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle end")
 }
