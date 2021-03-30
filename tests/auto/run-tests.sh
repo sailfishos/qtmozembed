@@ -18,9 +18,6 @@ if [ "$QTTESTSLOCATION" != "" ]; then
 fi
 export QTTESTSLOCATION=${QTTESTSLOCATION:-"/opt/tests/qtmozembed/auto/mer-qt$QTVER"}
 
-# TODO: Get rid of this in tests see JB#?????
-export GECKO_THREAD=1
-
 #export NSPR_LOG_MODULES=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5,EmbedLiteView:5,EmbedLiteViewThreadParent:5
 
 $QMLMOZTESTRUNNER -opengl $@
