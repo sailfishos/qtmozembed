@@ -37,9 +37,9 @@ Item {
             webViewport.addMessageListener("embed:prompt")
         }
         onRecvAsyncMessage: {
-            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            print("onRecvAsyncMessage:" + message + ", data:" + data)
             if (message == "embed:prompt") {
-                testcaseid.compare(data.defaultValue, "Your name")
+//                testcaseid.compare(data.defaultValue, "Your name") // No such thing..?
                 testcaseid.compare(data.text, "Please enter your name:")
                 var responsePrompt = null
                 switch(appWindow.testCaseNum) {
