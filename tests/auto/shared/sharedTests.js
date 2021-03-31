@@ -36,6 +36,7 @@ function shared_context4ObserveAPI()
 {
     mozContext.dumpTS("test_context4ObserveAPI start")
     mozContext.instance.notifyObservers("memory-pressure", null);
+    lastObserveMessage = undefined
     mozContext.instance.addObserver("test-observe-message");
     mozContext.instance.notifyObservers("test-observe-message", {msg: "testMessage", val: 1});
     testcaseid.verify(wrtWait(function() { return (lastObserveMessage === undefined); }, 10, 500))
