@@ -60,6 +60,10 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     setenv("LC_NUMERIC", "C", 1);
     setlocale(LC_NUMERIC, "C");
 
+    // GRE_HOME must be set before QMozContext is initialized. With invoker PWD is empty.
+    QByteArray binaryPath = QCoreApplication::applicationDirPath().toLocal8Bit();
+    setenv("GRE_HOME", binaryPath.constData(), 1);
+
     LoadEmbedLite();
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(this);
