@@ -45,7 +45,7 @@ class QOpenGLWebPage : public QObject
 
 public:
     explicit QOpenGLWebPage(QObject *parent = nullptr);
-    ~QOpenGLWebPage();
+    virtual ~QOpenGLWebPage();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
     int parentId() const;
