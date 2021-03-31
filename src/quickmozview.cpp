@@ -100,8 +100,6 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
-
-    QMozEngineSettings::instance();
 }
 
 QuickMozView::~QuickMozView()

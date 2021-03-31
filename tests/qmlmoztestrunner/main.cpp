@@ -63,9 +63,11 @@ int main(int argc, char **argv)
                                                   QString("/EmbedLiteOverrides.manifest"));
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteJSComponents.manifest"));
+
     int ret = -1;
     QTimer::singleShot(0, [&] {
         QMozContext::instance()->runEmbedding();
+        QMozEngineSettings::instance();
         ret = quick_test_main(argc, argv, "qmlmoztestrunner", 0);
         QMozContext::instance()->stopEmbedding();
     });
