@@ -49,7 +49,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mThread(new QThread())
     , mEmbedStarted(false)
     , mQtPump(nullptr)
-    , mAsyncContext(getenv("USE_ASYNC"))
+    , mAsyncContext(!getenv("DISABLE_ASYNC"))
     , mViewCreator(nullptr)
     , mMozWindow(nullptr)
 {
