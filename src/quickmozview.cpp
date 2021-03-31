@@ -148,7 +148,14 @@ void QuickMozView::processViewInitialization()
     // This is connected to view initialization. View must be initialized
     // over here.
     Q_ASSERT(d->mViewInitialized);
-    SetIsActive(mActive);
+    if (d->mDirtyState & QMozViewPrivate::DirtyActive) {
+        bool expectedActive = mActive;
+        mActive = !mActive;
+        setActive(expectedActive);
+        d->mDirtyState &= ~QMozViewPrivate::DirtyActive;
+    } else {
+        SetIsActive(mActive);
+    }
 }
 
 void QuickMozView::updateEnabled()
@@ -323,6 +330,7 @@ void QuickMozView::setActive(bool active)
     } else {
         // Will be processed once view is initialized.
         mActive = active;
+        d->mDirtyState |= QMozViewPrivate::DirtyActive;
     }
 }
 
