@@ -71,7 +71,7 @@ int main(int argc, char **argv)
                                                   QString("/EmbedLiteOverrides.manifest"));
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteJSComponents.manifest"));
-    QObject::connect(QMozContext::instance(), &QMozContext::initialized,
+    QObject::connect(QMozEngineSettings::instance(), &QMozEngineSettings::initialized,
                      &runn, &QTestRunner::DropInStartup, Qt::QueuedConnection);
     QObject::connect(QMozContext::instance(), &QMozContext::contextDestroyed,
                      &app, QCoreApplication::quit, Qt::QueuedConnection);
