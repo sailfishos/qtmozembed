@@ -72,9 +72,9 @@ int main(int argc, char **argv)
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteJSComponents.manifest"));
     QObject::connect(QMozEngineSettings::instance(), &QMozEngineSettings::initialized,
-                     &runn, &QTestRunner::DropInStartup, Qt::QueuedConnection);
+                     &runn, &QTestRunner::DropInStartup);
     QObject::connect(QMozContext::instance(), &QMozContext::contextDestroyed,
-                     &app, QCoreApplication::quit, Qt::QueuedConnection);
+                     &app, QCoreApplication::quit);
 
     QTimer::singleShot(0, QMozContext::instance(), SLOT(runEmbedding()));
     app.exec();
