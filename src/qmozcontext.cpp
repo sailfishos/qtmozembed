@@ -55,6 +55,11 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
+    // See JB#11625: JSON message are locale aware avoid breaking them
+    // This is moved from the sailfish-components-webview.
+    setenv("LC_NUMERIC", "C", 1);
+    setlocale(LC_NUMERIC, "C");
+
     LoadEmbedLite();
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(this);
