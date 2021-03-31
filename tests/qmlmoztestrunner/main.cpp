@@ -35,30 +35,22 @@
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
 #include "testviewcreator.h"
-#include "qtestrunner.h"
 #include <QGuiApplication>
 #include <QtCore/qstring.h>
 #include <QTimer>
 #include <QtQml>
 #include <stdio.h>
 #include <QQuickView>
+#include <QtQuickTest/quicktest.h>
 
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
-    bool isOpenGL = false;
-    for (int index = 1; index < argc; ++index) {
-        if (strcmp(argv[index], "-opengl") == 0) {
-            isOpenGL = true;
-            break;
-        }
-    }
 
     setenv("USE_ASYNC", "1", 1);
 
     qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
 
-    QTestRunner runn(isOpenGL, argc, argv);
     // These components must be loaded before app start
     QString componentPath(DEFAULT_COMPONENTS_PATH);
 
@@ -71,12 +63,12 @@ int main(int argc, char **argv)
                                                   QString("/EmbedLiteOverrides.manifest"));
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteJSComponents.manifest"));
-    QObject::connect(QMozEngineSettings::instance(), &QMozEngineSettings::initialized,
-                     &runn, &QTestRunner::DropInStartup);
-    QObject::connect(QMozContext::instance(), &QMozContext::contextDestroyed,
-                     &app, QCoreApplication::quit);
-
-    QTimer::singleShot(0, QMozContext::instance(), SLOT(runEmbedding()));
+    int ret = -1;
+    QTimer::singleShot(0, [&] {
+        QMozContext::instance()->runEmbedding();
+        ret = quick_test_main(argc, argv, "qmlmoztestrunner", 0);
+        QMozContext::instance()->stopEmbedding();
+    });
     app.exec();
-    return runn.GetResult();
+    return ret;
 }
