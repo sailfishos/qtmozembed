@@ -18,7 +18,7 @@ if [ "$QTTESTSLOCATION" != "" ]; then
 fi
 export QTTESTSLOCATION=${QTTESTSLOCATION:-"/opt/tests/qtmozembed/auto/mer-qt$QTVER"}
 
-#export NSPR_LOG_MODULES=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5,EmbedLiteView:5,EmbedLiteViewThreadParent:5
+#export MOZ_LOG=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5,EmbedLiteView:5,EmbedLiteViewThreadParent:5
 
 $QMLMOZTESTRUNNER -opengl $@
 exit_code=$?
