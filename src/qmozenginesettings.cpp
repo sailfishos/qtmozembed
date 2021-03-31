@@ -11,6 +11,7 @@
 #include "qmozenginesettings_p.h"
 
 #include <QStringList>
+#include <QTimer>
 
 #include <mozilla/embedlite/EmbedLiteApp.h>
 
@@ -59,7 +60,11 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
 {
 
     QMozContext *context = QMozContext::instance();
-    connect(context, &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
+    if (context->isInitialized()) {
+        QTimer::singleShot(0, this, &QMozEngineSettingsPrivate::initialize);
+    } else {
+        connect(context, &QMozContext::initialized, this, &QMozEngineSettingsPrivate::initialize);
+    }
     connect(context, &QMozContext::recvObserve, this, &QMozEngineSettingsPrivate::onObserve);
     context->addObserver(NS_PREF_CHANGED);
 }
