@@ -361,16 +361,16 @@ function shared_ActiveHyperLink()
     testcaseid.verify(MyScript.waitMozContext())
     mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
     [
-        { n: "embedlite.azpc.handle.singletap", v: false},
-        { n: "embedlite.azpc.json.singletap", v: true},
-        { n: "embedlite.azpc.handle.longtap", v: false},
-        { n: "embedlite.azpc.json.longtap", v: true},
-        { n: "embedlite.azpc.json.viewport", v: true},
-        { n: "browser.ui.touch.left", v: 32},
-        { n: "browser.ui.touch.right", v: 32},
-        { n: "browser.ui.touch.top", v: 48},
-        { n: "browser.ui.touch.bottom", v: 16},
-        { n: "browser.ui.touch.weight.visited", v: 120}
+        { name: "embedlite.azpc.handle.singletap", value: false},
+        { name: "embedlite.azpc.json.singletap", value: true},
+        { name: "embedlite.azpc.handle.longtap", value: false},
+        { name: "embedlite.azpc.json.longtap", value: true},
+        { name: "embedlite.azpc.json.viewport", value: true},
+        { name: "browser.ui.touch.left", value: 32},
+        { name: "browser.ui.touch.right", value: 32},
+        { name: "browser.ui.touch.top", value: 48},
+        { name: "browser.ui.touch.bottom", value: 16},
+        { name: "browser.ui.touch.weight.visited", value: 120}
     ]});
     testcaseid.verify(MyScript.waitMozView())
     webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:mozilla>ActiveLink</a>";
@@ -378,24 +378,22 @@ function shared_ActiveHyperLink()
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 20)
-    testcaseid.verify(wrtWait(function() {
-        return webViewport.url != "about:mozilla";
-    }))
+    testcaseid.verify(wrtWait(function() { return webViewport.url != "about:mozilla"; }))
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
     [
-        { n: "embedlite.azpc.handle.singletap", v: true},
-        { n: "embedlite.azpc.json.singletap", v: false},
-        { n: "embedlite.azpc.handle.longtap", v: true},
-        { n: "embedlite.azpc.json.longtap", v: false},
-        { n: "embedlite.azpc.json.viewport", v: false},
-        { n: "browser.ui.touch.left", v: 32},
-        { n: "browser.ui.touch.right", v: 32},
-        { n: "browser.ui.touch.top", v: 48},
-        { n: "browser.ui.touch.bottom", v: 16},
-        { n: "browser.ui.touch.weight.visited", v: 120}
+        { name: "embedlite.azpc.handle.singletap", value: true},
+        { name: "embedlite.azpc.json.singletap", value: false},
+        { name: "embedlite.azpc.handle.longtap", value: true},
+        { name: "embedlite.azpc.json.longtap", value: false},
+        { name: "embedlite.azpc.json.viewport", value: false},
+        { name: "browser.ui.touch.left", value: 32},
+        { name: "browser.ui.touch.right", value: 32},
+        { name: "browser.ui.touch.top", value: 48},
+        { name: "browser.ui.touch.bottom", value: 16},
+        { name: "browser.ui.touch.weight.visited", value: 120}
     ]});
     mozContext.dumpTS("test_ActiveHyperLink end")
 }
