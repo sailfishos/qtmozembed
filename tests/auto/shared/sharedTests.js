@@ -218,7 +218,7 @@ function shared_viewTestNewWindowAPI()
     testcaseid.verify(mozView !== undefined)
     testcaseid.verify(MyScript.waitLoadFinished(mozView))
     testcaseid.verify(wrtWait(function() { return (!mozView.painted); }))
-    testcaseid.compare(mozView.url, "about:mozilla")
+    testcaseid.compare(mozView.url, "https://example.com/")
     mozContext.dumpTS("test_viewTestNewWindowAPI end")
 }
 

@@ -21,7 +21,7 @@ Item {
 
     WebViewCreator {
         onNewWindowRequested: {
-            print("New Window Requested: url: ", url, ", parentID:", parentId)
+            print("New Window Requested: url: ", mozView.url, ", parentID:", parentId)
             appWindow.oldMozView = appWindow.mozView
             appWindow.mozView = null
             appWindow.createParentID = parentId
