@@ -33,7 +33,7 @@ Item {
         function test_2viewInit()
         {
             mozContext.dumpTS("test_2viewInitBasic start")
-            testcaseid.verify(mozContext.instance.initialized())
+            testcaseid.verify(mozContext.instance.isInitialized())
             MyScript.createSpriteObjects()
             while (mozView == null) {
                 testcaseid.wait(500)

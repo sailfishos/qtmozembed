@@ -10,3 +10,12 @@ debian/libqtmozembed.substvars
 debian/libqtmozembed/
 debian/tmp/
 objdir-*/
+*.o
+/documentation.list
+/RPMS/
+moc/
+libqt5embedwidget.so*
+/qmlplugin5/libqmlmozembedpluginqt5.so
+/src/pkgconfig/
+/src/libqt5embedwidget.prl
+/tests/qmlmoztestrunner/qmlmoztestrunner

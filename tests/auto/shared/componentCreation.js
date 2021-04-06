@@ -30,11 +30,11 @@ function waitMozContext() {
     if (mozContext.instance === undefined) {
         return false;
     }
-    if (mozContext.instance.initialized()) {
+    if (mozContext.instance.isInitialized()) {
         return true;
     }
     var ticks = 0;
-    while (!mozContext.instance.initialized() && ticks++ < context_view_wait_timeout) {
+    while (!mozContext.instance.isInitialized() && ticks++ < context_view_wait_timeout) {
         testcaseid.wait();
     }
     return ticks < context_view_wait_timeout;

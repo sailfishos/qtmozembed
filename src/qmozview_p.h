@@ -50,6 +50,7 @@ public:
         DirtySize = 0x0001,
         DirtyMargin = 0x0002,
         DirtyDotsPerInch = 0x0004,
+        DirtyActive = 0x0008,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)

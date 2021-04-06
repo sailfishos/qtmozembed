@@ -49,12 +49,21 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mThread(new QThread())
     , mEmbedStarted(false)
     , mQtPump(nullptr)
-    , mAsyncContext(getenv("USE_ASYNC"))
+    , mAsyncContext(!getenv("DISABLE_ASYNC"))
     , mViewCreator(nullptr)
     , mMozWindow(nullptr)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
+    // See JB#11625: JSON message are locale aware avoid breaking them
+    // This is moved from the sailfish-components-webview.
+    setenv("LC_NUMERIC", "C", 1);
+    setlocale(LC_NUMERIC, "C");
+
+    // GRE_HOME must be set before QMozContext is initialized. With invoker PWD is empty.
+    QByteArray binaryPath = QCoreApplication::applicationDirPath().toLocal8Bit();
+    setenv("GRE_HOME", binaryPath.constData(), 1);
+
     LoadEmbedLite();
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(this);
