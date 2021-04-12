@@ -30,12 +30,12 @@ Item {
         anchors.fill: parent
         onViewInitialized: {
             appWindow.mozViewInitialized = true
-            webViewport.addMessageListener("chrome:linkadded")
+            webViewport.addMessageListener("Link:SetIcon")
         }
         onRecvAsyncMessage: {
-            print("onRecvAsyncMessage:" + message + ", data:" + data)
-            if (message == "chrome:linkadded" && data.get == "image/x-icon") {
-                appWindow.favicon = data.href
+            // print("onRecvAsyncMessage:" + message + ", data:" + data)
+            if (message == "Link:SetIcon" && data.url.slice(0, 17) == "data:image/x-icon") {
+                appWindow.favicon = data.url
             }
         }
     }

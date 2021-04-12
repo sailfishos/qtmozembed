@@ -20,9 +20,15 @@ export QTTESTSLOCATION=${QTTESTSLOCATION:-"/opt/tests/qtmozembed/auto/mer-qt$QTV
 
 #export MOZ_LOG=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5,EmbedLiteView:5,EmbedLiteViewThreadParent:5
 
+# Clean up settings
+rm -rf ~/.mozilla/mozembed-testrunner/
+
 $QMLMOZTESTRUNNER -opengl $@
 exit_code=$?
 cd $CURDIR
 kill $DBUS_SESSION_BUS_PID
+
+# Clean up settings afterwards
+rm -rf ~/.mozilla/mozembed-testrunner/
 
 exit $exit_code
