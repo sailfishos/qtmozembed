@@ -95,7 +95,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
-    Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL)
+    Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL) \
+    Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -137,6 +138,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_INVOKABLE void scrollBy(int x, int y); \
     QMozSecurity *security(); \
     void addMessageListeners(const std::vector<std::string> &messageNamesList); \
+    bool desktopMode() const; \
+    void setDesktopMode(bool); \
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
@@ -200,5 +203,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void chromeChanged(); \
     void chromeGestureThresholdChanged(); \
     void marginsChanged(); \
+    void desktopModeChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

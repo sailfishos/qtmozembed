@@ -840,6 +840,16 @@ void QuickMozView::setPrivateMode(bool aPrivateMode)
     }
 }
 
+bool QuickMozView::desktopMode() const
+{
+    return d->mDesktopMode;
+}
+
+void QuickMozView::setDesktopMode(bool desktopMode)
+{
+    d->setDesktopMode(desktopMode);
+}
+
 void QuickMozView::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);

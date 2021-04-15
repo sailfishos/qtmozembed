@@ -85,7 +85,7 @@ public:
     void SetMargins(const QMargins &margins, bool updateTopBottom);
     QColor GetBackgroundColor() const;
     void SetIsFocused(bool aIsFocused);
-    void SetDesktopMode(bool aDesktopMode);
+    void setDesktopMode(bool aDesktopMode);
     void SetThrottlePainting(bool aThrottle);
     void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void TestFlickingMode(QTouchEvent *event);

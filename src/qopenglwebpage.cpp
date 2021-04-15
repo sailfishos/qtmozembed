@@ -217,11 +217,7 @@ bool QOpenGLWebPage::desktopMode() const
 
 void QOpenGLWebPage::setDesktopMode(bool desktopMode)
 {
-    if (d->mDesktopMode != desktopMode) {
-        d->mDesktopMode = desktopMode;
-        d->SetDesktopMode(desktopMode);
-        Q_EMIT desktopModeChanged();
-    }
+    d->setDesktopMode(desktopMode);
 }
 
 bool QOpenGLWebPage::throttlePainting() const

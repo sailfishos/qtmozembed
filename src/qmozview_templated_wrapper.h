@@ -53,6 +53,8 @@ public:
     virtual void movingChanged() = 0;
     virtual void pinchingChanged() = 0;
     virtual void marginsChanged() = 0;
+
+    virtual void desktopModeChanged() = 0;
 };
 
 template<class TMozQView>
@@ -212,6 +214,11 @@ public:
     void contentHeightChanged()
     {
         Q_EMIT view.contentHeightChanged();
+    }
+
+    void desktopModeChanged() override
+    {
+        Q_EMIT view.desktopModeChanged();
     }
 
     TMozQView &view;

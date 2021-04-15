@@ -38,7 +38,6 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged FINAL)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
-    Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
 
     Q_MOZ_VIEW_PRORERTIES
@@ -65,9 +64,6 @@ public:
 
     QMozWindow *mozWindow() const;
     void setMozWindow(QMozWindow *window);
-
-    bool desktopMode() const;
-    void setDesktopMode(bool);
 
     bool throttlePainting() const;
     void setThrottlePainting(bool);
@@ -101,7 +97,6 @@ Q_SIGNALS:
     void widthChanged();
     void heightChanged();
     void loadedChanged();
-    void desktopModeChanged();
     void throttlePaintingChanged();
     void afterRendering();
 

@@ -875,10 +875,16 @@ void QMozViewPrivate::SetIsFocused(bool aIsFocused)
     }
 }
 
-void QMozViewPrivate::SetDesktopMode(bool aDesktopMode)
+void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
 {
-    if (mViewInitialized) {
-        mView->SetDesktopMode(aDesktopMode);
+    if (mDesktopMode != aDesktopMode) {
+        mDesktopMode = aDesktopMode;
+
+        if (mViewInitialized) {
+            mView->SetDesktopMode(aDesktopMode);
+        }
+
+        mViewIface->desktopModeChanged();
     }
 }
 
