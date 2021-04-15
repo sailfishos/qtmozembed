@@ -29,6 +29,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  pkgconfig(systemsettings) >= 0.5.25
 Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
 Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
+Requires:       embedlite-components-qt5 >= 1.22.28
 
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}
@@ -46,7 +47,6 @@ Development files for qtmozembed.
 %package tests
 Summary:    Unit tests for QtMozEmbed tests
 Requires:   %{name} = %{version}-%{release}
-Requires:   embedlite-components-qt5 >= 1.0.0
 Requires:   qt5-qtdeclarative-import-qttest
 Requires:   nemo-test-tools
 
