@@ -229,7 +229,7 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 {
     if (mThrottlePainting != throttle) {
         mThrottlePainting = throttle;
-        d->SetThrottlePainting(throttle);
+        d->setThrottlePainting(throttle);
         Q_EMIT throttlePaintingChanged();
     }
 }
@@ -305,7 +305,7 @@ void QOpenGLWebPage::forceActiveFocus()
     }
 
     setActive(true);
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
 }
 
 void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
@@ -336,13 +336,13 @@ QVariant QOpenGLWebPage::inputMethodQuery(Qt::InputMethodQuery property) const
 void QOpenGLWebPage::focusInEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
 }
 
 void QOpenGLWebPage::focusOutEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
-    d->SetIsFocused(false);
+    d->setIsFocused(false);
 }
 
 void QOpenGLWebPage::forceViewActiveFocus()
@@ -526,7 +526,7 @@ QMargins QOpenGLWebPage::margins() const
 
 void QOpenGLWebPage::setMargins(QMargins margins)
 {
-    d->SetMargins(margins, true);
+    d->setMargins(margins, true);
 }
 
 void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
@@ -567,7 +567,7 @@ void QOpenGLWebPage::reload()
 {
     if (!d->mViewInitialized)
         return;
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->Reload(false);
 }
 
@@ -668,7 +668,7 @@ void QOpenGLWebPage::resumeView()
     // PresShell::SetIsActive (nsPresShell). Thus, keep on throttling
     // if should keep on throttling.
     if (mThrottlePainting) {
-        d->SetThrottlePainting(true);
+        d->setThrottlePainting(true);
     }
 
     d->mView->ResumeTimeouts();

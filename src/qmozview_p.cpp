@@ -145,7 +145,7 @@ QMozViewPrivate::~QMozViewPrivate()
     mView = nullptr;
 }
 
-void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
+void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
 {
     bool widthChanged = false;
     bool heightChanged = false;
@@ -246,7 +246,7 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
     }
 }
 
-void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
+void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
 {
     QTouchEvent::TouchPoint tp;
     QPointF touchPos;
@@ -303,7 +303,7 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
     mSecondLastPos = tp.lastPos();
 }
 
-void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
+void QMozViewPrivate::handleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
 {
     if (mDragging) {
         mDragging = false;
@@ -321,19 +321,19 @@ void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChange
     }
 }
 
-void QMozViewPrivate::ResetState()
+void QMozViewPrivate::resetState()
 {
     // Invalid initial drag start Y.
     mDragStartY = -1.0;
     mMoveDelta = 0.0;
 
     mFlicking = false;
-    UpdateMoving(false);
+    updateMoving(false);
     mVerticalScrollDecorator.setMoving(false);
     mHorizontalScrollDecorator.setMoving(false);
 }
 
-void QMozViewPrivate::UpdateMoving(bool moving)
+void QMozViewPrivate::updateMoving(bool moving)
 {
     if (mMoving != moving) {
         mMoving = moving;
@@ -345,7 +345,7 @@ void QMozViewPrivate::UpdateMoving(bool moving)
     }
 }
 
-void QMozViewPrivate::ResetPainted()
+void QMozViewPrivate::resetPainted()
 {
     if (mIsPainted) {
         mIsPainted = false;
@@ -385,7 +385,7 @@ void QMozViewPrivate::load(const QString &url)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    ResetPainted();
+    resetPainted();
     mView->LoadURL(url.toUtf8().data());
 }
 
@@ -443,7 +443,7 @@ void QMozViewPrivate::timerEvent(QTimerEvent *event)
         qreal offsetY = mScrollableOffset.y();
         qreal offsetX = mScrollableOffset.x();
         if (offsetX == mOffsetX && offsetY == mOffsetY) {
-            ResetState();
+            resetState();
             q->killTimer(mMovingTimerId);
             mMovingTimerId = 0;
         }
@@ -668,7 +668,7 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
     mViewIface->bgColorChanged();
 }
 
-void QMozViewPrivate::SetMargins(const QMargins &margins, bool updateTopBottom)
+void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
 {
     if (margins != mMargins) {
         mMargins = margins;
@@ -688,7 +688,7 @@ void QMozViewPrivate::SetMargins(const QMargins &margins, bool updateTopBottom)
 }
 
 // Can be read for instance from gecko compositor thread.
-QColor QMozViewPrivate::GetBackgroundColor() const
+QColor QMozViewPrivate::getBackgroundColor() const
 {
     QMutexLocker locker(&mBgColorMutex);
     return mBgColor;
@@ -724,7 +724,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
-    ResetPainted();
+    resetPainted();
 
     if (!mIsLoading) {
         mIsLoading = true;
@@ -863,11 +863,11 @@ void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aH
         mContentRect.setSize(QSizeF(aWidth, aHeight));
     }
 
-    UpdateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
+    updateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
                      mScrollableOffset.x(), mScrollableOffset.y());
 }
 
-void QMozViewPrivate::SetIsFocused(bool aIsFocused)
+void QMozViewPrivate::setIsFocused(bool aIsFocused)
 {
     mViewIsFocused = aIsFocused;
     if (mViewInitialized) {
@@ -888,7 +888,7 @@ void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
     }
 }
 
-void QMozViewPrivate::SetThrottlePainting(bool aThrottle)
+void QMozViewPrivate::setThrottlePainting(bool aThrottle)
 {
     if (mViewInitialized) {
         mView->SetThrottlePainting(aThrottle);
@@ -975,7 +975,7 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
     float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
     if (!qFuzzyIsNull(contentResoution)) {
         mContentResolution = contentResoution;
-        UpdateScrollArea(
+        updateScrollArea(
                     aScrollableSize.width * mContentResolution,
                     aScrollableSize.height * mContentResolution,
                     aContentRect.x * mContentResolution,
@@ -1039,7 +1039,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             mPinching = true;
             pinchingChanged = true;
         }
-        ResetState();
+        resetState();
     } else if (event->type() == QEvent::TouchUpdate) {
         Q_ASSERT(touchPointsCount > 0);
         if (!mDragging) {
@@ -1055,15 +1055,15 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
     } else if (event->type() == QEvent::TouchEnd) {
         Q_ASSERT(touchPointsCount > 0);
-        HandleTouchEnd(draggingChanged, pinchingChanged);
+        handleTouchEnd(draggingChanged, pinchingChanged);
     } else if (event->type() == QEvent::TouchCancel) {
-        HandleTouchEnd(draggingChanged, pinchingChanged);
+        handleTouchEnd(draggingChanged, pinchingChanged);
         testFlick = false;
         mCanFlick = false;
     }
 
     if (testFlick) {
-        TestFlickingMode(event);
+        testFlickingMode(event);
     }
 
     if (draggingChanged) {
@@ -1076,13 +1076,13 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
 
     if (event->type() == QEvent::TouchEnd) {
         if (mCanFlick) {
-            UpdateMoving(mCanFlick);
+            updateMoving(mCanFlick);
         } else {
             // From dragging (panning) end to clean state
-            ResetState();
+            resetState();
         }
     } else {
-        UpdateMoving(mDragging);
+        updateMoving(mDragging);
     }
 
     qint64 timeStamp = current_timestamp(event);
@@ -1100,7 +1100,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
         // All touch point should be cleared but let's clear active touch points anyways.
         mActiveTouchPoints.clear();
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
         // touch was canceled hence no need to generate touchstart or touchmove
         return;
     }
@@ -1149,7 +1149,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                    pt.pressure()));
         }
 
-        ReceiveInputEvent(touchStart);
+        receiveInputEvent(touchStart);
     }
 
     Q_FOREACH (int id, endIds) {
@@ -1158,7 +1158,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         touchEnd.touches.push_back(TouchData(pt.id(),
                                              createEmbedTouchPoint(pt.pos()),
                                              pt.pressure()));
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
     }
 
     if (!moveIds.empty()) {
@@ -1176,11 +1176,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                   createEmbedTouchPoint(pt.pos()),
                                                   pt.pressure()));
         }
-        ReceiveInputEvent(touchMove);
+        receiveInputEvent(touchMove);
     }
 }
 
-void QMozViewPrivate::ReceiveInputEvent(const EmbedTouchInput &event)
+void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
 {
     if (mViewInitialized) {
         mView->ReceiveInputEvent(event);
@@ -1200,7 +1200,7 @@ void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
                                                createEmbedTouchPoint(pt),
                                                1.0f));
     }
-    ReceiveInputEvent(touchBegin);
+    receiveInputEvent(touchBegin);
 }
 
 void QMozViewPrivate::synthTouchMove(const QVariant &touches)
@@ -1216,7 +1216,7 @@ void QMozViewPrivate::synthTouchMove(const QVariant &touches)
                                               createEmbedTouchPoint(pt),
                                               1.0f));
     }
-    ReceiveInputEvent(touchMove);
+    receiveInputEvent(touchMove);
 }
 
 void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
@@ -1232,7 +1232,7 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
                                              createEmbedTouchPoint(pt),
                                              1.0f));
     }
-    ReceiveInputEvent(touchEnd);
+    receiveInputEvent(touchEnd);
 }
 
 void QMozViewPrivate::recvMouseMove(int posX, int posY)
@@ -1243,7 +1243,7 @@ void QMozViewPrivate::recvMouseMove(int posX, int posY)
         touchMove.touches.push_back(TouchData(0,
                                               createEmbedTouchPoint(posX, posY),
                                               1.0f));
-        ReceiveInputEvent(touchMove);
+        receiveInputEvent(touchMove);
     }
 }
 
@@ -1256,7 +1256,7 @@ void QMozViewPrivate::recvMousePress(int posX, int posY)
         touchBegin.touches.push_back(TouchData(0,
                                                createEmbedTouchPoint(posX, posY),
                                                1.0f));
-        ReceiveInputEvent(touchBegin);
+        receiveInputEvent(touchBegin);
     }
 }
 
@@ -1268,7 +1268,7 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
         touchEnd.touches.push_back(TouchData(0,
                                              createEmbedTouchPoint(posX, posY),
                                              1.0f));
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
     }
     if (mPendingTouchEvent) {
         mPendingTouchEvent = false;

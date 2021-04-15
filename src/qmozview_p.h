@@ -82,18 +82,19 @@ public:
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
     bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
-    void SetMargins(const QMargins &margins, bool updateTopBottom);
-    QColor GetBackgroundColor() const;
-    void SetIsFocused(bool aIsFocused);
+    // Starting from here these are QMozViewPrivate methods.
+    void setMargins(const QMargins &margins, bool updateTopBottom);
+    QColor getBackgroundColor() const;
+    void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
-    void SetThrottlePainting(bool aThrottle);
-    void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
-    void TestFlickingMode(QTouchEvent *event);
-    void HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
-    void ResetState();
-    void UpdateMoving(bool moving);
-    void ResetPainted();
-    void ReceiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
+    void setThrottlePainting(bool aThrottle);
+    void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
+    void testFlickingMode(QTouchEvent *event);
+    void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
+    void resetState();
+    void updateMoving(bool moving);
+    void resetPainted();
+    void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
 
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);

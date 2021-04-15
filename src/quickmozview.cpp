@@ -384,7 +384,7 @@ void QuickMozView::updateMargins()
             m.setBottom(d->mBottomMargin);
         }
 
-        d->SetMargins(m, false);
+        d->setMargins(m, false);
     }
 }
 
@@ -448,13 +448,13 @@ QVariant QuickMozView::inputMethodQuery(Qt::InputMethodQuery property) const
 
 void QuickMozView::focusInEvent(QFocusEvent *event)
 {
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
     QQuickItem::focusInEvent(event);
 }
 
 void QuickMozView::focusOutEvent(QFocusEvent *event)
 {
-    d->SetIsFocused(false);
+    d->setIsFocused(false);
     QQuickItem::focusOutEvent(event);
 }
 
@@ -715,7 +715,7 @@ void QuickMozView::resetViewportHeight()
 
 void QuickMozView::setMargins(QMargins margins)
 {
-    d->SetMargins(margins, true);
+    d->setMargins(margins, true);
 }
 
 void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
@@ -735,7 +735,7 @@ void QuickMozView::goBack()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->GoBack();
 }
 
@@ -744,7 +744,7 @@ void QuickMozView::goForward()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->GoForward();
 }
 
@@ -760,7 +760,7 @@ void QuickMozView::reload()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->Reload(false);
 }
 
