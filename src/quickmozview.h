@@ -135,16 +135,12 @@ private:
     QMozViewPrivate *d;
     QSGTexture *mTexture;
     friend class QMozViewPrivate;
-    unsigned mParentID;
     Qt::ScreenOrientation mOrientation;
     bool mExplicitViewportWidth;
     bool mExplicitViewportHeight;
     bool mExplicitOrientation;
-    bool mPrivateMode;
     bool mUseQmlMouse;
     bool mComposited;
-    bool mActive;
-    bool mLoaded;
     bool mFollowItemGeometry;
 };
 

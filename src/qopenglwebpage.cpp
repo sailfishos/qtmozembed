@@ -58,13 +58,8 @@ using namespace mozilla::embedlite;
 QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     : QObject(parent)
     , d(new QMozViewPrivate(new IMozQView<QOpenGLWebPage>(*this), this))
-    , mParentID(0)
-    , mPrivateMode(false)
-    , mActive(false)
-    , mLoaded(false)
     , mCompleted(false)
     , mSizeUpdateScheduled(false)
-    , mDesktopMode(false)
     , mThrottlePainting(false)
 {
     d->mContext = QMozContext::instance();
@@ -90,8 +85,8 @@ QOpenGLWebPage::~QOpenGLWebPage()
 void QOpenGLWebPage::updateLoaded()
 {
     bool loaded = loadProgress() == 100 && !loading();
-    if (mLoaded != loaded) {
-        mLoaded = loaded;
+    if (d->mLoaded != loaded) {
+        d->mLoaded = loaded;
         Q_EMIT loadedChanged();
     }
 }
@@ -101,7 +96,7 @@ void QOpenGLWebPage::createView()
     qCDebug(lcEmbedLiteExt) << "QOpenGLWebPage";
     if (!d->mView) {
         EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
-        d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
+        d->mView = d->mContext->GetApp()->CreateView(win, d->mParentID, d->mPrivateMode, d->mDesktopMode);
         d->mView->SetListener(d);
         d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     }
@@ -138,12 +133,12 @@ void QOpenGLWebPage::onDrawOverlay(const QRect &rect)
 
 int QOpenGLWebPage::parentId() const
 {
-    return mParentID;
+    return d->mParentID;
 }
 
 bool QOpenGLWebPage::privateMode() const
 {
-    return mPrivateMode;
+    return d->mPrivateMode;
 }
 
 void QOpenGLWebPage::setPrivateMode(bool privateMode)
@@ -154,8 +149,8 @@ void QOpenGLWebPage::setPrivateMode(bool privateMode)
         return;
     }
 
-    if (privateMode != mPrivateMode) {
-        mPrivateMode = privateMode;
+    if (privateMode != d->mPrivateMode) {
+        d->mPrivateMode = privateMode;
         Q_EMIT privateModeChanged();
     }
 }
@@ -175,7 +170,7 @@ void QOpenGLWebPage::setEnabled(bool enabled)
 
 bool QOpenGLWebPage::active() const
 {
-    return mActive;
+    return d->mActive;
 }
 
 void QOpenGLWebPage::setActive(bool active)
@@ -186,16 +181,16 @@ void QOpenGLWebPage::setActive(bool active)
     if (!d || !d->mViewInitialized)
         return;
 
-    if (mActive != active) {
-        mActive = active;
-        d->mView->SetIsActive(mActive);
+    if (d->mActive != active) {
+        d->mActive = active;
+        d->mView->SetIsActive(d->mActive);
         Q_EMIT activeChanged();
     }
 }
 
 bool QOpenGLWebPage::loaded() const
 {
-    return mLoaded;
+    return d->mLoaded;
 }
 
 QMozWindow *QOpenGLWebPage::mozWindow() const
@@ -217,13 +212,13 @@ void QOpenGLWebPage::setMozWindow(QMozWindow *window)
 
 bool QOpenGLWebPage::desktopMode() const
 {
-    return mDesktopMode;
+    return d->mDesktopMode;
 }
 
 void QOpenGLWebPage::setDesktopMode(bool desktopMode)
 {
-    if (mDesktopMode != desktopMode) {
-        mDesktopMode = desktopMode;
+    if (d->mDesktopMode != desktopMode) {
+        d->mDesktopMode = desktopMode;
         d->SetDesktopMode(desktopMode);
         Q_EMIT desktopModeChanged();
     }
@@ -636,8 +631,8 @@ quint32 QOpenGLWebPage::uniqueID() const
 
 void QOpenGLWebPage::setParentID(unsigned aParentID)
 {
-    if (aParentID != mParentID) {
-        mParentID = aParentID;
+    if (aParentID != d->mParentID) {
+        d->mParentID = aParentID;
         Q_EMIT parentIdChanged();
     }
 }

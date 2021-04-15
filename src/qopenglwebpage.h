@@ -117,15 +117,10 @@ private:
     QMozViewPrivate *d;
     friend class QMozViewPrivate;
 
-    unsigned mParentID;
-    bool mPrivateMode;
-    bool mActive;
-    bool mLoaded;
     bool mCompleted;
     QList<QWeakPointer<QMozGrabResult> > mGrabResultList;
     QMutex mGrabResultListLock;
     bool mSizeUpdateScheduled;
-    bool mDesktopMode;
     bool mThrottlePainting;
 
     Q_DISABLE_COPY(QOpenGLWebPage)

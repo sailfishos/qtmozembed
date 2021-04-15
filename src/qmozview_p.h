@@ -142,6 +142,11 @@ protected:
     QMozContext *mContext;
     mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
+    unsigned mParentID;
+    bool mPrivateMode;
+    bool mDesktopMode;
+    bool mActive;
+    bool mLoaded;
     QColor mBgColor;
     qreal mTopMargin;
     qreal mBottomMargin;
