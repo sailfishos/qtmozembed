@@ -34,7 +34,6 @@ public:
     virtual void loadRedirect() = 0;
     virtual void securityChanged(QString status, uint state) = 0;
     virtual void firstPaint(int offx, int offy) = 0;
-    virtual void contentLoaded(QString docuri) = 0;
     virtual void contentWidthChanged() = 0;
     virtual void contentHeightChanged() = 0;
     virtual void viewAreaChanged() = 0;
@@ -138,10 +137,6 @@ public:
     void firstPaint(int offx, int offy)
     {
         Q_EMIT view.firstPaint(offx, offy);
-    }
-    void contentLoaded(QString docuri)
-    {
-        Q_EMIT view.contentLoaded(docuri);
     }
     void viewAreaChanged()
     {

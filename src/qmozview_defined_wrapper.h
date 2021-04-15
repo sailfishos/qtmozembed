@@ -182,7 +182,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void loadRedirect(); \
     void securityChanged(QString status, uint state); \
     void firstPaint(int offx, int offy); \
-    void contentLoaded(QString docuri); \
     void viewAreaChanged(); \
     void scrollableOffsetChanged(); \
     void atXBeginningChanged(); \
