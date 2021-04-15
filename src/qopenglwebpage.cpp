@@ -90,6 +90,8 @@ void QOpenGLWebPage::createView()
         d->mView = d->mContext->GetApp()->CreateView(win, d->mParentID, d->mPrivateMode, d->mDesktopMode);
         d->mView->SetListener(d);
         d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+
+        Q_EMIT uniqueIdChanged();
     }
 }
 
@@ -602,14 +604,14 @@ void QOpenGLWebPage::newWindow(const QString &url)
 #endif
 }
 
-quint32 QOpenGLWebPage::uniqueID() const
+quint32 QOpenGLWebPage::uniqueId() const
 {
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QOpenGLWebPage::setParentID(unsigned aParentID)
+void QOpenGLWebPage::setParentId(unsigned parentId)
 {
-    d->setParentId(aParentID);
+    d->setParentId(parentId);
 }
 
 void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)

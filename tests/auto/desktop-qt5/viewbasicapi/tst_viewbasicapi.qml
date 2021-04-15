@@ -40,7 +40,7 @@ Item {
             }
             mozContext.dumpTS("test_2viewInitBasic start1")
             testcaseid.verify(MyScript.waitMozView())
-            testcaseid.verify(mozView.uniqueID() > 0)
+            testcaseid.verify(mozView.uniqueId > 0)
             testcaseid.verify(mozView.child)
             mozView = null
             mozContext.dumpTS("test_2viewInitBasic end")

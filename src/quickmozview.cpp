@@ -194,6 +194,8 @@ void QuickMozView::createView()
     d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
     connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
             this, &QuickMozView::compositingFinished);
+
+    Q_EMIT uniqueIdChanged();
 }
 
 QSGNode *
@@ -795,14 +797,14 @@ void QuickMozView::newWindow(const QString &url)
 #endif
 }
 
-quint32 QuickMozView::uniqueID() const
+quint32 QuickMozView::uniqueId() const
 {
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QuickMozView::setParentId(unsigned aParentID)
+void QuickMozView::setParentId(unsigned parentId)
 {
-    d->setParentId(aParentID);
+    d->setParentId(parentId);
 }
 
 void QuickMozView::setPrivateMode(bool aPrivateMode)

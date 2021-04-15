@@ -97,8 +97,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
     Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL) \
     Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
-    Q_PROPERTY(int parentId READ parentId WRITE setParentID NOTIFY parentIdChanged FINAL) \
-
+    Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
+    Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -156,8 +156,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \
     void newWindow(const QString &url = "about:blank"); \
-    quint32 uniqueID() const; \
-    void setParentID(unsigned aParentID); \
+    quint32 uniqueId() const; \
+    void setParentId(unsigned parentId); \
     void synthTouchBegin(const QVariant &touches); \
     void synthTouchMove(const QVariant &touches); \
     void synthTouchEnd(const QVariant &touches); \
@@ -208,5 +208,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void marginsChanged(); \
     void desktopModeChanged(); \
     void parentIdChanged(); \
+    void uniqueIdChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */
