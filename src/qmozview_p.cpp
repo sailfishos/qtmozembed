@@ -587,6 +587,38 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
     }
 }
 
+void QMozViewPrivate::setParentId(unsigned parentId)
+{
+    if (parentId != mParentID) {
+        mParentID = parentId;
+        mViewIface->parentIdChanged();
+    }
+}
+
+void QMozViewPrivate::setChromeGestureEnabled(bool value)
+{
+    if (value != mChromeGestureEnabled) {
+        mChromeGestureEnabled = value;
+        mViewIface->chromeGestureEnabledChanged();
+    }
+}
+
+void QMozViewPrivate::setChromeGestureThreshold(qreal value)
+{
+    if (value != mChromeGestureThreshold) {
+        mChromeGestureThreshold = value;
+        mViewIface->chromeGestureThresholdChanged();
+    }
+}
+
+void QMozViewPrivate::setChrome(bool value)
+{
+    if (value != mChrome) {
+        mChrome = value;
+        mViewIface->chromeChanged();
+    }
+}
+
 TouchPointF QMozViewPrivate::createEmbedTouchPoint(const QPointF &point) const
 {
     return createEmbedTouchPoint(point.x(), point.y());
@@ -621,6 +653,15 @@ void QMozViewPrivate::onCompositorCreated()
     if (mDirtyState & DirtyDotsPerInch) {
         mView->SetDPI(mDpi);
         mDirtyState &= ~DirtyDotsPerInch;
+    }
+}
+
+void QMozViewPrivate::updateLoaded()
+{
+    bool loaded = mProgress == 100 && !mIsLoading;
+    if (mLoaded != loaded) {
+        mLoaded = loaded;
+        mViewIface->loadedChanged();
     }
 }
 

@@ -90,8 +90,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::setIsActive, this, &QuickMozView::SetIsActive);
     connect(this, &QuickMozView::viewInitialized, this, &QuickMozView::processViewInitialization);
     connect(this, &QuickMozView::enabledChanged, this, &QuickMozView::updateEnabled);
-    connect(this, &QuickMozView::loadProgressChanged, this, &QuickMozView::updateLoaded);
-    connect(this, &QuickMozView::loadingChanged, this, &QuickMozView::updateLoaded);
+    connect(this, &QuickMozView::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QuickMozView::loadingChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
@@ -117,15 +117,6 @@ QuickMozView::SetIsActive(bool aIsActive)
         d->mView->SetIsActive(aIsActive);
     } else {
         Q_EMIT setIsActive(aIsActive);
-    }
-}
-
-void QuickMozView::updateLoaded()
-{
-    bool loaded = loadProgress() == 100 && !loading();
-    if (d->mLoaded != loaded) {
-        d->mLoaded = loaded;
-        Q_EMIT loadedChanged();
     }
 }
 
@@ -594,10 +585,7 @@ bool QuickMozView::chromeGestureEnabled() const
 
 void QuickMozView::setChromeGestureEnabled(bool value)
 {
-    if (value != d->mChromeGestureEnabled) {
-        d->mChromeGestureEnabled = value;
-        Q_EMIT chromeGestureEnabledChanged();
-    }
+    d->setChromeGestureEnabled(value);
 }
 
 qreal QuickMozView::chromeGestureThreshold() const
@@ -607,10 +595,7 @@ qreal QuickMozView::chromeGestureThreshold() const
 
 void QuickMozView::setChromeGestureThreshold(qreal value)
 {
-    if (value != d->mChromeGestureThreshold) {
-        d->mChromeGestureThreshold = value;
-        Q_EMIT chromeGestureThresholdChanged();
-    }
+    d->setChromeGestureThreshold(value);
 }
 
 bool QuickMozView::chrome() const
@@ -620,10 +605,7 @@ bool QuickMozView::chrome() const
 
 void QuickMozView::setChrome(bool value)
 {
-    if (value != d->mChrome) {
-        d->mChrome = value;
-        Q_EMIT chromeChanged();
-    }
+    d->setChrome(value);
 }
 
 qreal QuickMozView::contentWidth() const
@@ -818,12 +800,9 @@ quint32 QuickMozView::uniqueID() const
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QuickMozView::setParentID(unsigned aParentID)
+void QuickMozView::setParentId(unsigned aParentID)
 {
-    if (aParentID != d->mParentID) {
-        d->mParentID = aParentID;
-        Q_EMIT parentIdChanged();
-    }
+    d->setParentId(aParentID);
 }
 
 void QuickMozView::setPrivateMode(bool aPrivateMode)

@@ -32,7 +32,6 @@ class QMozSecurity;
 class QOpenGLWebPage : public QObject
 {
     Q_OBJECT
-    Q_PROPERTY(int parentId READ parentId WRITE setParentID NOTIFY parentIdChanged FINAL)
     Q_PROPERTY(bool privateMode READ privateMode WRITE setPrivateMode NOTIFY privateModeChanged FINAL)
     Q_PROPERTY(bool completed READ completed NOTIFY completedChanged FINAL)
     Q_PROPERTY(bool enabled READ enabled WRITE setEnabled NOTIFY enabledChanged FINAL)
@@ -47,7 +46,6 @@ public:
     virtual ~QOpenGLWebPage();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
-    int parentId() const;
 
     bool privateMode() const;
     void setPrivateMode(bool privateMode);
@@ -89,7 +87,7 @@ public Q_SLOTS:
     void setInputMethodHints(Qt::InputMethodHints hints);
 
 Q_SIGNALS:
-    void parentIdChanged();
+    Q_MOZ_VIEW_SIGNALS
     void privateModeChanged();
     void completedChanged();
     void enabledChanged();
@@ -100,11 +98,8 @@ Q_SIGNALS:
     void throttlePaintingChanged();
     void afterRendering();
 
-    Q_MOZ_VIEW_SIGNALS
-
 private Q_SLOTS:
     void processViewInitialization();
-    void updateLoaded();
     void createView();
     void onDrawOverlay(const QRect &rect);
 

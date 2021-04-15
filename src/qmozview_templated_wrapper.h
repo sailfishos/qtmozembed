@@ -26,6 +26,7 @@ public:
     virtual void canGoBackChanged() = 0;
     virtual void canGoForwardChanged() = 0;
     virtual void loadingChanged() = 0;
+    virtual void loadedChanged() = 0;
     virtual void viewDestroyed() = 0;
     virtual void windowCloseRequested() = 0;
     virtual void recvAsyncMessage(const QString message, const QVariant data) = 0;
@@ -42,7 +43,6 @@ public:
     virtual void atXEndChanged() = 0;
     virtual void atYBeginningChanged() = 0;
     virtual void atYEndChanged() = 0;
-    virtual void chromeChanged() = 0;
     virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
@@ -55,6 +55,11 @@ public:
     virtual void marginsChanged() = 0;
 
     virtual void desktopModeChanged() = 0;
+    virtual void chromeGestureEnabledChanged() = 0;
+    virtual void chromeGestureThresholdChanged() = 0;
+    virtual void chromeChanged() = 0;
+
+    virtual void parentIdChanged() = 0;
 };
 
 template<class TMozQView>
@@ -100,6 +105,12 @@ public:
     {
         Q_EMIT view.loadingChanged();
     }
+
+    void loadedChanged() override
+    {
+        Q_EMIT view.loadedChanged();
+    }
+
     void viewDestroyed()
     {
         Q_EMIT view.viewDestroyed();
@@ -156,10 +167,27 @@ public:
     {
         Q_EMIT view.atYEndChanged();
     }
-    void chromeChanged()
+
+    void chromeGestureEnabledChanged() override
+    {
+        Q_EMIT view.chromeGestureEnabledChanged();
+    }
+
+    void chromeGestureThresholdChanged() override
+    {
+        Q_EMIT view.chromeGestureThresholdChanged();
+    }
+
+    void chromeChanged() override
     {
         Q_EMIT view.chromeChanged();
     }
+
+    void parentIdChanged() override
+    {
+        Q_EMIT view.parentIdChanged();
+    }
+
     void handleLongTap(QPoint point, QMozReturnValue *retval)
     {
         Q_EMIT view.handleLongTap(point, retval);

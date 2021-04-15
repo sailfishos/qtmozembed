@@ -118,6 +118,11 @@ public:
     void sendAsyncMessage(const QString &name, const QVariant &value);
     void setMozWindow(QMozWindow *);
 
+    void setParentId(unsigned parentId);
+    void setChromeGestureEnabled(bool value);
+    void setChromeGestureThreshold(qreal value);
+    void setChrome(bool value);
+
     mozilla::embedlite::TouchPointF createEmbedTouchPoint(const QPointF &point) const;
     mozilla::embedlite::TouchPointF createEmbedTouchPoint(qreal posX, qreal posY) const;
 
@@ -125,6 +130,7 @@ public:
 
 public Q_SLOTS:
     void onCompositorCreated();
+    void updateLoaded();
 
 protected:
     friend class QOpenGLWebPage;

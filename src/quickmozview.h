@@ -27,7 +27,6 @@ class QMozSecurity;
 class QuickMozView : public QQuickItem
 {
     Q_OBJECT
-    Q_PROPERTY(int parentId READ parentId WRITE setParentID NOTIFY parentIdChanged FINAL)
     Q_PROPERTY(bool privateMode READ privateMode WRITE setPrivateMode NOTIFY privateModeChanged FINAL)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
@@ -45,7 +44,6 @@ public:
     Q_MOZ_VIEW_PUBLIC_METHODS
     void RenderToCurrentContext();
 
-    int parentId() const;
     bool privateMode() const;
 
     bool active() const;
@@ -79,7 +77,6 @@ public Q_SLOTS:
 Q_SIGNALS:
     void childChanged();
     void setIsActive(bool);
-    void parentIdChanged();
     void privateModeChanged();
     void activeChanged();
     void loadedChanged();
@@ -93,7 +90,6 @@ Q_SIGNALS:
 private Q_SLOTS:
     void processViewInitialization();
     void SetIsActive(bool aIsActive);
-    void updateLoaded();
     void resumeRendering();
     void compositingFinished();
     void updateMargins();

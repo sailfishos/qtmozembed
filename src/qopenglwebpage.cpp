@@ -65,8 +65,8 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     d->mContext = QMozContext::instance();
 
     connect(this, &QOpenGLWebPage::viewInitialized, this, &QOpenGLWebPage::processViewInitialization);
-    connect(this, &QOpenGLWebPage::loadProgressChanged, this, &QOpenGLWebPage::updateLoaded);
-    connect(this, &QOpenGLWebPage::loadingChanged, this, &QOpenGLWebPage::updateLoaded);
+    connect(this, &QOpenGLWebPage::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QOpenGLWebPage::loadingChanged, d, &QMozViewPrivate::updateLoaded);
 }
 
 QOpenGLWebPage::~QOpenGLWebPage()
@@ -80,15 +80,6 @@ QOpenGLWebPage::~QOpenGLWebPage()
     mGrabResultList.clear();
     delete d;
     d = nullptr;
-}
-
-void QOpenGLWebPage::updateLoaded()
-{
-    bool loaded = loadProgress() == 100 && !loading();
-    if (d->mLoaded != loaded) {
-        d->mLoaded = loaded;
-        Q_EMIT loadedChanged();
-    }
 }
 
 void QOpenGLWebPage::createView()
@@ -477,10 +468,7 @@ bool QOpenGLWebPage::chromeGestureEnabled() const
 
 void QOpenGLWebPage::setChromeGestureEnabled(bool value)
 {
-    if (value != d->mChromeGestureEnabled) {
-        d->mChromeGestureEnabled = value;
-        Q_EMIT chromeGestureEnabledChanged();
-    }
+    d->setChromeGestureEnabled(value);
 }
 
 qreal QOpenGLWebPage::chromeGestureThreshold() const
@@ -490,10 +478,7 @@ qreal QOpenGLWebPage::chromeGestureThreshold() const
 
 void QOpenGLWebPage::setChromeGestureThreshold(qreal value)
 {
-    if (value != d->mChromeGestureThreshold) {
-        d->mChromeGestureThreshold = value;
-        Q_EMIT chromeGestureThresholdChanged();
-    }
+    d->setChromeGestureThreshold(value);
 }
 
 bool QOpenGLWebPage::chrome() const
@@ -503,10 +488,7 @@ bool QOpenGLWebPage::chrome() const
 
 void QOpenGLWebPage::setChrome(bool value)
 {
-    if (value != d->mChrome) {
-        d->mChrome = value;
-        Q_EMIT chromeChanged();
-    }
+    d->setChrome(value);
 }
 
 qreal QOpenGLWebPage::contentWidth() const
@@ -627,10 +609,7 @@ quint32 QOpenGLWebPage::uniqueID() const
 
 void QOpenGLWebPage::setParentID(unsigned aParentID)
 {
-    if (aParentID != d->mParentID) {
-        d->mParentID = aParentID;
-        Q_EMIT parentIdChanged();
-    }
+    d->setParentId(aParentID);
 }
 
 void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)
