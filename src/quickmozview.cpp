@@ -120,15 +120,6 @@ QuickMozView::SetIsActive(bool aIsActive)
     }
 }
 
-void
-QuickMozView::contextInitialized()
-{
-#ifdef DEVELOPMENT_BUILD
-    qCInfo(lcEmbedLiteExt);
-#endif
-    createView();
-}
-
 void QuickMozView::processViewInitialization()
 {
     // This is connected to view initialization. View must be initialized
@@ -168,34 +159,6 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
                 mExplicitViewportHeight ? d->mSize.height() : newGeometry.height()));
 
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
-}
-
-void QuickMozView::createView()
-{
-    if (d->mSize.isEmpty()) {
-        d->mSize = window()->size();
-    }
-
-    QMozWindow *mozWindow = d->mContext->registeredWindow();
-    if (!mozWindow) {
-        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
-        d->mContext->registerWindow(mozWindow);
-    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
-        mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
-    }
-
-    if (d->mActive) {
-        mozWindow->setContentOrientation(mOrientation);
-    }
-
-    d->setMozWindow(mozWindow);
-    d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, d->mParentID, d->mPrivateMode);
-    d->mView->SetListener(d);
-    d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
-    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
-            this, &QuickMozView::compositingFinished);
-
-    Q_EMIT uniqueIdChanged();
 }
 
 QSGNode *
@@ -358,6 +321,27 @@ void QuickMozView::compositingFinished()
         mComposited = true;
         update();
     }
+}
+
+void QuickMozView::prepareMozWindow()
+{
+    if (d->mSize.isEmpty()) {
+        d->mSize = window()->size();
+    }
+
+    QMozWindow *mozWindow = d->mContext->registeredWindow();
+    if (!mozWindow) {
+        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
+        d->mContext->registerWindow(mozWindow);
+    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
+        mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
+    }
+
+    if (d->mActive) {
+        mozWindow->setContentOrientation(mOrientation);
+    }
+
+    d->setMozWindow(mozWindow);
 }
 
 void QuickMozView::updateMargins()
@@ -900,12 +884,7 @@ void QuickMozView::timerEvent(QTimerEvent *event)
 void QuickMozView::componentComplete()
 {
     QQuickItem::componentComplete();
-    // The first created view gets always parentId of 0
-    if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::initialized, this, &QuickMozView::contextInitialized);
-    } else {
-        createView();
-    }
+    d->createView();
 }
 
 void QuickMozView::resumeRendering()

@@ -37,8 +37,7 @@ protected:
 
 private:
     friend class QMozWindow;
-    friend class QOpenGLWebPage;
-    friend class QuickMozView;
+    friend class QMozViewPrivate;
 
     void getEGLContext(void *&context, void *&surface, void *&display);
 #if defined(ENABLE_GLX)

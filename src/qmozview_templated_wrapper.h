@@ -59,6 +59,7 @@ public:
     virtual void chromeChanged() = 0;
 
     virtual void parentIdChanged() = 0;
+    virtual void uniqueIdChanged() = 0;
 };
 
 template<class TMozQView>
@@ -181,6 +182,11 @@ public:
     void parentIdChanged() override
     {
         Q_EMIT view.parentIdChanged();
+    }
+
+    void uniqueIdChanged() override
+    {
+        Q_EMIT view.uniqueIdChanged();
     }
 
     void handleLongTap(QPoint point, QMozReturnValue *retval)

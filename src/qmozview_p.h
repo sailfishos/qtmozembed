@@ -131,6 +131,7 @@ public:
 public Q_SLOTS:
     void onCompositorCreated();
     void updateLoaded();
+    void createView();
 
 protected:
     friend class QOpenGLWebPage;

@@ -14,6 +14,8 @@
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QTouchEvent>
+#include <QQuickWindow>
+#include <QScreen>
 
 #include <iostream>
 #include <locale>
@@ -34,6 +36,8 @@
 #include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
+
+#include "quickmozview.h"
 
 #ifndef MOZVIEW_FLICK_THRESHOLD
 #define MOZVIEW_FLICK_THRESHOLD 200
@@ -662,6 +666,33 @@ void QMozViewPrivate::updateLoaded()
     if (mLoaded != loaded) {
         mLoaded = loaded;
         mViewIface->loadedChanged();
+    }
+}
+
+void QMozViewPrivate::createView()
+{
+    if (!mContext->isInitialized()) {
+        connect(mContext, &QMozContext::initialized, this, &QMozViewPrivate::createView);
+    } else {
+        Q_ASSERT(!mView);
+        QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
+        if (mozView) {
+            mozView->prepareMozWindow();
+        }
+
+        Q_ASSERT(mMozWindow);
+
+        EmbedLiteWindow *win = mMozWindow->d->mWindow;
+        mView = mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
+        mView->SetListener(this);
+        setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+
+        if (mozView) {
+            connect(mMozWindow.data(), &QMozWindow::compositingFinished,
+                    mozView, &QuickMozView::compositingFinished);
+        }
+
+        mViewIface->uniqueIdChanged();
     }
 }
 

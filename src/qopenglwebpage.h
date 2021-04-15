@@ -100,7 +100,6 @@ Q_SIGNALS:
 
 private Q_SLOTS:
     void processViewInitialization();
-    void createView();
     void onDrawOverlay(const QRect &rect);
 
 private:

@@ -82,19 +82,6 @@ QOpenGLWebPage::~QOpenGLWebPage()
     d = nullptr;
 }
 
-void QOpenGLWebPage::createView()
-{
-    qCDebug(lcEmbedLiteExt) << "QOpenGLWebPage";
-    if (!d->mView) {
-        EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
-        d->mView = d->mContext->GetApp()->CreateView(win, d->mParentID, d->mPrivateMode, d->mDesktopMode);
-        d->mView->SetListener(d);
-        d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
-
-        Q_EMIT uniqueIdChanged();
-    }
-}
-
 void QOpenGLWebPage::processViewInitialization()
 {
     // This is connected to view initialization. View must be initialized
@@ -234,12 +221,7 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 */
 void QOpenGLWebPage::initialize()
 {
-    Q_ASSERT(d->mMozWindow);
-    if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::initialized, this, &QOpenGLWebPage::createView);
-    } else {
-        createView();
-    }
+    d->createView();
 }
 
 bool QOpenGLWebPage::event(QEvent *event)

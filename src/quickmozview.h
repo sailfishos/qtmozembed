@@ -119,14 +119,12 @@ public Q_SLOTS:
     void setInputMethodHints(Qt::InputMethodHints hints);
 
 private Q_SLOTS:
-
-    void contextInitialized();
     void updateEnabled();
     void updateOrientation(Qt::ScreenOrientation orientation);
 
 private:
-    void createView();
     void updateContentSize(const QSizeF &size);
+    void prepareMozWindow();
 
     QMozViewPrivate *d;
     QSGTexture *mTexture;
