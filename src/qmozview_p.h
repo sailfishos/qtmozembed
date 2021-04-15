@@ -108,7 +108,7 @@ public:
     void addMessageListeners(const std::vector<std::string> &messageNamesList);
 
     void startMoveMonitor();
-    void timerEvent(QTimerEvent *event);
+    void timerEvent(QTimerEvent *event) override;
     QVariant inputMethodQuery(Qt::InputMethodQuery property) const;
     void inputMethodEvent(QInputMethodEvent *event);
     void keyPressEvent(QKeyEvent *event);
