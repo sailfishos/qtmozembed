@@ -1417,7 +1417,7 @@ void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant 
         doc = QJsonDocument::fromVariant(value);
     }
 
-    QByteArray array = doc.toJson();
+    QByteArray array = doc.toJson(QJsonDocument::Compact);
     QString data(array);
 
     mView->SendAsyncMessage((const char16_t *)message.utf16(), (const char16_t *)data.utf16());
