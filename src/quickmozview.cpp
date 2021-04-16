@@ -906,3 +906,14 @@ void QuickMozView::updatePolish()
         d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
 }
+
+QString QuickMozView::httpUserAgent() const
+{
+    return d->httpUserAgent();
+}
+
+void QuickMozView::setHttpUserAgent(const QString &httpUserAgent)
+{
+    d->setHttpUserAgent(httpUserAgent);
+}
+
