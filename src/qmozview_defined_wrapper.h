@@ -12,6 +12,7 @@
 
 #include <QVariant>
 #include <QColor>
+#include <QJSValue>
 #include <QUrl>
 #include <QRect>
 #include <QRectF>
@@ -143,6 +144,9 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool desktopMode() const; \
     void setDesktopMode(bool); \
     int parentId() const; \
+    Q_INVOKABLE void runJavaScript(const QString &script, \
+                               const QJSValue &callback = QJSValue::UndefinedValue, \
+                               const QJSValue &errorCallback = QJSValue::UndefinedValue); \
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \

@@ -11,11 +11,13 @@
 
 #include <QGuiApplication>
 #include <QJSValue>
+#include <QJSEngine>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QTouchEvent>
 #include <QQuickWindow>
 #include <QScreen>
+#include <QQmlInfo>
 
 #include <iostream>
 #include <locale>
@@ -54,6 +56,8 @@ using namespace mozilla;
 using namespace mozilla::embedlite;
 
 #define CONTENT_LOADED "chrome:contentloaded"
+#define RUN_JAVASCRIPT "embedui:runjavascript"
+#define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -135,9 +139,11 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mOffsetX(0.0)
     , mOffsetY(0.0)
     , mHasCompositor(false)
+    , mNextJSCallId(0)
     , mDirtyState(0)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
+    addMessageListener(RUN_JAVASCRIPT_REPLY);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -410,6 +416,66 @@ void QMozViewPrivate::scrollBy(int x, int y)
     }
 }
 
+void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callback, const QJSValue &errorCallback)
+{
+    if (!mViewInitialized) {
+        auto viewInitialzedError = QStringLiteral("Error: run javascript can be called only after view is initialized.");
+        if (errorCallback.isCallable()) {
+            QJSValueList args = { QJSValue(viewInitialzedError) };
+            // Make it possible to call const errorCallback.
+            QJSValue cb = errorCallback;
+            QJSValue result = cb.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << viewInitialzedError;
+            }
+        } else {
+            qmlInfo(q) << viewInitialzedError;
+        }
+
+        return;
+    }
+
+    // Callback undefined, fire and forget.
+    if (callback.isUndefined()) {
+        QVariantMap data;
+        data.insert(QString("script"), script);
+        data.insert(QString("callbackId"), -1);
+        doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
+        return;
+    }
+
+    if (!callback.isCallable()) {
+        auto callbackArgumentError = QStringLiteral("Error: callback argument is not a function.");
+
+        if (errorCallback.isCallable()) {
+            QJSValueList args = { QJSValue(callbackArgumentError) };
+            // Make it possible to call const errorCallback.
+            QJSValue cb = errorCallback;
+            QJSValue result = cb.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << callbackArgumentError;
+            }
+        } else {
+            qmlInfo(q) << callbackArgumentError;
+        }
+        return;
+    }
+
+    if (!errorCallback.isUndefined() && !errorCallback.isCallable()) {
+        qmlInfo(q) << "Error: error callback argument is not a function.";
+        return;
+    }
+
+    uint callbackId = mNextJSCallId++;
+
+    QVariantMap data;
+    data.insert(QString("script"), script);
+    data.insert(QString("callbackId"), callbackId);
+    doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
+
+    mPendingJSCalls.insert(callbackId, qMakePair(callback, errorCallback));
+}
+
 void QMozViewPrivate::loadFrameScript(const QString &frameScript)
 {
     if (!mViewInitialized) {
@@ -563,23 +629,17 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
 }
 
-void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &value)
+void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &value)
 {
     if (!mViewInitialized)
         return;
 
-    QJsonDocument doc;
-    if (value.userType() == QMetaType::type("QJSValue")) {
-        // Qt 5.6 likes to pass a QJSValue
-        QJSValue jsValue = qvariant_cast<QJSValue>(value);
-        doc = QJsonDocument::fromVariant(jsValue.toVariant());
-    } else {
-        doc = QJsonDocument::fromVariant(value);
+    if (message == QLatin1String(RUN_JAVASCRIPT)) {
+        qmlInfo(q) << "Error: trying to send reserved message:" << message;
+        return;
     }
-    QByteArray array = doc.toJson();
-    QString data(array);
 
-    mView->SendAsyncMessage((const char16_t *)name.utf16(), (const char16_t *)data.utf16());
+    doSendAsyncMessage(message, value);
 }
 
 void QMozViewPrivate::setMozWindow(QMozWindow *window)
@@ -852,17 +912,12 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
     ok = error.error == QJsonParseError::NoError;
     QVariant vdata = doc.toVariant();
 
-    // Check docuri if this is an error page
-    if (message == CONTENT_LOADED && vdata.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
-        // Mark security invalid, not used in error pages
-        mSecurity.setSecurityRaw(nullptr, 0);
-    }
-
     if (ok) {
 #ifdef DEVELOPMENT_BUILD
         qCDebug(lcEmbedLiteExt) << "mesg:" << message << ", data:" << data;
 #endif
-        mViewIface->recvAsyncMessage(message, vdata);
+        if (!handleAsyncMessage(message, vdata))
+            mViewIface->recvAsyncMessage(message, vdata);
     } else {
         qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString();
 #ifdef DEVELOPMENT_BUILD
@@ -1346,4 +1401,65 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
     if (mPendingTouchEvent) {
         mPendingTouchEvent = false;
     }
+}
+
+void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant &value)
+{
+    if (!mViewInitialized)
+        return;
+
+    QJsonDocument doc;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(value);
+        doc = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        doc = QJsonDocument::fromVariant(value);
+    }
+
+    QByteArray array = doc.toJson();
+    QString data(array);
+
+    mView->SendAsyncMessage((const char16_t *)message.utf16(), (const char16_t *)data.utf16());
+}
+
+bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant &data)
+{
+    // Check docuri if this is an error page
+    if (message == QLatin1String(CONTENT_LOADED) && data.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
+        // Mark security invalid, not used in error pages
+        mSecurity.setSecurityRaw(nullptr, 0);
+        return false;
+    } else if (message == QLatin1String(RUN_JAVASCRIPT_REPLY)) {
+        QVariantMap map = data.toMap();
+        uint jsCallId = map.value(QLatin1String("callbackId")).toUInt();
+        QPair<QJSValue, QJSValue> callbacks = mPendingJSCalls.take(jsCallId);
+        QVariant result = map.value(QLatin1String("result"));
+        QVariant error = map.value(QLatin1String("error"));
+
+        QJSValue callback = callbacks.first;
+        if (error.isValid()) {
+            QJSValue errorCallback = callbacks.second;
+            if (errorCallback.isCallable()) {
+                QJSValueList args = { QJSValue(error.toString()) };
+                QJSValue result = errorCallback.call(args);
+                if (result.isError()) {
+                    qmlInfo(q) << "Error executing error callback";
+                }
+            } else {
+                qmlInfo(q) << error;
+            }
+        } else if (callback.isCallable()) {
+            // Over here callback should never be non-callable.
+            QJSValueList args = { callback.engine()->toScriptValue<QVariant>(result) };
+            QJSValue result = callback.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << "Error executing callback";
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }

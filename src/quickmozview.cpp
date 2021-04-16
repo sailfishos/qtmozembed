@@ -747,6 +747,13 @@ void QuickMozView::scrollBy(int x, int y)
     d->scrollBy(x, y);
 }
 
+void QuickMozView::runJavaScript(const QString &script,
+                                 const QJSValue &callback,
+                                 const QJSValue &errorCallback)
+{
+    d->runJavaScript(script, callback, errorCallback);
+}
+
 // This should be a const method returning a pointer to a const object
 // but unfortunately this conflicts with it being exposed as a Q_PROPERTY
 QMozSecurity *QuickMozView::security()

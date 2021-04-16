@@ -21,6 +21,7 @@
 #include <QMap>
 #include <QSGSimpleTextureNode>
 #include <QKeyEvent>
+#include <QJSValue>
 
 #include <mozilla/embedlite/EmbedLiteView.h>
 
@@ -99,6 +100,10 @@ public:
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);
 
+    void runJavaScript(const QString &script,
+                       const QJSValue &callback,
+                       const QJSValue &errorCallback);
+
     void setSize(const QSizeF &size);
     void setDotsPerInch(qreal dpi);
 
@@ -115,7 +120,7 @@ public:
     void keyReleaseEvent(QKeyEvent *event);
     void touchEvent(QTouchEvent *event);
 
-    void sendAsyncMessage(const QString &name, const QVariant &value);
+    void sendAsyncMessage(const QString &message, const QVariant &value);
     void setMozWindow(QMozWindow *);
 
     void setParentId(unsigned parentId);
@@ -143,6 +148,9 @@ protected:
     void recvMouseMove(int posX, int posY);
     void recvMousePress(int posX, int posY);
     void recvMouseRelease(int posX, int posY);
+
+    void doSendAsyncMessage(const QString &message, const QVariant &value);
+    bool handleAsyncMessage(const QString &message, const QVariant &data);
 
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
@@ -214,6 +222,9 @@ protected:
     bool mHasCompositor;
     QMozSecurity mSecurity;
     qreal mDpi;
+    // Pair of success and error callbacks.
+    QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
+    uint mNextJSCallId;
 
     DirtyState mDirtyState;
 
