@@ -137,6 +137,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mHasCompositor(false)
     , mDirtyState(0)
 {
+    loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
 }
 
 QMozViewPrivate::~QMozViewPrivate()

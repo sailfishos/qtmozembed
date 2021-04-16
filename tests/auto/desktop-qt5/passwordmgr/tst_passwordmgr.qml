@@ -30,7 +30,6 @@ Item {
         anchors.fill: parent
         onViewInitialized: {
             webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
-            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
             appWindow.mozViewInitialized = true
             webViewport.addMessageListener("embed:login")
         }
