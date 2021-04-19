@@ -10,46 +10,46 @@
            <post_steps>
                <step>/usr/bin/stop-ui-test.sh</step>
            </post_steps>
-           <case manual="false" timeout="200" name="unittests-context">
+           <case manual="false" name="unittests-context">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/context &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-basicview">
+           <case manual="false" name="unittests-basicview">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicview &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-view">
+           <case manual="false" name="unittests-view">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/view &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="600" name="unittests-basicinput">
+           <case manual="false" name="unittests-basicinput">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicinput &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-basicscroll">
+           <case manual="false" name="unittests-basicscroll">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicscroll &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-multitouch">
+           <case manual="false" name="unittests-multitouch">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/multitouch &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-favicons">
+           <case manual="false" name="unittests-favicons">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/favicons &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-promptbasic">
+           <case manual="false" name="unittests-promptbasic">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/promptbasic &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-searchengine">
+           <case manual="false" name="unittests-searchengine">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/searchengine &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-passwordmgr">
+           <case manual="false" name="unittests-passwordmgr">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/passwordmgr &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-downloadmgr">
+           <case manual="false" name="unittests-downloadmgr">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/downloadmgr &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-newviewrequest">
+           <case manual="false" name="unittests-newviewrequest">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/newviewrequest &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-selection">
+           <case manual="false" name="unittests-selection">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/selection &amp;&amp; ../../run-tests.sh</step>
            </case>
-           <case manual="false" timeout="200" name="unittests-linksactivation">
+           <case manual="false" name="unittests-linksactivation">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/linksactivation &amp;&amp; ../../run-tests.sh</step>
            </case>
        </set>
