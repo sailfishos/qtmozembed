@@ -45,17 +45,15 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.addMessageListener("embed:filepicker")
+            webViewport.addMessageListener("embed:downloadpicker")
             appWindow.mozViewInitialized = true
         }
         onRecvAsyncMessage: {
-            // print("onRecvAsyncMessage:" + message + ", data:" + data)
-            if (message == "embed:filepicker") {
-                webViewport.sendAsyncMessage("filepickerresponse", {
-                                                 winid: data.winid,
-                                                 accepted: true,
-                                                 items: ["/tmp/tt.bin"]
-                                             })
+            if (message == "embed:downloadpicker") {
+                mozContext.instance.notifyObservers("embedui:downloadpicker", {
+                                                 downloadDirectory: "/tmp/",
+                                                 defaultFileName: data.defaultFileName,                                             })
+                                                 suggestedFileExtension: data.suggestedFileExtension
             }
         }
     }

@@ -18,8 +18,10 @@ Item {
     Connections {
         target: mozContext.instance
         onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data)
-            appWindow.selectedContent = data.data
+            if (message == "clipboard:setdata") {
+                print("onRecvObserve: msg:", message, ", data:", data.data)
+                appWindow.selectedContent = data.data || ""
+            }
         }
     }
 
@@ -31,7 +33,9 @@ Item {
         anchors.fill: parent
         onViewInitialized: {
             appWindow.mozViewInitialized = true
-            webViewport.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
+            webViewport.addMessageListener("Content:ContextMenu")
+            webViewport.addMessageListener("Content:SelectionRange")
+            webViewport.addMessageListener("Content:SelectionCopied")
         }
         onRecvAsyncMessage: {
             print("onRecvAsyncMessage:" + message + ", data:" + data)

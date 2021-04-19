@@ -55,7 +55,7 @@ function shared_Test1LoadInputPage()
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 10)
-    testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 3)); }))
+    testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 4)); }))
     appWindow.inputState = false;
     testcaseid.keyClick(Qt.Key_K);
     testcaseid.keyClick(Qt.Key_O);
@@ -82,7 +82,7 @@ function shared_Test1LoadInputURLPage()
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 10)
-    testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 3)); }))
+    testcaseid.verify(wrtWait(function() { return (!appWindow.isState(1, 0, 4)); }))
     appWindow.inputState = false;
     testcaseid.keyClick(Qt.Key_1);
     testcaseid.keyClick(Qt.Key_2);
@@ -373,12 +373,12 @@ function shared_ActiveHyperLink()
         { name: "browser.ui.touch.weight.visited", value: 120}
     ]});
     testcaseid.verify(MyScript.waitMozView())
-    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:mozilla>ActiveLink</a>";
+    webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:license>ActiveLink</a>";
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
     testcaseid.mouseClick(webViewport, 10, 20)
-    testcaseid.verify(wrtWait(function() { return webViewport.url != "about:mozilla"; }))
+    testcaseid.verify(wrtWait(function() { return webViewport.url != "about:license"; }))
     testcaseid.verify(MyScript.waitLoadFinished(webViewport))
     testcaseid.compare(webViewport.loadProgress, 100);
     testcaseid.verify(wrtWait(function() { return (!webViewport.painted); }))
