@@ -28,7 +28,6 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://embedlite/content/SelectHelper.js")
             webViewport.useQmlMouse = true
             appWindow.mozViewInitialized = true
         }
