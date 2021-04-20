@@ -34,4 +34,6 @@ kill $DBUS_SESSION_BUS_PID
 # Clean up settings afterwards
 rm -rf ~/.mozilla/mozembed-testrunner/
 
+echo "exit_code $exit_code"
+
 exit $exit_code
