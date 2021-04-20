@@ -47,8 +47,6 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
-    setenv("USE_ASYNC", "1", 1);
-
     qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
 
     // These components must be loaded before app start
