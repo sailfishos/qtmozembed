@@ -67,7 +67,7 @@ private:
     EmbedLiteApp *mApp;
     std::vector<std::string> mObserversList;
     bool mInitialized;
-    QThread *mThread;
+    QPointer<QThread> mThread;
     bool mEmbedStarted;
     EmbedLiteMessagePump *mEventLoopPrivate;
     MessagePumpQt *mQtPump;
