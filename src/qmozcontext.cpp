@@ -130,13 +130,15 @@ void QMozContextPrivate::Destroyed()
 #endif
     mApp->SetListener(nullptr);
 
-    if (!mThread->isFinished()) {
+    if (mThread && !mThread->isFinished()) {
         mThread->exit(0);
         mThread->wait();
+        mThread = nullptr;
     }
 
-    if (mAsyncContext) {
+    if (mQtPump) {
         mQtPump->deleteLater();
+        mQtPump = nullptr;
     }
     Q_EMIT contextDestroyed();
 }
