@@ -62,18 +62,16 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_searchengine"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_searchengine cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_searchengine cleanupTestCase")
         }
 
-        function test_TestCheckDefaultSearch()
-        {
+        function test_TestCheckDefaultSearch() {
             var engineExistsPredicate = function() {
                 var found = false;
 

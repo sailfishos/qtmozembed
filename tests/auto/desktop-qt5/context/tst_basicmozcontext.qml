@@ -8,8 +8,6 @@ Item {
     width: 480
     height: 800
 
-    property bool mozViewInitialized
-    property var mozView
     property var lastObserveMessage
 
     QmlMozContext {
@@ -22,22 +20,23 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_basicmozcontext"
         when: windowShown
-        parent: appWindow
 
-        function cleanup()
+        function cleanupTestCase()
         {
-            mozContext.dumpTS("tst_basicmozcontext cleanup")
+            mozContext.dumpTS("tst_basicmozcontext cleanupTestCase")
+            // Stop embedding explicitly as we do not have any views.
+            mozContext.instance.stopEmbedding()
         }
         function test_context1Init()
         {
             mozContext.dumpTS("test_context1Init start")
             verify(mozContext.instance !== undefined)
             verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
-            verify(MyScript.mozContext.instance.isInitialized())
+            verify(mozContext.instance.isInitialized())
             mozContext.dumpTS("test_context1Init end")
         }
         function test_context3PrefAPI()

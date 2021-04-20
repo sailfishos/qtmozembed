@@ -15,29 +15,27 @@ Item {
         id: mozContext
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_viewbasicapi"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
+        function cleanupTestCase() {
             mozContext.dumpTS("tst_viewbasicapi cleanup")
         }
 
         function test_2viewInit() {
-            mozContext.dumpTS("test_2viewInitBasic start")
+            mozContext.dumpTS("test_2viewInit start")
             testcaseid.verify(mozContext.instance.isInitialized())
             MyScript.createSpriteObjects()
             while (mozView == null) {
                 testcaseid.wait(500)
             }
-            mozContext.dumpTS("test_2viewInitBasic start1")
+            mozContext.dumpTS("test_2viewInit start1")
             testcaseid.verify(MyScript.waitMozView())
             testcaseid.verify(mozView.uniqueId > 0)
             testcaseid.verify(mozView.child)
-            mozView = null
-            mozContext.dumpTS("test_2viewInitBasic end")
+            mozContext.dumpTS("test_2viewInit end")
         }
     }
 }

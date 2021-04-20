@@ -29,6 +29,7 @@ Item {
         onViewInitialized: {
             webViewport.useQmlMouse = true
             appWindow.mozViewInitialized = true
+            mozContext.dumpTS("tst_activatelinks onViewInitialized")
         }
     }
 
@@ -40,18 +41,16 @@ Item {
         onPositionChanged: webViewport.recvMouseMove(mouseX, mouseY)
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_activatelinks"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_inputtest cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_activatelinks cleanup")
         }
 
-        function test_ActiveHyperLink()
-        {
+        function test_ActiveHyperLink() {
             mozContext.dumpTS("test_ActiveHyperLink start")
             verify(MyScript.waitMozContext())
             mozContext.instance.notifyObservers("embedui:setprefs", { prefs :

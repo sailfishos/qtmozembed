@@ -41,14 +41,13 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_selection"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_inputtest cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_selection cleanupTestCase")
         }
 
         function test_SelectionInit()

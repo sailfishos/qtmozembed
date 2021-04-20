@@ -57,19 +57,17 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_downloadmgr"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_downloadmgr cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_downloadmgr cleanupTestCase")
         }
 
-        function test_TestDownloadMgrPage()
-        {
-            mozContext.dumpTS("test_TestLoginMgrPage start")
+        function test_TestDownloadMgrPage() {
+            mozContext.dumpTS("test_TestDownloadMgrPage start")
             testcaseid.verify(MyScript.waitMozContext())
             mozContext.instance.addObserver("embed:download");
             testcaseid.verify(MyScript.waitMozView())

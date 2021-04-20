@@ -16,6 +16,7 @@ Item {
     QmlMozContext {
         id: mozContext
     }
+
     Connections {
         target: mozContext.instance
         onOnInitialized: {
@@ -39,15 +40,13 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_scrolltest"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_scrolltest cleanup")
-            testcaseid.wait(500)
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_scrolltest cleanupTestCase")
         }
 
         function test_TestScrollPaintOperations() {

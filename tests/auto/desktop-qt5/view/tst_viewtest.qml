@@ -23,14 +23,13 @@ Item {
         onViewInitialized: appWindow.mozViewInitialized = true
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_viewtest"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_viewtest cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_viewtest cleanupTestCase")
         }
 
         function test_Test1LoadSimpleBlank()

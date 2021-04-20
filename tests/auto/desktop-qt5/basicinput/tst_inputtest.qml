@@ -69,18 +69,16 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_inputtest"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_inputtest cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_inputtest cleanupTestCase")
         }
 
-        function test_Test1LoadInputPage()
-        {
+        function test_Test1LoadInputPage() {
             mozContext.dumpTS("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
@@ -104,9 +102,8 @@ Item {
             mozContext.dumpTS("test_Test1LoadInputPage end");
         }
 
-        function test_Test1LoadInputURLPage()
-        {
-            mozContext.dumpTS("test_Test1LoadInputPage start")
+        function test_Test1LoadInputURLPage() {
+            mozContext.dumpTS("test_Test1LoadInputURLPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.inputContent = ""
@@ -129,7 +126,7 @@ Item {
             verify(MyScript.wrtWait(function() { return (appWindow.inputContent == ""); }))
             verify(MyScript.wrtWait(function() { return (appWindow.inputType == ""); }))
             compare(appWindow.inputContent, "1234");
-            mozContext.dumpTS("test_Test1LoadInputPage end");
+            mozContext.dumpTS("test_Test1LoadInputURLPage end");
         }
     }
 }

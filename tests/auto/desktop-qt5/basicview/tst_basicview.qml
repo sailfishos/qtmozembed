@@ -16,26 +16,24 @@ Item {
         id: mozContext
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_basicview"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_basicview cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_basicview cleanupTestCase")
         }
 
-        function test_1contextPrepareViewContext()
-        {
+        function test_1contextPrepareViewContext() {
             mozContext.dumpTS("test_1contextPrepareViewContext start")
             verify(mozContext.instance !== undefined)
             verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
             verify(mozContext.instance.isInitialized())
             mozContext.dumpTS("test_1contextPrepareViewContext end")
         }
-        function test_2viewInit()
-        {
+
+        function test_2viewInit() {
             mozContext.dumpTS("test_2viewInit start")
             verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
             verify(mozContext.instance.isInitialized())
@@ -46,8 +44,8 @@ Item {
             verify(mozView !== undefined)
             mozContext.dumpTS("test_2viewInit end")
         }
-        function test_3viewLoadURL()
-        {
+
+        function test_3viewLoadURL() {
             mozContext.dumpTS("test_3viewLoadURL start")
             verify(mozView !== undefined)
             mozView.url = "about:mozilla";

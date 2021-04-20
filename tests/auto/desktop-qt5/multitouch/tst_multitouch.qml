@@ -53,18 +53,16 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_multitouch"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
+        function cleanupTestCase() {
             mozContext.dumpTS("tst_multitouch cleanup")
         }
 
-        function test_Test1MultiTouchPage()
-        {
+        function test_Test1MultiTouchPage() {
             mozContext.dumpTS("test_Test1MultiTouchPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())

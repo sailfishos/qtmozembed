@@ -44,18 +44,16 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_passwordmgr"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_passwordmgr cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_passwordmgr cleanupTestCase")
         }
 
-        function test_TestLoginMgrPage()
-        {
+        function test_TestLoginMgrPage() {
             mozContext.dumpTS("test_TestLoginMgrPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())

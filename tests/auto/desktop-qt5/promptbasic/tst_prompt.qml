@@ -12,6 +12,7 @@ Item {
     property bool promptReceived
     property var testResult
     property int testCaseNum
+    property var responseMessages: []
 
     QmlMozContext {
         id: mozContext
@@ -49,13 +50,16 @@ Item {
                     responsePrompt = "unexpectedPromptResult"
                     break
                 }
+
+                responseMessages[appWindow.testCaseNum] = {
+                    winid: data.winid,
+                    checkval: true,
+                    accepted: true,
+                    promptvalue: responsePrompt
+                }
+
                 if (responsePrompt) {
-                    webViewport.sendAsyncMessage("promptresponse", {
-                                                     winid: data.winid,
-                                                     checkval: true,
-                                                     accepted: true,
-                                                     promptvalue: responsePrompt
-                                                 })
+                    webViewport.sendAsyncMessage("promptresponse", responseMessages[appWindow.testCaseNum])
                 }
                 appWindow.promptReceived = true
             } else if (message == "testembed:elementinnervalue") {
@@ -64,19 +68,21 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_prompt"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_multitouch cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_prompt cleanupTestCase")
+
+            // Clear no response case
+            webViewport.sendAsyncMessage("promptresponse", responseMessages[2])
+            wait(1000)
         }
 
-        function test_TestPromptPage()
-        {
-            mozContext.dumpTS("test_TestPromptPage start")
+        function test_1TestPromptPage() {
+            mozContext.dumpTS("test_1TestPromptPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 0
@@ -91,12 +97,11 @@ Item {
                                                 name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "ok");
-            mozContext.dumpTS("test_TestPromptPage end");
+            mozContext.dumpTS("test_1TestPromptPage end");
         }
 
-        function test_TestPromptWithBadResponse()
-        {
-            mozContext.dumpTS("test_TestPromptWithBadResponse start")
+        function test_2TestPromptWithBadResponse() {
+            mozContext.dumpTS("test_2TestPromptWithBadResponse start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 1
@@ -111,12 +116,11 @@ Item {
                                              name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "failed");
-            mozContext.dumpTS("test_TestPromptWithBadResponse end");
+            mozContext.dumpTS("test_2TestPromptWithBadResponse end");
         }
 
-        function test_TestPromptWithoutResponse()
-        {
-            mozContext.dumpTS("test_TestPromptWithoutResponse start")
+        function test_3TestPromptWithoutResponse() {
+            mozContext.dumpTS("test_3TestPromptWithoutResponse start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 2
@@ -131,7 +135,7 @@ Item {
                                                 name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "unknown");
-            mozContext.dumpTS("test_TestPromptWithoutResponse end");
+            mozContext.dumpTS("test_3TestPromptWithoutResponse end");
         }
     }
 }
