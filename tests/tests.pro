@@ -19,7 +19,6 @@ test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/view/tst_viewtest.qml \
 
 shared.files = auto/shared/componentCreation.js \
-    auto/shared/sharedTests.js \
     auto/shared/ViewComponent.qml \
     auto/shared/downloadmgr/tt.bin \
     auto/shared/favicons/favicon.html \

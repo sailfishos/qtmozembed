@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -51,9 +50,20 @@ Item {
             testcaseid.wait(500)
         }
 
-        function test_TestScrollPaintOperations()
-        {
-            SharedTests.shared_TestScrollPaintOperations()
+        function test_TestScrollPaintOperations() {
+            mozContext.dumpTS("test_TestScrollPaintOperations start")
+            verify(MyScript.waitMozContext())
+            verify(MyScript.waitMozView())
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
+            verify(MyScript.waitLoadFinished(webViewport))
+            compare(webViewport.loadProgress, 100);
+            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            while (appWindow.scrollY === 0) {
+                MyScript.scrollBy(100, 301, 0, -200, 100, false);
+                wait(100);
+            }
+            verify(appWindow.scrollX === 0)
+            mozContext.dumpTS("test_TestScrollPaintOperations end");
         }
     }
 }

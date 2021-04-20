@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -26,12 +25,7 @@ Item {
             mozContext.dumpTS("tst_viewbasicapi cleanup")
         }
 
-        function test_1contextPrepareViewContext()
-        {
-            SharedTests.shared_1contextPrepareViewContext()
-        }
-        function test_2viewInit()
-        {
+        function test_2viewInit() {
             mozContext.dumpTS("test_2viewInitBasic start")
             testcaseid.verify(mozContext.instance.isInitialized())
             MyScript.createSpriteObjects()

@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -78,11 +77,11 @@ Item {
             webViewport.url = "about:mozilla";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(SharedTests.wrtWait(function() { return (!webViewport.painted); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(SharedTests.wrtWait(function() { return (!appWindow.promptReceived); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
             mozContext.dumpTS("test_TestDownloadMgrPage end");
         }
     }

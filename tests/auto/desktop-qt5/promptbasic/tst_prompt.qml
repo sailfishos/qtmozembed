@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -77,17 +76,62 @@ Item {
 
         function test_TestPromptPage()
         {
-            SharedTests.shared_TestPromptPage()
+            mozContext.dumpTS("test_TestPromptPage start")
+            verify(MyScript.waitMozContext())
+            verify(MyScript.waitMozView())
+            appWindow.testCaseNum = 0
+            appWindow.promptReceived = false
+            appWindow.testResult = null
+            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            verify(MyScript.waitLoadFinished(webViewport))
+            compare(webViewport.loadProgress, 100);
+            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
+            webViewport.sendAsyncMessage("embedtest:getelementinner", {
+                                                name: "result" })
+            verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
+            compare(appWindow.testResult, "ok");
+            mozContext.dumpTS("test_TestPromptPage end");
         }
 
         function test_TestPromptWithBadResponse()
         {
-            SharedTests.shared_TestPromptWithBadResponse()
+            mozContext.dumpTS("test_TestPromptWithBadResponse start")
+            verify(MyScript.waitMozContext())
+            verify(MyScript.waitMozView())
+            appWindow.testCaseNum = 1
+            appWindow.promptReceived = false
+            appWindow.testResult = null
+            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            verify(MyScript.waitLoadFinished(webViewport))
+            compare(webViewport.loadProgress, 100);
+            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
+            webViewport.sendAsyncMessage("embedtest:getelementinner", {
+                                             name: "result" })
+            verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
+            compare(appWindow.testResult, "failed");
+            mozContext.dumpTS("test_TestPromptWithBadResponse end");
         }
 
         function test_TestPromptWithoutResponse()
         {
-            SharedTests.shared_TestPromptWithoutResponse()
+            mozContext.dumpTS("test_TestPromptWithoutResponse start")
+            verify(MyScript.waitMozContext())
+            verify(MyScript.waitMozView())
+            appWindow.testCaseNum = 2
+            appWindow.promptReceived = false
+            appWindow.testResult = null
+            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            verify(MyScript.waitLoadFinished(webViewport))
+            compare(webViewport.loadProgress, 100);
+            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
+            webViewport.sendAsyncMessage("embedtest:getelementinner", {
+                                                name: "result" })
+            verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
+            compare(appWindow.testResult, "unknown");
+            mozContext.dumpTS("test_TestPromptWithoutResponse end");
         }
     }
 }

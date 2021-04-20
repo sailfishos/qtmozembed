@@ -62,6 +62,21 @@ function waitLoadFinished(view) {
     return ticks < load_finish_wait_timeout;
 }
 
+function wrtWait(conditionFunc, waitIter, timeout) {
+    timeout = typeof timeout !== 'undefined' ? timeout : -1;
+    waitIter = typeof waitIter !== 'undefined' ? waitIter : 5000;
+    var tick = 0;
+    while (conditionFunc() && tick++ < waitIter) {
+        if (timeout == -1) {
+            testcaseid.wait()
+        }
+        else {
+            testcaseid.wait(timeout)
+        }
+    }
+    return tick < waitIter;
+}
+
 function dumpTs(message) {
     print("TimeStamp:" + message + ", " + Qt.formatTime(new Date(), "hh:mm:ss::ms") + "\n");
 }

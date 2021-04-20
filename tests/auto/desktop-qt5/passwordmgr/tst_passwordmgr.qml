@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -57,7 +56,16 @@ Item {
 
         function test_TestLoginMgrPage()
         {
-            SharedTests.shared_TestLoginMgrPage()
+            mozContext.dumpTS("test_TestLoginMgrPage start")
+            verify(MyScript.waitMozContext())
+            verify(MyScript.waitMozView())
+            appWindow.promptReceived = false
+            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
+            verify(MyScript.waitLoadFinished(webViewport))
+            compare(webViewport.loadProgress, 100);
+            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
+            mozContext.dumpTS("test_TestLoginMgrPage end");
         }
     }
 }

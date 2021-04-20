@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -61,7 +60,7 @@ Item {
             webViewport.url = "data:text/html,hello test selection";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(SharedTests.wrtWait(function() { return (!webViewport.painted); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             webViewport.sendAsyncMessage("Browser:SelectionStart", {
                                                 xPos: 56,
                                                 yPos: 16
@@ -73,7 +72,7 @@ Item {
                                                 xPos: 56,
                                                 yPos: 16
                                               })
-            testcaseid.verify(SharedTests.wrtWait(function() { return (appWindow.selectedContent == ""); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (appWindow.selectedContent == ""); }))
             testcaseid.compare(appWindow.selectedContent, "test");
             mozContext.dumpTS("test_SelectionInit end")
         }

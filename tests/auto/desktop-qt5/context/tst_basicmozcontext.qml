@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -35,15 +34,30 @@ Item {
         }
         function test_context1Init()
         {
-            SharedTests.shared_context1Init()
+            mozContext.dumpTS("test_context1Init start")
+            verify(mozContext.instance !== undefined)
+            verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+            verify(MyScript.mozContext.instance.isInitialized())
+            mozContext.dumpTS("test_context1Init end")
         }
         function test_context3PrefAPI()
         {
-            SharedTests.shared_context3PrefAPI()
+            mozContext.dumpTS("test_context3PrefAPI start")
+            mozContext.instance.setPref("test.embedlite.pref", "result");
+            mozContext.dumpTS("test_context3PrefAPI end")
         }
         function test_context4ObserveAPI()
         {
-            SharedTests.shared_context4ObserveAPI()
+            mozContext.dumpTS("test_context4ObserveAPI start")
+            mozContext.instance.notifyObservers("memory-pressure", null);
+            lastObserveMessage = undefined
+            mozContext.instance.addObserver("test-observe-message");
+            mozContext.instance.notifyObservers("test-observe-message", {msg: "testMessage", val: 1});
+            verify(MyScript.wrtWait(function() { return (lastObserveMessage === undefined); }, 10, 500))
+            compare(lastObserveMessage.msg, "test-observe-message");
+            compare(lastObserveMessage.data.val, 1);
+            compare(lastObserveMessage.data.msg, "testMessage");
+            mozContext.dumpTS("test_context4ObserveAPI end")
         }
     }
 }
