@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -11,13 +12,10 @@ Item {
     property bool mozViewInitialized
     property bool promptReceived
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
+        target: QmlMozContext
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -50,20 +48,20 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_passwordmgr cleanupTestCase")
+            MyScript.dumpTs("tst_passwordmgr cleanupTestCase")
         }
 
         function test_TestLoginMgrPage() {
-            mozContext.dumpTS("test_TestLoginMgrPage start")
+            MyScript.dumpTs("test_TestLoginMgrPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.promptReceived = false
-            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
+            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/passwordmgr/subtst_notifications_1.html";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
-            mozContext.dumpTS("test_TestLoginMgrPage end");
+            MyScript.dumpTs("test_TestLoginMgrPage end");
         }
     }
 }

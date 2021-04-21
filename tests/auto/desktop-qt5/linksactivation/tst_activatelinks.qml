@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -10,14 +11,9 @@ Item {
 
     property bool mozViewInitialized
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
-        onRecvObserve: {
-            print("onRecvObserve: msg:", message, ", data:", data.data)
-        }
+        target: QmlMozContext
+        onRecvObserve: console.log("onRecvObserve: msg:", message, ", data:", data.data)
     }
 
     QmlMozView {
@@ -29,7 +25,7 @@ Item {
         onViewInitialized: {
             webViewport.useQmlMouse = true
             appWindow.mozViewInitialized = true
-            mozContext.dumpTS("tst_activatelinks onViewInitialized")
+            MyScript.dumpTs("tst_activatelinks onViewInitialized")
         }
     }
 
@@ -47,13 +43,13 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_activatelinks cleanup")
+            MyScript.dumpTs("tst_activatelinks cleanup")
         }
 
         function test_ActiveHyperLink() {
-            mozContext.dumpTS("test_ActiveHyperLink start")
+            MyScript.dumpTs("test_ActiveHyperLink start")
             verify(MyScript.waitMozContext())
-            mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
+            QmlMozContext.notifyObservers("embedui:setprefs", { prefs :
             [
                 { name: "embedlite.azpc.handle.singletap", value: false},
                 { name: "embedlite.azpc.json.singletap", value: true},
@@ -76,7 +72,7 @@ Item {
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            mozContext.instance.notifyObservers("embedui:setprefs", { prefs :
+            QmlMozContext.notifyObservers("embedui:setprefs", { prefs :
             [
                 { name: "embedlite.azpc.handle.singletap", value: true},
                 { name: "embedlite.azpc.json.singletap", value: false},
@@ -89,7 +85,7 @@ Item {
                 { name: "browser.ui.touch.bottom", value: 16},
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]});
-            mozContext.dumpTS("test_ActiveHyperLink end")
+            MyScript.dumpTs("test_ActiveHyperLink end")
             webViewport.useQmlMouse = false
         }
     }

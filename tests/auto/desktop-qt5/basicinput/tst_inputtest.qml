@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -21,13 +22,10 @@ Item {
         return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause
     }
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
+        target: QmlMozContext
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -75,11 +73,11 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_inputtest cleanupTestCase")
+            MyScript.dumpTs("tst_inputtest cleanupTestCase")
         }
 
         function test_Test1LoadInputPage() {
-            mozContext.dumpTS("test_Test1LoadInputPage start")
+            MyScript.dumpTs("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input id=myelem value=''>";
@@ -99,11 +97,11 @@ Item {
                                                })
             verify(MyScript.wrtWait(function() { return (appWindow.inputContent == ""); }))
             compare(appWindow.inputContent, "korp");
-            mozContext.dumpTS("test_Test1LoadInputPage end");
+            MyScript.dumpTs("test_Test1LoadInputPage end");
         }
 
         function test_Test1LoadInputURLPage() {
-            mozContext.dumpTS("test_Test1LoadInputURLPage start")
+            MyScript.dumpTs("test_Test1LoadInputURLPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.inputContent = ""
@@ -126,7 +124,7 @@ Item {
             verify(MyScript.wrtWait(function() { return (appWindow.inputContent == ""); }))
             verify(MyScript.wrtWait(function() { return (appWindow.inputType == ""); }))
             compare(appWindow.inputContent, "1234");
-            mozContext.dumpTS("test_Test1LoadInputURLPage end");
+            MyScript.dumpTs("test_Test1LoadInputURLPage end");
         }
     }
 }

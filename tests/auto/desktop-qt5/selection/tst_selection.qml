@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -11,11 +12,8 @@ Item {
     property bool mozViewInitialized
     property string selectedContent
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
+        target: QmlMozContext
         onRecvObserve: {
             if (message == "clipboard:setdata") {
                 print("onRecvObserve: msg:", message, ", data:", data.data)
@@ -47,14 +45,14 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_selection cleanupTestCase")
+            MyScript.dumpTs("tst_selection cleanupTestCase")
         }
 
         function test_SelectionInit()
         {
-            mozContext.dumpTS("test_SelectionInit start")
+            MyScript.dumpTs("test_SelectionInit start")
             testcaseid.verify(MyScript.waitMozContext())
-            mozContext.instance.addObserver("clipboard:setdata");
+            QmlMozContext.addObserver("clipboard:setdata");
             testcaseid.verify(MyScript.waitMozView())
             webViewport.url = "data:text/html,hello test selection";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
@@ -73,7 +71,7 @@ Item {
                                               })
             testcaseid.verify(MyScript.wrtWait(function() { return (appWindow.selectedContent == ""); }))
             testcaseid.compare(appWindow.selectedContent, "test");
-            mozContext.dumpTS("test_SelectionInit end")
+            MyScript.dumpTs("test_SelectionInit end")
         }
     }
 }

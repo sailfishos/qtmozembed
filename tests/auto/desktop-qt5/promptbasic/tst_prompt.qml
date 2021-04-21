@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -14,13 +15,10 @@ Item {
     property int testCaseNum
     property var responseMessages: []
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
+        target: QmlMozContext
         onOnInitialized: {
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
         }
     }
 
@@ -74,7 +72,7 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_prompt cleanupTestCase")
+            MyScript.dumpTs("tst_prompt cleanupTestCase")
 
             // Clear no response case
             webViewport.sendAsyncMessage("promptresponse", responseMessages[2])
@@ -82,13 +80,13 @@ Item {
         }
 
         function test_1TestPromptPage() {
-            mozContext.dumpTS("test_1TestPromptPage start")
+            MyScript.dumpTs("test_1TestPromptPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 0
             appWindow.promptReceived = false
             appWindow.testResult = null
-            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
@@ -97,17 +95,17 @@ Item {
                                                 name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "ok");
-            mozContext.dumpTS("test_1TestPromptPage end");
+            MyScript.dumpTs("test_1TestPromptPage end");
         }
 
         function test_2TestPromptWithBadResponse() {
-            mozContext.dumpTS("test_2TestPromptWithBadResponse start")
+            MyScript.dumpTs("test_2TestPromptWithBadResponse start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 1
             appWindow.promptReceived = false
             appWindow.testResult = null
-            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
@@ -116,17 +114,17 @@ Item {
                                              name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "failed");
-            mozContext.dumpTS("test_2TestPromptWithBadResponse end");
+            MyScript.dumpTs("test_2TestPromptWithBadResponse end");
         }
 
         function test_3TestPromptWithoutResponse() {
-            mozContext.dumpTS("test_3TestPromptWithoutResponse start")
+            MyScript.dumpTs("test_3TestPromptWithoutResponse start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             appWindow.testCaseNum = 2
             appWindow.promptReceived = false
             appWindow.testResult = null
-            webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
+            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
@@ -135,7 +133,7 @@ Item {
                                                 name: "result" })
             verify(MyScript.wrtWait(function() { return (!appWindow.testResult); }))
             compare(appWindow.testResult, "unknown");
-            mozContext.dumpTS("test_3TestPromptWithoutResponse end");
+            MyScript.dumpTs("test_3TestPromptWithoutResponse end");
         }
     }
 }
