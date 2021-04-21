@@ -221,18 +221,6 @@ QMozContext::~QMozContext()
 {
 }
 
-void QMozContext::sendObserve(const QString &aTopic, const QVariant &value)
-{
-    qWarning() << "QMozContext::sendObserve is deprecated and will be removed 1st of December 2016. Use QMozContext::notifyObservers instead.";
-    notifyObservers(aTopic, value);
-}
-
-void QMozContext::sendObserve(const QString &aTopic, const QString &value)
-{
-    qWarning() << "QMozContext::sendObserve is deprecated and will be removed 1st of December 2016. Use QMozContext::notifyObservers instead.";
-    notifyObservers(aTopic, value);
-}
-
 void
 QMozContext::addComponentManifest(const QString &manifestPath)
 {
