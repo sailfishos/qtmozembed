@@ -221,16 +221,14 @@ QMozContext::~QMozContext()
 {
 }
 
-void
-QMozContext::addComponentManifest(const QString &manifestPath)
+void QMozContext::addComponentManifest(const QString &manifestPath)
 {
     if (!d->mApp)
         return;
     d->mApp->AddManifestLocation(manifestPath.toUtf8().data());
 }
 
-void
-QMozContext::addObserver(const QString &aTopic)
+void QMozContext::addObserver(const QString &aTopic)
 {
     if (!d->IsInitialized()) {
         d->mObserversList.push_back(aTopic.toStdString());
@@ -315,14 +313,12 @@ void QMozContext::runEmbedding(int aDelay)
     }
 }
 
-bool
-QMozContext::isInitialized() const
+bool QMozContext::isInitialized() const
 {
     return d->mInitialized;
 }
 
-EmbedLiteApp *
-QMozContext::GetApp()
+EmbedLiteApp *QMozContext::GetApp()
 {
     return d->mApp;
 }
@@ -349,14 +345,12 @@ void QMozContext::stopEmbedding()
     }
 }
 
-quint32
-QMozContext::createView(const quint32 &parentId)
+quint32 QMozContext::createView(const quint32 &parentId)
 {
     return d->mViewCreator ? d->mViewCreator->createView(parentId) : 0;
 }
 
-void
-QMozContext::setIsAccelerated(bool aIsAccelerated)
+void QMozContext::setIsAccelerated(bool aIsAccelerated)
 {
     if (!d->mApp)
         return;
@@ -364,8 +358,7 @@ QMozContext::setIsAccelerated(bool aIsAccelerated)
     d->mApp->SetIsAccelerated(aIsAccelerated);
 }
 
-bool
-QMozContext::isAccelerated() const
+bool QMozContext::isAccelerated() const
 {
     if (!d->mApp)
         return false;
@@ -382,8 +375,7 @@ QMozWindow *QMozContext::registeredWindow() const
     return d->mMozWindow.data();
 }
 
-void
-QMozContext::notifyFirstUIInitialized()
+void QMozContext::notifyFirstUIInitialized()
 {
     static bool sCalledOnce = false;
     if (!sCalledOnce) {
