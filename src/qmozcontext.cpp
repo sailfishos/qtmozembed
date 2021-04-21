@@ -201,12 +201,6 @@ QMozContext *QMozContext::instance()
     return mozContextInstance();
 }
 
-QMozContext *QMozContext::GetInstance()
-{
-    qWarning() << "QMozContext::GetInstance() is deprecated and will be removed 1st of December 2016. Use QMozContext::instance() instead.";
-    return QMozContext::instance();
-}
-
 QMozContext::QMozContext(QObject *parent)
     : QObject(parent)
     , d(QMozContextPrivate::instance())

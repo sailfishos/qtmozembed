@@ -39,7 +39,6 @@ public:
     void registerWindow(QMozWindow *window);
     QMozWindow *registeredWindow() const;
 
-    static QMozContext *GetInstance();
     static QMozContext *instance();
 
     TaskHandle PostUITask(TaskCallback, void *data, int timeout = 0);
