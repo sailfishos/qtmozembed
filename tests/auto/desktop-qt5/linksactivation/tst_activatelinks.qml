@@ -13,7 +13,7 @@ Item {
 
     Connections {
         target: QmlMozContext
-        onRecvObserve: console.log("onRecvObserve: msg:", message, ", data:", data.data)
+        onRecvObserve: console.log("onRecvObserve: msg:", message, ", name:", data.name, "value:", data.value)
     }
 
     QmlMozView {
