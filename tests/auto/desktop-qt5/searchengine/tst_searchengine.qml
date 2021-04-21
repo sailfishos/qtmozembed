@@ -15,12 +15,12 @@ Item {
     Connections {
         target: QmlMozContext
         onOnInitialized: {
-            QmlMozContext.setPref("browser.search.defaultenginename", "QMOZTest")
+            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
             QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-            QmlMozContext.setPref("browser.search.log", true)
+            QMozEngineSettings.setPreference("browser.search.log", true)
             QmlMozContext.addObserver("browser-search-engine-modified")
             QmlMozContext.addObserver("embed:search")
-            QmlMozContext.setPref("keyword.enabled", true)
+            QMozEngineSettings.setPreference("keyword.enabled", true)
         }
         onRecvObserve: {
             if (message == "embed:search") {
@@ -87,10 +87,10 @@ Item {
             };
             MyScript.dumpTs("TestCheckDefaultSearch start")
             verify(MyScript.waitMozContext())
-            QmlMozContext.setPref("browser.search.log", true);
+            QMozEngineSettings.setPreference("browser.search.log", true);
             QmlMozContext.addObserver("browser-search-engine-modified");
             QmlMozContext.addObserver("embed:search");
-            QmlMozContext.setPref("keyword.enabled", true);
+            QMozEngineSettings.setPreference("keyword.enabled", true);
             verify(MyScript.waitMozView())
             QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
             verify(MyScript.wrtWait(function() { return (!engineExistsPredicate()); }))

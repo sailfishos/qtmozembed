@@ -401,13 +401,6 @@ QMozWindow *QMozContext::registeredWindow() const
 }
 
 void
-QMozContext::setPref(const QString &aName, const QVariant &aPref)
-{
-    qWarning() << "QMozContext::setPref is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPreference instead.";
-    QMozEngineSettings::instance()->setPreference(aName, aPref);
-}
-
-void
 QMozContext::notifyFirstUIInitialized()
 {
     static bool sCalledOnce = false;

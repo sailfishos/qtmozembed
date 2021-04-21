@@ -12,6 +12,7 @@
 #include <QtQml/QQmlEngine>
 #include "quickmozview.h"
 #include "qmozcontext.h"
+#include "qmozenginesettings.h"
 #include "qmozscrolldecorator.h"
 #include "qmozsecurity.h"
 
@@ -32,6 +33,9 @@ public:
         qmlRegisterType<QuickMozView>("Qt5Mozilla", 1, 0, "QmlMozView");
         qmlRegisterSingletonType<QMozContext>("Qt5Mozilla", 1, 0, "QmlMozContext",
                                               singletonApiFactory<QMozContext>);
+        qmlRegisterSingletonType<QMozEngineSettings>("Qt5Mozilla", 1, 0, "QMozEngineSettings",
+                                              singletonApiFactory<QMozEngineSettings>);
+
         qmlRegisterUncreatableType<QMozScrollDecorator>("Qt5Mozilla", 1, 0, "QmlMozScrollDecorator", "");
         qmlRegisterUncreatableType<QMozReturnValue>("Qt5Mozilla", 1, 0, "QMozReturnValue", "");
         qmlRegisterType<QMozSecurity>("Qt5Mozilla", 1, 0, "QMozSecurity");

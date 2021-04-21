@@ -13,10 +13,10 @@ Item {
     property bool promptReceived
 
     Component.onCompleted: {
-        QmlMozContext.setPref("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
-        QmlMozContext.setPref("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
-        QmlMozContext.setPref("browser.download.manager.retention", 2);
-        QmlMozContext.setPref("browser.helperApps.deleteTempFileOnExit", false);
+        QMozEngineSettings.setPreference("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
+        QMozEngineSettings.setPreference("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
+        QMozEngineSettings.setPreference("browser.download.manager.retention", 2);
+        QMozEngineSettings.setPreference("browser.helperApps.deleteTempFileOnExit", false);
     }
 
     Connections {

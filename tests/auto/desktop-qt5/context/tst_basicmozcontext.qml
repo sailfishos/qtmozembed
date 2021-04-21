@@ -39,7 +39,7 @@ Item {
         function test_context3PrefAPI()
         {
             MyScript.dumpTs("test_context3PrefAPI start")
-            QmlMozContext.setPref("test.embedlite.pref", "result");
+            QMozEngineSettings.setPreference("test.embedlite.pref", "result");
             MyScript.dumpTs("test_context3PrefAPI end")
         }
         function test_context4ObserveAPI()
