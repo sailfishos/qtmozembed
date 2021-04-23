@@ -11,9 +11,13 @@
 
 #include <QGuiApplication>
 #include <QJSValue>
+#include <QJSEngine>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QTouchEvent>
+#include <QQuickWindow>
+#include <QScreen>
+#include <QQmlInfo>
 
 #include <iostream>
 #include <locale>
@@ -35,6 +39,8 @@
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
 
+#include "quickmozview.h"
+
 #ifndef MOZVIEW_FLICK_THRESHOLD
 #define MOZVIEW_FLICK_THRESHOLD 200
 #endif
@@ -50,6 +56,8 @@ using namespace mozilla;
 using namespace mozilla::embedlite;
 
 #define CONTENT_LOADED "chrome:contentloaded"
+#define RUN_JAVASCRIPT "embedui:runjavascript"
+#define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -84,6 +92,11 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mContext(nullptr)
     , mView(nullptr)
     , mViewInitialized(false)
+    , mParentID(0)
+    , mPrivateMode(false)
+    , mDesktopMode(false)
+    , mActive(false)
+    , mLoaded(false)
     , mBgColor(Qt::white)
     , mTopMargin(0.0)
     , mBottomMargin(0.0)
@@ -126,8 +139,11 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mOffsetX(0.0)
     , mOffsetY(0.0)
     , mHasCompositor(false)
+    , mNextJSCallId(0)
     , mDirtyState(0)
 {
+    loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
+    addMessageListener(RUN_JAVASCRIPT_REPLY);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -140,7 +156,7 @@ QMozViewPrivate::~QMozViewPrivate()
     mView = nullptr;
 }
 
-void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
+void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
 {
     bool widthChanged = false;
     bool heightChanged = false;
@@ -241,7 +257,7 @@ void QMozViewPrivate::UpdateScrollArea(unsigned int aWidth, unsigned int aHeight
     }
 }
 
-void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
+void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
 {
     QTouchEvent::TouchPoint tp;
     QPointF touchPos;
@@ -298,7 +314,7 @@ void QMozViewPrivate::TestFlickingMode(QTouchEvent *event)
     mSecondLastPos = tp.lastPos();
 }
 
-void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
+void QMozViewPrivate::handleTouchEnd(bool &draggingChanged, bool &pinchingChanged)
 {
     if (mDragging) {
         mDragging = false;
@@ -316,19 +332,19 @@ void QMozViewPrivate::HandleTouchEnd(bool &draggingChanged, bool &pinchingChange
     }
 }
 
-void QMozViewPrivate::ResetState()
+void QMozViewPrivate::resetState()
 {
     // Invalid initial drag start Y.
     mDragStartY = -1.0;
     mMoveDelta = 0.0;
 
     mFlicking = false;
-    UpdateMoving(false);
+    updateMoving(false);
     mVerticalScrollDecorator.setMoving(false);
     mHorizontalScrollDecorator.setMoving(false);
 }
 
-void QMozViewPrivate::UpdateMoving(bool moving)
+void QMozViewPrivate::updateMoving(bool moving)
 {
     if (mMoving != moving) {
         mMoving = moving;
@@ -340,7 +356,7 @@ void QMozViewPrivate::UpdateMoving(bool moving)
     }
 }
 
-void QMozViewPrivate::ResetPainted()
+void QMozViewPrivate::resetPainted()
 {
     if (mIsPainted) {
         mIsPainted = false;
@@ -380,7 +396,7 @@ void QMozViewPrivate::load(const QString &url)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    ResetPainted();
+    resetPainted();
     mView->LoadURL(url.toUtf8().data());
 }
 
@@ -398,6 +414,66 @@ void QMozViewPrivate::scrollBy(int x, int y)
         // Map to CSS pixels.
         mView->ScrollBy(x / mContentResolution, y / mContentResolution);
     }
+}
+
+void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callback, const QJSValue &errorCallback)
+{
+    if (!mViewInitialized) {
+        auto viewInitialzedError = QStringLiteral("Error: run javascript can be called only after view is initialized.");
+        if (errorCallback.isCallable()) {
+            QJSValueList args = { QJSValue(viewInitialzedError) };
+            // Make it possible to call const errorCallback.
+            QJSValue cb = errorCallback;
+            QJSValue result = cb.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << viewInitialzedError;
+            }
+        } else {
+            qmlInfo(q) << viewInitialzedError;
+        }
+
+        return;
+    }
+
+    // Callback undefined, fire and forget.
+    if (callback.isUndefined()) {
+        QVariantMap data;
+        data.insert(QString("script"), script);
+        data.insert(QString("callbackId"), -1);
+        doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
+        return;
+    }
+
+    if (!callback.isCallable()) {
+        auto callbackArgumentError = QStringLiteral("Error: callback argument is not a function.");
+
+        if (errorCallback.isCallable()) {
+            QJSValueList args = { QJSValue(callbackArgumentError) };
+            // Make it possible to call const errorCallback.
+            QJSValue cb = errorCallback;
+            QJSValue result = cb.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << callbackArgumentError;
+            }
+        } else {
+            qmlInfo(q) << callbackArgumentError;
+        }
+        return;
+    }
+
+    if (!errorCallback.isUndefined() && !errorCallback.isCallable()) {
+        qmlInfo(q) << "Error: error callback argument is not a function.";
+        return;
+    }
+
+    uint callbackId = mNextJSCallId++;
+
+    QVariantMap data;
+    data.insert(QString("script"), script);
+    data.insert(QString("callbackId"), callbackId);
+    doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
+
+    mPendingJSCalls.insert(callbackId, qMakePair(callback, errorCallback));
 }
 
 void QMozViewPrivate::loadFrameScript(const QString &frameScript)
@@ -438,7 +514,7 @@ void QMozViewPrivate::timerEvent(QTimerEvent *event)
         qreal offsetY = mScrollableOffset.y();
         qreal offsetX = mScrollableOffset.x();
         if (offsetX == mOffsetX && offsetY == mOffsetY) {
-            ResetState();
+            resetState();
             q->killTimer(mMovingTimerId);
             mMovingTimerId = 0;
         }
@@ -553,23 +629,17 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
 }
 
-void QMozViewPrivate::sendAsyncMessage(const QString &name, const QVariant &value)
+void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &value)
 {
     if (!mViewInitialized)
         return;
 
-    QJsonDocument doc;
-    if (value.userType() == QMetaType::type("QJSValue")) {
-        // Qt 5.6 likes to pass a QJSValue
-        QJSValue jsValue = qvariant_cast<QJSValue>(value);
-        doc = QJsonDocument::fromVariant(jsValue.toVariant());
-    } else {
-        doc = QJsonDocument::fromVariant(value);
+    if (message == QLatin1String(RUN_JAVASCRIPT)) {
+        qmlInfo(q) << "Error: trying to send reserved message:" << message;
+        return;
     }
-    QByteArray array = doc.toJson();
-    QString data(array);
 
-    mView->SendAsyncMessage((const char16_t *)name.utf16(), (const char16_t *)data.utf16());
+    doSendAsyncMessage(message, value);
 }
 
 void QMozViewPrivate::setMozWindow(QMozWindow *window)
@@ -579,6 +649,38 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
         mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
+    }
+}
+
+void QMozViewPrivate::setParentId(unsigned parentId)
+{
+    if (parentId != mParentID) {
+        mParentID = parentId;
+        mViewIface->parentIdChanged();
+    }
+}
+
+void QMozViewPrivate::setChromeGestureEnabled(bool value)
+{
+    if (value != mChromeGestureEnabled) {
+        mChromeGestureEnabled = value;
+        mViewIface->chromeGestureEnabledChanged();
+    }
+}
+
+void QMozViewPrivate::setChromeGestureThreshold(qreal value)
+{
+    if (value != mChromeGestureThreshold) {
+        mChromeGestureThreshold = value;
+        mViewIface->chromeGestureThresholdChanged();
+    }
+}
+
+void QMozViewPrivate::setChrome(bool value)
+{
+    if (value != mChrome) {
+        mChrome = value;
+        mViewIface->chromeChanged();
     }
 }
 
@@ -616,6 +718,42 @@ void QMozViewPrivate::onCompositorCreated()
     if (mDirtyState & DirtyDotsPerInch) {
         mView->SetDPI(mDpi);
         mDirtyState &= ~DirtyDotsPerInch;
+    }
+}
+
+void QMozViewPrivate::updateLoaded()
+{
+    bool loaded = mProgress == 100 && !mIsLoading;
+    if (mLoaded != loaded) {
+        mLoaded = loaded;
+        mViewIface->loadedChanged();
+    }
+}
+
+void QMozViewPrivate::createView()
+{
+    if (!mContext->isInitialized()) {
+        connect(mContext, &QMozContext::initialized, this, &QMozViewPrivate::createView);
+    } else {
+        Q_ASSERT(!mView);
+        QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
+        if (mozView) {
+            mozView->prepareMozWindow();
+        }
+
+        Q_ASSERT(mMozWindow);
+
+        EmbedLiteWindow *win = mMozWindow->d->mWindow;
+        mView = mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
+        mView->SetListener(this);
+        setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+
+        if (mozView) {
+            connect(mMozWindow.data(), &QMozWindow::compositingFinished,
+                    mozView, &QuickMozView::compositingFinished);
+        }
+
+        mViewIface->uniqueIdChanged();
     }
 }
 
@@ -663,7 +801,7 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
     mViewIface->bgColorChanged();
 }
 
-void QMozViewPrivate::SetMargins(const QMargins &margins, bool updateTopBottom)
+void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
 {
     if (margins != mMargins) {
         mMargins = margins;
@@ -683,7 +821,7 @@ void QMozViewPrivate::SetMargins(const QMargins &margins, bool updateTopBottom)
 }
 
 // Can be read for instance from gecko compositor thread.
-QColor QMozViewPrivate::GetBackgroundColor() const
+QColor QMozViewPrivate::getBackgroundColor() const
 {
     QMutexLocker locker(&mBgColorMutex);
     return mBgColor;
@@ -719,7 +857,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
-    ResetPainted();
+    resetPainted();
 
     if (!mIsLoading) {
         mIsLoading = true;
@@ -774,17 +912,12 @@ void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t 
     ok = error.error == QJsonParseError::NoError;
     QVariant vdata = doc.toVariant();
 
-    // Check docuri if this is an error page
-    if (message == CONTENT_LOADED && vdata.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
-        // Mark security invalid, not used in error pages
-        mSecurity.setSecurityRaw(nullptr, 0);
-    }
-
     if (ok) {
 #ifdef DEVELOPMENT_BUILD
         qCDebug(lcEmbedLiteExt) << "mesg:" << message << ", data:" << data;
 #endif
-        mViewIface->recvAsyncMessage(message, vdata);
+        if (!handleAsyncMessage(message, vdata))
+            mViewIface->recvAsyncMessage(message, vdata);
     } else {
         qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString();
 #ifdef DEVELOPMENT_BUILD
@@ -858,11 +991,11 @@ void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aH
         mContentRect.setSize(QSizeF(aWidth, aHeight));
     }
 
-    UpdateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
+    updateScrollArea(aWidth * mContentResolution, aHeight * mContentResolution,
                      mScrollableOffset.x(), mScrollableOffset.y());
 }
 
-void QMozViewPrivate::SetIsFocused(bool aIsFocused)
+void QMozViewPrivate::setIsFocused(bool aIsFocused)
 {
     mViewIsFocused = aIsFocused;
     if (mViewInitialized) {
@@ -870,14 +1003,20 @@ void QMozViewPrivate::SetIsFocused(bool aIsFocused)
     }
 }
 
-void QMozViewPrivate::SetDesktopMode(bool aDesktopMode)
+void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
 {
-    if (mViewInitialized) {
-        mView->SetDesktopMode(aDesktopMode);
+    if (mDesktopMode != aDesktopMode) {
+        mDesktopMode = aDesktopMode;
+
+        if (mViewInitialized) {
+            mView->SetDesktopMode(aDesktopMode);
+        }
+
+        mViewIface->desktopModeChanged();
     }
 }
 
-void QMozViewPrivate::SetThrottlePainting(bool aThrottle)
+void QMozViewPrivate::setThrottlePainting(bool aThrottle)
 {
     if (mViewInitialized) {
         mView->SetThrottlePainting(aThrottle);
@@ -964,7 +1103,7 @@ bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &
     float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
     if (!qFuzzyIsNull(contentResoution)) {
         mContentResolution = contentResoution;
-        UpdateScrollArea(
+        updateScrollArea(
                     aScrollableSize.width * mContentResolution,
                     aScrollableSize.height * mContentResolution,
                     aContentRect.x * mContentResolution,
@@ -1028,7 +1167,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             mPinching = true;
             pinchingChanged = true;
         }
-        ResetState();
+        resetState();
     } else if (event->type() == QEvent::TouchUpdate) {
         Q_ASSERT(touchPointsCount > 0);
         if (!mDragging) {
@@ -1044,15 +1183,15 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
     } else if (event->type() == QEvent::TouchEnd) {
         Q_ASSERT(touchPointsCount > 0);
-        HandleTouchEnd(draggingChanged, pinchingChanged);
+        handleTouchEnd(draggingChanged, pinchingChanged);
     } else if (event->type() == QEvent::TouchCancel) {
-        HandleTouchEnd(draggingChanged, pinchingChanged);
+        handleTouchEnd(draggingChanged, pinchingChanged);
         testFlick = false;
         mCanFlick = false;
     }
 
     if (testFlick) {
-        TestFlickingMode(event);
+        testFlickingMode(event);
     }
 
     if (draggingChanged) {
@@ -1065,13 +1204,13 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
 
     if (event->type() == QEvent::TouchEnd) {
         if (mCanFlick) {
-            UpdateMoving(mCanFlick);
+            updateMoving(mCanFlick);
         } else {
             // From dragging (panning) end to clean state
-            ResetState();
+            resetState();
         }
     } else {
-        UpdateMoving(mDragging);
+        updateMoving(mDragging);
     }
 
     qint64 timeStamp = current_timestamp(event);
@@ -1089,7 +1228,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
         // All touch point should be cleared but let's clear active touch points anyways.
         mActiveTouchPoints.clear();
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
         // touch was canceled hence no need to generate touchstart or touchmove
         return;
     }
@@ -1138,7 +1277,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                    pt.pressure()));
         }
 
-        ReceiveInputEvent(touchStart);
+        receiveInputEvent(touchStart);
     }
 
     Q_FOREACH (int id, endIds) {
@@ -1147,7 +1286,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         touchEnd.touches.push_back(TouchData(pt.id(),
                                              createEmbedTouchPoint(pt.pos()),
                                              pt.pressure()));
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
     }
 
     if (!moveIds.empty()) {
@@ -1165,11 +1304,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                                                   createEmbedTouchPoint(pt.pos()),
                                                   pt.pressure()));
         }
-        ReceiveInputEvent(touchMove);
+        receiveInputEvent(touchMove);
     }
 }
 
-void QMozViewPrivate::ReceiveInputEvent(const EmbedTouchInput &event)
+void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
 {
     if (mViewInitialized) {
         mView->ReceiveInputEvent(event);
@@ -1189,7 +1328,7 @@ void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
                                                createEmbedTouchPoint(pt),
                                                1.0f));
     }
-    ReceiveInputEvent(touchBegin);
+    receiveInputEvent(touchBegin);
 }
 
 void QMozViewPrivate::synthTouchMove(const QVariant &touches)
@@ -1205,7 +1344,7 @@ void QMozViewPrivate::synthTouchMove(const QVariant &touches)
                                               createEmbedTouchPoint(pt),
                                               1.0f));
     }
-    ReceiveInputEvent(touchMove);
+    receiveInputEvent(touchMove);
 }
 
 void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
@@ -1221,7 +1360,7 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
                                              createEmbedTouchPoint(pt),
                                              1.0f));
     }
-    ReceiveInputEvent(touchEnd);
+    receiveInputEvent(touchEnd);
 }
 
 void QMozViewPrivate::recvMouseMove(int posX, int posY)
@@ -1232,7 +1371,7 @@ void QMozViewPrivate::recvMouseMove(int posX, int posY)
         touchMove.touches.push_back(TouchData(0,
                                               createEmbedTouchPoint(posX, posY),
                                               1.0f));
-        ReceiveInputEvent(touchMove);
+        receiveInputEvent(touchMove);
     }
 }
 
@@ -1245,7 +1384,7 @@ void QMozViewPrivate::recvMousePress(int posX, int posY)
         touchBegin.touches.push_back(TouchData(0,
                                                createEmbedTouchPoint(posX, posY),
                                                1.0f));
-        ReceiveInputEvent(touchBegin);
+        receiveInputEvent(touchBegin);
     }
 }
 
@@ -1257,9 +1396,70 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
         touchEnd.touches.push_back(TouchData(0,
                                              createEmbedTouchPoint(posX, posY),
                                              1.0f));
-        ReceiveInputEvent(touchEnd);
+        receiveInputEvent(touchEnd);
     }
     if (mPendingTouchEvent) {
         mPendingTouchEvent = false;
     }
+}
+
+void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant &value)
+{
+    if (!mViewInitialized)
+        return;
+
+    QJsonDocument doc;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        // Qt 5.6 likes to pass a QJSValue
+        QJSValue jsValue = qvariant_cast<QJSValue>(value);
+        doc = QJsonDocument::fromVariant(jsValue.toVariant());
+    } else {
+        doc = QJsonDocument::fromVariant(value);
+    }
+
+    QByteArray array = doc.toJson(QJsonDocument::Compact);
+    QString data(array);
+
+    mView->SendAsyncMessage((const char16_t *)message.utf16(), (const char16_t *)data.utf16());
+}
+
+bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant &data)
+{
+    // Check docuri if this is an error page
+    if (message == QLatin1String(CONTENT_LOADED) && data.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
+        // Mark security invalid, not used in error pages
+        mSecurity.setSecurityRaw(nullptr, 0);
+        return false;
+    } else if (message == QLatin1String(RUN_JAVASCRIPT_REPLY)) {
+        QVariantMap map = data.toMap();
+        uint jsCallId = map.value(QLatin1String("callbackId")).toUInt();
+        QPair<QJSValue, QJSValue> callbacks = mPendingJSCalls.take(jsCallId);
+        QVariant result = map.value(QLatin1String("result"));
+        QVariant error = map.value(QLatin1String("error"));
+
+        QJSValue callback = callbacks.first;
+        if (error.isValid()) {
+            QJSValue errorCallback = callbacks.second;
+            if (errorCallback.isCallable()) {
+                QJSValueList args = { QJSValue(error.toString()) };
+                QJSValue result = errorCallback.call(args);
+                if (result.isError()) {
+                    qmlInfo(q) << "Error executing error callback";
+                }
+            } else {
+                qmlInfo(q) << error;
+            }
+        } else if (callback.isCallable()) {
+            // Over here callback should never be non-callable.
+            QJSValueList args = { callback.engine()->toScriptValue<QVariant>(result) };
+            QJSValue result = callback.call(args);
+            if (result.isError()) {
+                qmlInfo(q) << "Error executing callback";
+            }
+        }
+
+        return true;
+    }
+
+    return false;
 }

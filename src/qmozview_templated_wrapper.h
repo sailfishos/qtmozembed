@@ -26,6 +26,7 @@ public:
     virtual void canGoBackChanged() = 0;
     virtual void canGoForwardChanged() = 0;
     virtual void loadingChanged() = 0;
+    virtual void loadedChanged() = 0;
     virtual void viewDestroyed() = 0;
     virtual void windowCloseRequested() = 0;
     virtual void recvAsyncMessage(const QString message, const QVariant data) = 0;
@@ -33,7 +34,6 @@ public:
     virtual void loadRedirect() = 0;
     virtual void securityChanged(QString status, uint state) = 0;
     virtual void firstPaint(int offx, int offy) = 0;
-    virtual void contentLoaded(QString docuri) = 0;
     virtual void contentWidthChanged() = 0;
     virtual void contentHeightChanged() = 0;
     virtual void viewAreaChanged() = 0;
@@ -42,7 +42,6 @@ public:
     virtual void atXEndChanged() = 0;
     virtual void atYBeginningChanged() = 0;
     virtual void atYEndChanged() = 0;
-    virtual void chromeChanged() = 0;
     virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
@@ -53,6 +52,14 @@ public:
     virtual void movingChanged() = 0;
     virtual void pinchingChanged() = 0;
     virtual void marginsChanged() = 0;
+
+    virtual void desktopModeChanged() = 0;
+    virtual void chromeGestureEnabledChanged() = 0;
+    virtual void chromeGestureThresholdChanged() = 0;
+    virtual void chromeChanged() = 0;
+
+    virtual void parentIdChanged() = 0;
+    virtual void uniqueIdChanged() = 0;
 };
 
 template<class TMozQView>
@@ -98,6 +105,12 @@ public:
     {
         Q_EMIT view.loadingChanged();
     }
+
+    void loadedChanged() override
+    {
+        Q_EMIT view.loadedChanged();
+    }
+
     void viewDestroyed()
     {
         Q_EMIT view.viewDestroyed();
@@ -126,10 +139,6 @@ public:
     {
         Q_EMIT view.firstPaint(offx, offy);
     }
-    void contentLoaded(QString docuri)
-    {
-        Q_EMIT view.contentLoaded(docuri);
-    }
     void viewAreaChanged()
     {
         Q_EMIT view.viewAreaChanged();
@@ -154,10 +163,32 @@ public:
     {
         Q_EMIT view.atYEndChanged();
     }
-    void chromeChanged()
+
+    void chromeGestureEnabledChanged() override
+    {
+        Q_EMIT view.chromeGestureEnabledChanged();
+    }
+
+    void chromeGestureThresholdChanged() override
+    {
+        Q_EMIT view.chromeGestureThresholdChanged();
+    }
+
+    void chromeChanged() override
     {
         Q_EMIT view.chromeChanged();
     }
+
+    void parentIdChanged() override
+    {
+        Q_EMIT view.parentIdChanged();
+    }
+
+    void uniqueIdChanged() override
+    {
+        Q_EMIT view.uniqueIdChanged();
+    }
+
     void handleLongTap(QPoint point, QMozReturnValue *retval)
     {
         Q_EMIT view.handleLongTap(point, retval);
@@ -212,6 +243,11 @@ public:
     void contentHeightChanged()
     {
         Q_EMIT view.contentHeightChanged();
+    }
+
+    void desktopModeChanged() override
+    {
+        Q_EMIT view.desktopModeChanged();
     }
 
     TMozQView &view;

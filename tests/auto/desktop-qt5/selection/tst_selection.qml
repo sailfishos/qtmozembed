@@ -30,7 +30,6 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://embedlite/content/embedhelper.js")
             appWindow.mozViewInitialized = true
             webViewport.addMessageListeners([ "Content:ContextMenu", "Content:SelectionRange", "Content:SelectionCopied" ])
         }

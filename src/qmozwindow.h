@@ -52,8 +52,7 @@ protected:
     void timerEvent(QTimerEvent *event);
 
 private:
-    friend class QOpenGLWebPage;
-    friend class QuickMozView;
+    friend class QMozViewPrivate;
     friend class QMozWindowPrivate;
 
     QScopedPointer<QMozWindowPrivate> d;

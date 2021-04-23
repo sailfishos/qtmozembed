@@ -72,16 +72,12 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     : QQuickItem(parent)
     , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
     , mTexture(nullptr)
-    , mParentID(0)
     , mOrientation(Qt::PrimaryOrientation)
     , mExplicitViewportWidth(false)
     , mExplicitViewportHeight(false)
     , mExplicitOrientation(false)
-    , mPrivateMode(false)
     , mUseQmlMouse(false)
     , mComposited(false)
-    , mActive(false)
-    , mLoaded(false)
     , mFollowItemGeometry(true)
 {
     setFlag(ItemHasContents, true);
@@ -94,8 +90,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::setIsActive, this, &QuickMozView::SetIsActive);
     connect(this, &QuickMozView::viewInitialized, this, &QuickMozView::processViewInitialization);
     connect(this, &QuickMozView::enabledChanged, this, &QuickMozView::updateEnabled);
-    connect(this, &QuickMozView::loadProgressChanged, this, &QuickMozView::updateLoaded);
-    connect(this, &QuickMozView::loadingChanged, this, &QuickMozView::updateLoaded);
+    connect(this, &QuickMozView::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QuickMozView::loadingChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
     connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
     updateEnabled();
@@ -124,36 +120,18 @@ QuickMozView::SetIsActive(bool aIsActive)
     }
 }
 
-void QuickMozView::updateLoaded()
-{
-    bool loaded = loadProgress() == 100 && !loading();
-    if (mLoaded != loaded) {
-        mLoaded = loaded;
-        Q_EMIT loadedChanged();
-    }
-}
-
-void
-QuickMozView::contextInitialized()
-{
-#ifdef DEVELOPMENT_BUILD
-    qCInfo(lcEmbedLiteExt);
-#endif
-    createView();
-}
-
 void QuickMozView::processViewInitialization()
 {
     // This is connected to view initialization. View must be initialized
     // over here.
     Q_ASSERT(d->mViewInitialized);
     if (d->mDirtyState & QMozViewPrivate::DirtyActive) {
-        bool expectedActive = mActive;
-        mActive = !mActive;
+        bool expectedActive = d->mActive;
+        d->mActive = !expectedActive;
         setActive(expectedActive);
         d->mDirtyState &= ~QMozViewPrivate::DirtyActive;
     } else {
-        SetIsActive(mActive);
+        SetIsActive(d->mActive);
     }
 }
 
@@ -181,32 +159,6 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
                 mExplicitViewportHeight ? d->mSize.height() : newGeometry.height()));
 
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
-}
-
-void QuickMozView::createView()
-{
-    if (d->mSize.isEmpty()) {
-        d->mSize = window()->size();
-    }
-
-    QMozWindow *mozWindow = d->mContext->registeredWindow();
-    if (!mozWindow) {
-        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
-        d->mContext->registerWindow(mozWindow);
-    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && mActive) {
-        mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
-    }
-
-    if (mActive) {
-        mozWindow->setContentOrientation(mOrientation);
-    }
-
-    d->setMozWindow(mozWindow);
-    d->mView = d->mContext->GetApp()->CreateView(d->mMozWindow->d->mWindow, mParentID, mPrivateMode);
-    d->mView->SetListener(d);
-    d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
-    connect(d->mMozWindow.data(), &QMozWindow::compositingFinished,
-            this, &QuickMozView::compositingFinished);
 }
 
 QSGNode *
@@ -297,24 +249,24 @@ void QuickMozView::releaseResources()
 
 int QuickMozView::parentId() const
 {
-    return mParentID;
+    return d->mParentID;
 }
 
 bool QuickMozView::privateMode() const
 {
-    return mPrivateMode;
+    return d->mPrivateMode;
 }
 
 bool QuickMozView::active() const
 {
-    return mActive;
+    return d->mActive;
 }
 
 void QuickMozView::setActive(bool active)
 {
     if (d->mViewInitialized) {
-        if (mActive != active) {
-            mActive = active;
+        if (d->mActive != active) {
+            d->mActive = active;
             // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
             SetIsActive(active);
             if (active) {
@@ -328,14 +280,14 @@ void QuickMozView::setActive(bool active)
         }
     } else {
         // Will be processed once view is initialized.
-        mActive = active;
+        d->mActive = active;
         d->mDirtyState |= QMozViewPrivate::DirtyActive;
     }
 }
 
 bool QuickMozView::loaded() const
 {
-    return mLoaded;
+    return d->mLoaded;
 }
 
 /*!
@@ -365,10 +317,31 @@ void QuickMozView::updateContentSize(const QSizeF &size)
 
 void QuickMozView::compositingFinished()
 {
-    if (mActive) {
+    if (d->mActive) {
         mComposited = true;
         update();
     }
+}
+
+void QuickMozView::prepareMozWindow()
+{
+    if (d->mSize.isEmpty()) {
+        d->mSize = window()->size();
+    }
+
+    QMozWindow *mozWindow = d->mContext->registeredWindow();
+    if (!mozWindow) {
+        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
+        d->mContext->registerWindow(mozWindow);
+    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
+        mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
+    }
+
+    if (d->mActive) {
+        mozWindow->setContentOrientation(mOrientation);
+    }
+
+    d->setMozWindow(mozWindow);
 }
 
 void QuickMozView::updateMargins()
@@ -388,7 +361,7 @@ void QuickMozView::updateMargins()
             m.setBottom(d->mBottomMargin);
         }
 
-        d->SetMargins(m, false);
+        d->setMargins(m, false);
     }
 }
 
@@ -452,13 +425,13 @@ QVariant QuickMozView::inputMethodQuery(Qt::InputMethodQuery property) const
 
 void QuickMozView::focusInEvent(QFocusEvent *event)
 {
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
     QQuickItem::focusInEvent(event);
 }
 
 void QuickMozView::focusOutEvent(QFocusEvent *event)
 {
-    d->SetIsFocused(false);
+    d->setIsFocused(false);
     QQuickItem::focusOutEvent(event);
 }
 
@@ -598,10 +571,7 @@ bool QuickMozView::chromeGestureEnabled() const
 
 void QuickMozView::setChromeGestureEnabled(bool value)
 {
-    if (value != d->mChromeGestureEnabled) {
-        d->mChromeGestureEnabled = value;
-        Q_EMIT chromeGestureEnabledChanged();
-    }
+    d->setChromeGestureEnabled(value);
 }
 
 qreal QuickMozView::chromeGestureThreshold() const
@@ -611,10 +581,7 @@ qreal QuickMozView::chromeGestureThreshold() const
 
 void QuickMozView::setChromeGestureThreshold(qreal value)
 {
-    if (value != d->mChromeGestureThreshold) {
-        d->mChromeGestureThreshold = value;
-        Q_EMIT chromeGestureThresholdChanged();
-    }
+    d->setChromeGestureThreshold(value);
 }
 
 bool QuickMozView::chrome() const
@@ -624,10 +591,7 @@ bool QuickMozView::chrome() const
 
 void QuickMozView::setChrome(bool value)
 {
-    if (value != d->mChrome) {
-        d->mChrome = value;
-        Q_EMIT chromeChanged();
-    }
+    d->setChrome(value);
 }
 
 qreal QuickMozView::contentWidth() const
@@ -719,7 +683,7 @@ void QuickMozView::resetViewportHeight()
 
 void QuickMozView::setMargins(QMargins margins)
 {
-    d->SetMargins(margins, true);
+    d->setMargins(margins, true);
 }
 
 void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
@@ -739,7 +703,7 @@ void QuickMozView::goBack()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->GoBack();
 }
 
@@ -748,7 +712,7 @@ void QuickMozView::goForward()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->GoForward();
 }
 
@@ -764,7 +728,7 @@ void QuickMozView::reload()
     if (!d->mViewInitialized)
         return;
 
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->Reload(false);
 }
 
@@ -781,6 +745,13 @@ void QuickMozView::scrollTo(int x, int y)
 void QuickMozView::scrollBy(int x, int y)
 {
     d->scrollBy(x, y);
+}
+
+void QuickMozView::runJavaScript(const QString &script,
+                                 const QJSValue &callback,
+                                 const QJSValue &errorCallback)
+{
+    d->runJavaScript(script, callback, errorCallback);
 }
 
 // This should be a const method returning a pointer to a const object
@@ -817,17 +788,14 @@ void QuickMozView::newWindow(const QString &url)
 #endif
 }
 
-quint32 QuickMozView::uniqueID() const
+quint32 QuickMozView::uniqueId() const
 {
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QuickMozView::setParentID(unsigned aParentID)
+void QuickMozView::setParentId(unsigned parentId)
 {
-    if (aParentID != mParentID) {
-        mParentID = aParentID;
-        Q_EMIT parentIdChanged();
-    }
+    d->setParentId(parentId);
 }
 
 void QuickMozView::setPrivateMode(bool aPrivateMode)
@@ -838,10 +806,20 @@ void QuickMozView::setPrivateMode(bool aPrivateMode)
         return;
     }
 
-    if (aPrivateMode != mPrivateMode) {
-        mPrivateMode = aPrivateMode;
+    if (aPrivateMode != d->mPrivateMode) {
+        d->mPrivateMode = aPrivateMode;
         Q_EMIT privateModeChanged();
     }
+}
+
+bool QuickMozView::desktopMode() const
+{
+    return d->mDesktopMode;
+}
+
+void QuickMozView::setDesktopMode(bool desktopMode)
+{
+    d->setDesktopMode(desktopMode);
 }
 
 void QuickMozView::synthTouchBegin(const QVariant &touches)
@@ -913,12 +891,7 @@ void QuickMozView::timerEvent(QTimerEvent *event)
 void QuickMozView::componentComplete()
 {
     QQuickItem::componentComplete();
-    // The first created view gets always parentId of 0
-    if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::initialized, this, &QuickMozView::contextInitialized);
-    } else {
-        createView();
-    }
+    d->createView();
 }
 
 void QuickMozView::resumeRendering()
@@ -928,7 +901,7 @@ void QuickMozView::resumeRendering()
 
 void QuickMozView::updatePolish()
 {
-    if (d->mMozWindow && mActive) {
+    if (d->mMozWindow && d->mActive) {
         d->mMozWindow->setContentOrientation(mOrientation);
         d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }

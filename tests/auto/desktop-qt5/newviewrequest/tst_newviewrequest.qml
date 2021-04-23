@@ -29,7 +29,7 @@ Item {
             while (appWindow.mozView === null) {
                 testcaseid.wait()
             }
-            testcaseid.verify(mozView.uniqueID() > 0)
+            testcaseid.verify(mozView.uniqueId > 0)
         }
     }
 

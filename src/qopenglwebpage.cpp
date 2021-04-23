@@ -58,20 +58,15 @@ using namespace mozilla::embedlite;
 QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     : QObject(parent)
     , d(new QMozViewPrivate(new IMozQView<QOpenGLWebPage>(*this), this))
-    , mParentID(0)
-    , mPrivateMode(false)
-    , mActive(false)
-    , mLoaded(false)
     , mCompleted(false)
     , mSizeUpdateScheduled(false)
-    , mDesktopMode(false)
     , mThrottlePainting(false)
 {
     d->mContext = QMozContext::instance();
 
     connect(this, &QOpenGLWebPage::viewInitialized, this, &QOpenGLWebPage::processViewInitialization);
-    connect(this, &QOpenGLWebPage::loadProgressChanged, this, &QOpenGLWebPage::updateLoaded);
-    connect(this, &QOpenGLWebPage::loadingChanged, this, &QOpenGLWebPage::updateLoaded);
+    connect(this, &QOpenGLWebPage::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QOpenGLWebPage::loadingChanged, d, &QMozViewPrivate::updateLoaded);
 }
 
 QOpenGLWebPage::~QOpenGLWebPage()
@@ -85,26 +80,6 @@ QOpenGLWebPage::~QOpenGLWebPage()
     mGrabResultList.clear();
     delete d;
     d = nullptr;
-}
-
-void QOpenGLWebPage::updateLoaded()
-{
-    bool loaded = loadProgress() == 100 && !loading();
-    if (mLoaded != loaded) {
-        mLoaded = loaded;
-        Q_EMIT loadedChanged();
-    }
-}
-
-void QOpenGLWebPage::createView()
-{
-    qCDebug(lcEmbedLiteExt) << "QOpenGLWebPage";
-    if (!d->mView) {
-        EmbedLiteWindow *win = d->mMozWindow->d->mWindow;
-        d->mView = d->mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
-        d->mView->SetListener(d);
-        d->setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
-    }
 }
 
 void QOpenGLWebPage::processViewInitialization()
@@ -138,12 +113,12 @@ void QOpenGLWebPage::onDrawOverlay(const QRect &rect)
 
 int QOpenGLWebPage::parentId() const
 {
-    return mParentID;
+    return d->mParentID;
 }
 
 bool QOpenGLWebPage::privateMode() const
 {
-    return mPrivateMode;
+    return d->mPrivateMode;
 }
 
 void QOpenGLWebPage::setPrivateMode(bool privateMode)
@@ -154,8 +129,8 @@ void QOpenGLWebPage::setPrivateMode(bool privateMode)
         return;
     }
 
-    if (privateMode != mPrivateMode) {
-        mPrivateMode = privateMode;
+    if (privateMode != d->mPrivateMode) {
+        d->mPrivateMode = privateMode;
         Q_EMIT privateModeChanged();
     }
 }
@@ -175,7 +150,7 @@ void QOpenGLWebPage::setEnabled(bool enabled)
 
 bool QOpenGLWebPage::active() const
 {
-    return mActive;
+    return d->mActive;
 }
 
 void QOpenGLWebPage::setActive(bool active)
@@ -186,16 +161,16 @@ void QOpenGLWebPage::setActive(bool active)
     if (!d || !d->mViewInitialized)
         return;
 
-    if (mActive != active) {
-        mActive = active;
-        d->mView->SetIsActive(mActive);
+    if (d->mActive != active) {
+        d->mActive = active;
+        d->mView->SetIsActive(d->mActive);
         Q_EMIT activeChanged();
     }
 }
 
 bool QOpenGLWebPage::loaded() const
 {
-    return mLoaded;
+    return d->mLoaded;
 }
 
 QMozWindow *QOpenGLWebPage::mozWindow() const
@@ -217,16 +192,12 @@ void QOpenGLWebPage::setMozWindow(QMozWindow *window)
 
 bool QOpenGLWebPage::desktopMode() const
 {
-    return mDesktopMode;
+    return d->mDesktopMode;
 }
 
 void QOpenGLWebPage::setDesktopMode(bool desktopMode)
 {
-    if (mDesktopMode != desktopMode) {
-        mDesktopMode = desktopMode;
-        d->SetDesktopMode(desktopMode);
-        Q_EMIT desktopModeChanged();
-    }
+    d->setDesktopMode(desktopMode);
 }
 
 bool QOpenGLWebPage::throttlePainting() const
@@ -238,7 +209,7 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 {
     if (mThrottlePainting != throttle) {
         mThrottlePainting = throttle;
-        d->SetThrottlePainting(throttle);
+        d->setThrottlePainting(throttle);
         Q_EMIT throttlePaintingChanged();
     }
 }
@@ -250,12 +221,7 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
 */
 void QOpenGLWebPage::initialize()
 {
-    Q_ASSERT(d->mMozWindow);
-    if (!d->mContext->isInitialized()) {
-        connect(d->mContext, &QMozContext::initialized, this, &QOpenGLWebPage::createView);
-    } else {
-        createView();
-    }
+    d->createView();
 }
 
 bool QOpenGLWebPage::event(QEvent *event)
@@ -314,7 +280,7 @@ void QOpenGLWebPage::forceActiveFocus()
     }
 
     setActive(true);
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
 }
 
 void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
@@ -345,13 +311,13 @@ QVariant QOpenGLWebPage::inputMethodQuery(Qt::InputMethodQuery property) const
 void QOpenGLWebPage::focusInEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
-    d->SetIsFocused(true);
+    d->setIsFocused(true);
 }
 
 void QOpenGLWebPage::focusOutEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
-    d->SetIsFocused(false);
+    d->setIsFocused(false);
 }
 
 void QOpenGLWebPage::forceViewActiveFocus()
@@ -486,10 +452,7 @@ bool QOpenGLWebPage::chromeGestureEnabled() const
 
 void QOpenGLWebPage::setChromeGestureEnabled(bool value)
 {
-    if (value != d->mChromeGestureEnabled) {
-        d->mChromeGestureEnabled = value;
-        Q_EMIT chromeGestureEnabledChanged();
-    }
+    d->setChromeGestureEnabled(value);
 }
 
 qreal QOpenGLWebPage::chromeGestureThreshold() const
@@ -499,10 +462,7 @@ qreal QOpenGLWebPage::chromeGestureThreshold() const
 
 void QOpenGLWebPage::setChromeGestureThreshold(qreal value)
 {
-    if (value != d->mChromeGestureThreshold) {
-        d->mChromeGestureThreshold = value;
-        Q_EMIT chromeGestureThresholdChanged();
-    }
+    d->setChromeGestureThreshold(value);
 }
 
 bool QOpenGLWebPage::chrome() const
@@ -512,10 +472,7 @@ bool QOpenGLWebPage::chrome() const
 
 void QOpenGLWebPage::setChrome(bool value)
 {
-    if (value != d->mChrome) {
-        d->mChrome = value;
-        Q_EMIT chromeChanged();
-    }
+    d->setChrome(value);
 }
 
 qreal QOpenGLWebPage::contentWidth() const
@@ -535,7 +492,7 @@ QMargins QOpenGLWebPage::margins() const
 
 void QOpenGLWebPage::setMargins(QMargins margins)
 {
-    d->SetMargins(margins, true);
+    d->setMargins(margins, true);
 }
 
 void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
@@ -576,7 +533,7 @@ void QOpenGLWebPage::reload()
 {
     if (!d->mViewInitialized)
         return;
-    d->ResetPainted();
+    d->resetPainted();
     d->mView->Reload(false);
 }
 
@@ -593,6 +550,13 @@ void QOpenGLWebPage::scrollTo(int x, int y)
 void QOpenGLWebPage::scrollBy(int x, int y)
 {
     d->scrollBy(x, y);
+}
+
+void QOpenGLWebPage::runJavaScript(const QString &script,
+                                   const QJSValue &callback,
+                                   const QJSValue &errorCallback)
+{
+    d->runJavaScript(script, callback, errorCallback);
 }
 
 // This should be a const method returning a pointer to a const object
@@ -629,17 +593,14 @@ void QOpenGLWebPage::newWindow(const QString &url)
 #endif
 }
 
-quint32 QOpenGLWebPage::uniqueID() const
+quint32 QOpenGLWebPage::uniqueId() const
 {
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QOpenGLWebPage::setParentID(unsigned aParentID)
+void QOpenGLWebPage::setParentId(unsigned parentId)
 {
-    if (aParentID != mParentID) {
-        mParentID = aParentID;
-        Q_EMIT parentIdChanged();
-    }
+    d->setParentId(parentId);
 }
 
 void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)
@@ -677,7 +638,7 @@ void QOpenGLWebPage::resumeView()
     // PresShell::SetIsActive (nsPresShell). Thus, keep on throttling
     // if should keep on throttling.
     if (mThrottlePainting) {
-        d->SetThrottlePainting(true);
+        d->setThrottlePainting(true);
     }
 
     d->mView->ResumeTimeouts();

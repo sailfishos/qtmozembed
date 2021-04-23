@@ -21,6 +21,7 @@
 #include <QMap>
 #include <QSGSimpleTextureNode>
 #include <QKeyEvent>
+#include <QJSValue>
 
 #include <mozilla/embedlite/EmbedLiteView.h>
 
@@ -82,21 +83,26 @@ public:
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
     bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
 
-    void SetMargins(const QMargins &margins, bool updateTopBottom);
-    QColor GetBackgroundColor() const;
-    void SetIsFocused(bool aIsFocused);
-    void SetDesktopMode(bool aDesktopMode);
-    void SetThrottlePainting(bool aThrottle);
-    void UpdateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
-    void TestFlickingMode(QTouchEvent *event);
-    void HandleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
-    void ResetState();
-    void UpdateMoving(bool moving);
-    void ResetPainted();
-    void ReceiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
+    // Starting from here these are QMozViewPrivate methods.
+    void setMargins(const QMargins &margins, bool updateTopBottom);
+    QColor getBackgroundColor() const;
+    void setIsFocused(bool aIsFocused);
+    void setDesktopMode(bool aDesktopMode);
+    void setThrottlePainting(bool aThrottle);
+    void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
+    void testFlickingMode(QTouchEvent *event);
+    void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
+    void resetState();
+    void updateMoving(bool moving);
+    void resetPainted();
+    void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
 
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);
+
+    void runJavaScript(const QString &script,
+                       const QJSValue &callback,
+                       const QJSValue &errorCallback);
 
     void setSize(const QSizeF &size);
     void setDotsPerInch(qreal dpi);
@@ -107,15 +113,20 @@ public:
     void addMessageListeners(const std::vector<std::string> &messageNamesList);
 
     void startMoveMonitor();
-    void timerEvent(QTimerEvent *event);
+    void timerEvent(QTimerEvent *event) override;
     QVariant inputMethodQuery(Qt::InputMethodQuery property) const;
     void inputMethodEvent(QInputMethodEvent *event);
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
     void touchEvent(QTouchEvent *event);
 
-    void sendAsyncMessage(const QString &name, const QVariant &value);
+    void sendAsyncMessage(const QString &message, const QVariant &value);
     void setMozWindow(QMozWindow *);
+
+    void setParentId(unsigned parentId);
+    void setChromeGestureEnabled(bool value);
+    void setChromeGestureThreshold(qreal value);
+    void setChrome(bool value);
 
     mozilla::embedlite::TouchPointF createEmbedTouchPoint(const QPointF &point) const;
     mozilla::embedlite::TouchPointF createEmbedTouchPoint(qreal posX, qreal posY) const;
@@ -124,6 +135,8 @@ public:
 
 public Q_SLOTS:
     void onCompositorCreated();
+    void updateLoaded();
+    void createView();
 
 protected:
     friend class QOpenGLWebPage;
@@ -136,12 +149,20 @@ protected:
     void recvMousePress(int posX, int posY);
     void recvMouseRelease(int posX, int posY);
 
+    void doSendAsyncMessage(const QString &message, const QVariant &value);
+    bool handleAsyncMessage(const QString &message, const QVariant &data);
+
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
     QPointer<QMozWindow> mMozWindow;
     QMozContext *mContext;
     mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
+    unsigned mParentID;
+    bool mPrivateMode;
+    bool mDesktopMode;
+    bool mActive;
+    bool mLoaded;
     QColor mBgColor;
     qreal mTopMargin;
     qreal mBottomMargin;
@@ -201,6 +222,9 @@ protected:
     bool mHasCompositor;
     QMozSecurity mSecurity;
     qreal mDpi;
+    // Pair of success and error callbacks.
+    QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
+    uint mNextJSCallId;
 
     DirtyState mDirtyState;
 

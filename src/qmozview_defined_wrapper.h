@@ -12,6 +12,7 @@
 
 #include <QVariant>
 #include <QColor>
+#include <QJSValue>
 #include <QUrl>
 #include <QRect>
 #include <QRectF>
@@ -95,7 +96,10 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool chrome READ chrome WRITE setChrome NOTIFY chromeChanged FINAL) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
-    Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL)
+    Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL) \
+    Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
+    Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
+    Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -137,6 +141,12 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_INVOKABLE void scrollBy(int x, int y); \
     QMozSecurity *security(); \
     void addMessageListeners(const std::vector<std::string> &messageNamesList); \
+    bool desktopMode() const; \
+    void setDesktopMode(bool); \
+    int parentId() const; \
+    Q_INVOKABLE void runJavaScript(const QString &script, \
+                               const QJSValue &callback = QJSValue::UndefinedValue, \
+                               const QJSValue &errorCallback = QJSValue::UndefinedValue); \
 
 #define Q_MOZ_VIEW_PUBLIC_SLOTS \
     void loadHtml(const QString &html, const QUrl &baseUrl = QUrl()); \
@@ -150,8 +160,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \
     void newWindow(const QString &url = "about:blank"); \
-    quint32 uniqueID() const; \
-    void setParentID(unsigned aParentID); \
+    quint32 uniqueId() const; \
+    void setParentId(unsigned parentId); \
     void synthTouchBegin(const QVariant &touches); \
     void synthTouchMove(const QVariant &touches); \
     void synthTouchEnd(const QVariant &touches); \
@@ -176,7 +186,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void loadRedirect(); \
     void securityChanged(QString status, uint state); \
     void firstPaint(int offx, int offy); \
-    void contentLoaded(QString docuri); \
     void viewAreaChanged(); \
     void scrollableOffsetChanged(); \
     void atXBeginningChanged(); \
@@ -200,5 +209,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void chromeChanged(); \
     void chromeGestureThresholdChanged(); \
     void marginsChanged(); \
+    void desktopModeChanged(); \
+    void parentIdChanged(); \
+    void uniqueIdChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */
