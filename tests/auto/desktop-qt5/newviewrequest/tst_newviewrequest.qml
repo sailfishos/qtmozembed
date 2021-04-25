@@ -3,7 +3,6 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import qtmozembed.tests 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -33,27 +32,51 @@ Item {
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_newviewrequest"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_newviewrequest cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_newviewrequest cleanupTestCase")
         }
 
-        function test_1newcontextPrepareViewContext()
-        {
-            SharedTests.shared_1newcontextPrepareViewContext()
+        function test_1newcontextPrepareViewContext() {
+            mozContext.dumpTS("test_1newcontextPrepareViewContext start")
+            verify(mozContext.instance !== undefined)
+            verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+            verify(mozContext.instance.isInitialized())
+            mozContext.dumpTS("test_1newcontextPrepareViewContext end")
         }
-        function test_2newviewInit()
-        {
-            SharedTests.shared_2newviewInit()
+
+        function test_2newviewInit() {
+            mozContext.dumpTS("test_2newviewInit start")
+            verify(MyScript.wrtWait(function() { return (mozContext.instance.isInitialized() === false); }, 100, 500))
+            verify(mozContext.instance.isInitialized())
+            MyScript.createSpriteObjects();
+            verify(MyScript.wrtWait(function() { return (mozView === null); }, 10, 500))
+            verify(MyScript.wrtWait(function() { return (mozViewInitialized !== true); }, 10, 500))
+            verify(mozView !== undefined)
+            mozContext.dumpTS("test_2newviewInit end")
         }
-        function test_viewTestNewWindowAPI()
-        {
-            SharedTests.shared_viewTestNewWindowAPI()
+
+        function test_viewTestNewWindowAPI() {
+            mozContext.dumpTS("test_viewTestNewWindowAPI start")
+            verify(MyScript.wrtWait(function() { return (mozView === undefined); }, 100, 500))
+            verify(mozView !== undefined)
+            mozView.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/newviewrequest/newwin.html";
+            verify(MyScript.waitLoadFinished(mozView))
+            compare(mozView.title, "NewWinExample")
+            verify(MyScript.wrtWait(function() { return (!mozView.painted); }))
+            mozViewInitialized = false;
+            mouseClick(mozView, 10, 10)
+            verify(MyScript.wrtWait(function() { return (!mozView || !oldMozView); }))
+            verify(MyScript.wrtWait(function() { return (mozViewInitialized !== true); }))
+            verify(mozView !== undefined)
+            verify(MyScript.waitLoadFinished(mozView))
+            verify(MyScript.wrtWait(function() { return (!mozView.painted); }))
+            compare(mozView.url, "about:license")
+            mozContext.dumpTS("test_viewTestNewWindowAPI end")
         }
     }
 }

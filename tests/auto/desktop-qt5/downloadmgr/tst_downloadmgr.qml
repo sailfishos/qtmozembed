@@ -2,7 +2,6 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
-import "../../shared/sharedTests.js" as SharedTests
 
 Item {
     id: appWindow
@@ -45,34 +44,30 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.addMessageListener("embed:filepicker")
+            webViewport.addMessageListener("embed:downloadpicker")
             appWindow.mozViewInitialized = true
         }
         onRecvAsyncMessage: {
-            // print("onRecvAsyncMessage:" + message + ", data:" + data)
-            if (message == "embed:filepicker") {
-                webViewport.sendAsyncMessage("filepickerresponse", {
-                                                 winid: data.winid,
-                                                 accepted: true,
-                                                 items: ["/tmp/tt.bin"]
-                                             })
+            if (message == "embed:downloadpicker") {
+                mozContext.instance.notifyObservers("embedui:downloadpicker", {
+                                                 downloadDirectory: "/tmp/",
+                                                 defaultFileName: data.defaultFileName,                                             })
+                                                 suggestedFileExtension: data.suggestedFileExtension
             }
         }
     }
 
-    resources: TestCase {
+    TestCase {
         id: testcaseid
-        name: "mozContextPage"
+        name: "tst_downloadmgr"
         when: windowShown
-        parent: appWindow
 
-        function cleanup() {
-            mozContext.dumpTS("tst_downloadmgr cleanup")
+        function cleanupTestCase() {
+            mozContext.dumpTS("tst_downloadmgr cleanupTestCase")
         }
 
-        function test_TestDownloadMgrPage()
-        {
-            mozContext.dumpTS("test_TestLoginMgrPage start")
+        function test_TestDownloadMgrPage() {
+            mozContext.dumpTS("test_TestDownloadMgrPage start")
             testcaseid.verify(MyScript.waitMozContext())
             mozContext.instance.addObserver("embed:download");
             testcaseid.verify(MyScript.waitMozView())
@@ -80,11 +75,11 @@ Item {
             webViewport.url = "about:mozilla";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(SharedTests.wrtWait(function() { return (!webViewport.painted); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             webViewport.url = mozContext.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(SharedTests.wrtWait(function() { return (!appWindow.promptReceived); }))
+            testcaseid.verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
             mozContext.dumpTS("test_TestDownloadMgrPage end");
         }
     }

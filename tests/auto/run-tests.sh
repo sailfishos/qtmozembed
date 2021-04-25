@@ -2,6 +2,9 @@
 
 QTVER=5
 
+export LANG=en_GB.UTF-8
+export EMBED_CONSOLE=stacktrace
+
 # Create a temporary DBus session to isolate us from the normal environment.
 export `dbus-launch`
 if [ "$QTMOZEMBEDOBJDIR" != "" ]; then
@@ -30,5 +33,7 @@ kill $DBUS_SESSION_BUS_PID
 
 # Clean up settings afterwards
 rm -rf ~/.mozilla/mozembed-testrunner/
+
+echo "exit_code $exit_code"
 
 exit $exit_code

@@ -47,8 +47,6 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
-    setenv("USE_ASYNC", "1", 1);
-
     qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
 
     // These components must be loaded before app start
@@ -64,13 +62,28 @@ int main(int argc, char **argv)
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteJSComponents.manifest"));
 
+    bool contextDestroyed = false;
+
+    QObject::connect(QMozContext::instance(), &QMozContext::lastViewDestroyed,
+                     QMozContext::instance(), &QMozContext::stopEmbedding);
+    QObject::connect(QMozContext::instance(), &QMozContext::contextDestroyed,
+                     [&] {
+        contextDestroyed = true;
+    });
+
     int ret = -1;
     QTimer::singleShot(0, [&] {
         QMozContext::instance()->runEmbedding();
         QMozEngineSettings::instance();
         ret = quick_test_main(argc, argv, "qmlmoztestrunner", 0);
-        QMozContext::instance()->stopEmbedding();
     });
+
     app.exec();
+
+    while (!contextDestroyed) {
+        QEventLoop::ProcessEventsFlags flags = QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents;
+        QCoreApplication::processEvents(flags, 100);
+    }
+
     return ret;
 }
