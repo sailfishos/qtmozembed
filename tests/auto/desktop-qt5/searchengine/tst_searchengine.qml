@@ -1,6 +1,7 @@
 import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
+import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
 Item {
@@ -11,18 +12,15 @@ Item {
     property bool mozViewInitialized
     property var testResult
 
-    QmlMozContext {
-        id: mozContext
-    }
     Connections {
-        target: mozContext.instance
+        target: QmlMozContext
         onOnInitialized: {
-            mozContext.instance.setPref("browser.search.defaultenginename", "QMOZTest")
-            mozContext.instance.addComponentManifest(mozContext.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-            mozContext.instance.setPref("browser.search.log", true)
-            mozContext.instance.addObserver("browser-search-engine-modified")
-            mozContext.instance.addObserver("embed:search")
-            mozContext.instance.setPref("keyword.enabled", true)
+            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
+            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            QMozEngineSettings.setPreference("browser.search.log", true)
+            QmlMozContext.addObserver("browser-search-engine-modified")
+            QmlMozContext.addObserver("embed:search")
+            QMozEngineSettings.setPreference("keyword.enabled", true)
         }
         onRecvObserve: {
             if (message == "embed:search") {
@@ -68,7 +66,7 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_searchengine cleanupTestCase")
+            MyScript.dumpTs("tst_searchengine cleanupTestCase")
         }
 
         function test_TestCheckDefaultSearch() {
@@ -87,25 +85,25 @@ Item {
 
                 return !found;
             };
-            mozContext.dumpTS("TestCheckDefaultSearch start")
+            MyScript.dumpTs("TestCheckDefaultSearch start")
             verify(MyScript.waitMozContext())
-            mozContext.instance.setPref("browser.search.log", true);
-            mozContext.instance.addObserver("browser-search-engine-modified");
-            mozContext.instance.addObserver("embed:search");
-            mozContext.instance.setPref("keyword.enabled", true);
+            QMozEngineSettings.setPreference("browser.search.log", true);
+            QmlMozContext.addObserver("browser-search-engine-modified");
+            QmlMozContext.addObserver("embed:search");
+            QMozEngineSettings.setPreference("keyword.enabled", true);
             verify(MyScript.waitMozView())
-            mozContext.instance.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
+            QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
             verify(MyScript.wrtWait(function() { return (!engineExistsPredicate()); }))
-            mozContext.instance.notifyObservers("embedui:search", {msg:"loadxml", uri: "file://" + mozContext.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
+            QmlMozContext.notifyObservers("embedui:search", {msg:"loadxml", uri: "file://" + TestHelper.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
             verify(MyScript.wrtWait(function() { return (appWindow.testResult !== "loaded"); }))
-            mozContext.instance.notifyObservers("embedui:search", {msg:"getlist"})
+            QmlMozContext.notifyObservers("embedui:search", {msg:"getlist"})
             verify(MyScript.wrtWait(engineExistsPredicate));
             webViewport.load("linux home");
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             compare(webViewport.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
-            mozContext.dumpTS("TestCheckDefaultSearch end");
+            MyScript.dumpTs("TestCheckDefaultSearch end");
         }
     }
 }

@@ -35,6 +35,7 @@
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
 #include "testviewcreator.h"
+#include "testhelper.h"
 #include <QGuiApplication>
 #include <QtCore/qstring.h>
 #include <QTimer>
@@ -43,11 +44,18 @@
 #include <QQuickView>
 #include <QtQuickTest/quicktest.h>
 
+static QObject *testHelperFactory(QQmlEngine *engine, QJSEngine *)
+{
+    return new TestHelper(engine);
+}
+
 int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<TestViewCreator>("qtmozembed.tests", 1, 0, "WebViewCreator");
+    qmlRegisterType<TestViewCreator>("QtMozEmbed.Tests", 1, 0, "WebViewCreator");
+    qmlRegisterSingletonType<TestHelper>("QtMozEmbed.Tests", 1, 0, "TestHelper",
+                                                    testHelperFactory);
 
     // These components must be loaded before app start
     QString componentPath(DEFAULT_COMPONENTS_PATH);

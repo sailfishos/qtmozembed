@@ -5,8 +5,7 @@ TEMPLATE = lib
 CONFIG += qt plugin c++11
 QT += qml quick
 
-SOURCES += main.cpp qmlmozcontext.cpp
-HEADERS += qmlmozcontext.h
+SOURCES += main.cpp
 
 RELATIVE_PATH=..
 VDEPTH_PATH=qmlplugin5

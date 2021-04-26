@@ -39,7 +39,6 @@ public:
     void registerWindow(QMozWindow *window);
     QMozWindow *registeredWindow() const;
 
-    static QMozContext *GetInstance();
     static QMozContext *instance();
 
     TaskHandle PostUITask(TaskCallback, void *data, int timeout = 0);
@@ -63,14 +62,10 @@ public Q_SLOTS:
     void notifyObservers(const QString &topic, const QString &value);
     void notifyObservers(const QString &topic, const QVariant &value);
 
-    void sendObserve(const QString &aTopic, const QString &value);
-    void sendObserve(const QString &aTopic, const QVariant &value);
-
     // running this without delay specified will execute Gecko/Qt nested main loop
     // and block this call until stopEmbedding called
     void runEmbedding(int aDelay = -1);
     void stopEmbedding();
-    void setPref(const QString &aName, const QVariant &aPref);
     void notifyFirstUIInitialized();
     void setProfile(const QString &);
 

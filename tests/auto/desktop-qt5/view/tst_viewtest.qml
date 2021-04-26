@@ -10,10 +10,6 @@ Item {
 
     property bool mozViewInitialized
 
-    QmlMozContext {
-        id: mozContext
-    }
-
     QmlMozView {
         id: webViewport
         visible: true
@@ -29,28 +25,28 @@ Item {
         when: windowShown
 
         function cleanupTestCase() {
-            mozContext.dumpTS("tst_viewtest cleanupTestCase")
+            MyScript.dumpTs("tst_viewtest cleanupTestCase")
         }
 
         function test_Test1LoadSimpleBlank()
         {
-            mozContext.dumpTS("test_Test1LoadSimpleBlank start")
+            MyScript.dumpTs("test_Test1LoadSimpleBlank start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
             webViewport.url = "about:blank";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100)
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            mozContext.dumpTS("test_Test1LoadSimpleBlank end")
+            MyScript.dumpTs("test_Test1LoadSimpleBlank end")
         }
         function test_Test2LoadAboutMozillaCheckTitle()
         {
-            mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle start")
+            MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle start")
             webViewport.url = "about:mozilla";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.title, "The Book of Mozilla, 11:14")
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            mozContext.dumpTS("test_Test2LoadAboutMozillaCheckTitle end")
+            MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle end")
         }
     }
 }
