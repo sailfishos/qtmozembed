@@ -1435,8 +1435,8 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         uint jsCallId = map.value(QLatin1String("callbackId")).toUInt();
         QPair<QJSValue, QJSValue> callbacks = mPendingJSCalls.take(jsCallId);
         QVariant result = map.value(QLatin1String("result"));
+        bool stringified = map.value(QLatin1String("stringified")).toBool();
         QVariant error = map.value(QLatin1String("error"));
-
         QJSValue callback = callbacks.first;
         if (error.isValid()) {
             QJSValue errorCallback = callbacks.second;
@@ -1451,7 +1451,14 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
             }
         } else if (callback.isCallable()) {
             // Over here callback should never be non-callable.
-            QJSValueList args = { callback.engine()->toScriptValue<QVariant>(result) };
+            QJSValueList args;
+            if (stringified) {
+                QJsonDocument doc = QJsonDocument::fromJson(result.toString().toUtf8());
+                QVariant vdata = doc.toVariant();
+                args = { callback.engine()->toScriptValue<QVariant>(vdata) };
+            } else {
+                args = { callback.engine()->toScriptValue<QVariant>(result) };
+            }
             QJSValue result = callback.call(args);
             if (result.isError()) {
                 qmlInfo(q) << "Error executing callback";
