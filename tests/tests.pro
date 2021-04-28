@@ -13,6 +13,7 @@ test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/newviewrequest/tst_newviewrequest.qml \
     auto/desktop-qt5/passwordmgr/tst_passwordmgr.qml \
     auto/desktop-qt5/promptbasic/tst_prompt.qml \
+    auto/desktop-qt5/runjavascript/* \
     auto/desktop-qt5/searchengine/tst_searchengine.qml \
     auto/desktop-qt5/selection/tst_selection.qml \
     auto/desktop-qt5/viewbasicapi/tst_viewbasicapi.qml \
