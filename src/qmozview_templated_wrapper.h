@@ -54,6 +54,7 @@ public:
     virtual void marginsChanged() = 0;
 
     virtual void desktopModeChanged() = 0;
+    virtual void httpUserAgentChanged() = 0;
     virtual void chromeGestureEnabledChanged() = 0;
     virtual void chromeGestureThresholdChanged() = 0;
     virtual void chromeChanged() = 0;
@@ -248,6 +249,11 @@ public:
     void desktopModeChanged() override
     {
         Q_EMIT view.desktopModeChanged();
+    }
+
+    void httpUserAgentChanged()
+    {
+        Q_EMIT view.httpUserAgentChanged();
     }
 
     TMozQView &view;

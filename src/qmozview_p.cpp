@@ -788,6 +788,10 @@ void QMozViewPrivate::ViewInitialized()
         mDirtyState &= ~DirtyMargin;
     }
 
+    if (!mHttpUserAgent.isEmpty()) {
+        mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
+    }
+
     // This is currently part of official API, so let's subscribe to these messages by default
     mViewIface->viewInitialized();
     mViewIface->canGoBackChanged();
@@ -1469,4 +1473,30 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
     }
 
     return false;
+}
+
+void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)
+{
+    if (mHttpUserAgent != httpUserAgent) {
+        mHttpUserAgent = httpUserAgent;
+        if (mViewInitialized && mView) {
+            mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
+        }
+        mViewIface->httpUserAgentChanged();
+    }
+}
+
+QString QMozViewPrivate::httpUserAgent() const
+{
+    return mHttpUserAgent;
+}
+
+void QMozViewPrivate::OnHttpUserAgentUsed(const char16_t *aHttpUserAgent)
+{
+    QString httpUserAgent = QString::fromUtf16(aHttpUserAgent);
+    if (mHttpUserAgent != httpUserAgent) {
+        // Update the property, but don't send it back to the engine
+        mHttpUserAgent = httpUserAgent;
+        mViewIface->httpUserAgentChanged();
+    }
 }

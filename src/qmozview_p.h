@@ -82,6 +82,7 @@ public:
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
     bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
+    void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent);
 
     // Starting from here these are QMozViewPrivate methods.
     void setMargins(const QMargins &margins, bool updateTopBottom);
@@ -96,6 +97,8 @@ public:
     void updateMoving(bool moving);
     void resetPainted();
     void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
+    void setHttpUserAgent(const QString &httpUserAgent);
+    QString httpUserAgent() const;
 
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);
@@ -225,6 +228,7 @@ protected:
     // Pair of success and error callbacks.
     QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
     uint mNextJSCallId;
+    QString mHttpUserAgent;
 
     DirtyState mDirtyState;
 

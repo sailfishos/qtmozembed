@@ -100,6 +100,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
     Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
     Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
+    Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -144,6 +145,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool desktopMode() const; \
     void setDesktopMode(bool); \
     int parentId() const; \
+    QString httpUserAgent() const; \
+    void setHttpUserAgent(const QString &httpUserAgent); \
     Q_INVOKABLE void runJavaScript(const QString &script, \
                                const QJSValue &callback = QJSValue::UndefinedValue, \
                                const QJSValue &errorCallback = QJSValue::UndefinedValue); \
@@ -212,5 +215,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void desktopModeChanged(); \
     void parentIdChanged(); \
     void uniqueIdChanged(); \
+    void httpUserAgentChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

@@ -675,3 +675,13 @@ void QOpenGLWebPage::timerEvent(QTimerEvent *event)
 {
     d->timerEvent(event);
 }
+
+QString QOpenGLWebPage::httpUserAgent() const
+{
+    return d->httpUserAgent();
+}
+
+void QOpenGLWebPage::setHttpUserAgent(const QString &httpUserAgent)
+{
+    d->setHttpUserAgent(httpUserAgent);
+}
