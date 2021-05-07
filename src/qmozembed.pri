@@ -20,7 +20,7 @@ CONFIG += \
     egl
 
 QMAKE_CXXFLAGS += -I $$GECKO_INCLUDE_DIR -include mozilla-config.h
-unix:QMAKE_CXXFLAGS += -fno-short-wchar -std=c++0x -fPIC
+unix:QMAKE_CXXFLAGS += -fno-short-wchar -fPIC
 DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1
 
 !isEmpty(ENABLE_GLX) {

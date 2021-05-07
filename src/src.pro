@@ -1,4 +1,4 @@
-CONFIG += qt thread debug ordered create_pc create_prl no_install_prl c++11
+CONFIG += qt thread debug ordered create_pc create_prl no_install_prl c++1z
 QT += openglextensions
 TARGET = qt5embedwidget
 TEMPLATE = lib
