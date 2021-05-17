@@ -65,7 +65,8 @@ Q_SIGNALS:
 
 private:
     EmbedLiteApp *mApp;
-    std::vector<std::string> mObserversList;
+    std::map<std::string, uint> mObservers;
+
     bool mInitialized;
     QPointer<QThread> mThread;
     bool mEmbedStarted;
