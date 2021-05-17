@@ -55,6 +55,9 @@
            <case manual="false" name="unittests-runjavascript">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/runjavascript &amp;&amp; ../../run-tests.sh</step>
            </case>
+           <case manual="false" name="unittests-useragent">
+               <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/useragent &amp;&amp; ../../run-tests.sh</step>
+           </case>
        </set>
    </suite>
 </testdefinition>

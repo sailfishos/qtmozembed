@@ -18,6 +18,7 @@ test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/selection/tst_selection.qml \
     auto/desktop-qt5/viewbasicapi/tst_viewbasicapi.qml \
     auto/desktop-qt5/view/tst_viewtest.qml \
+    auto/desktop-qt5/useragent/tst_useragent.qml \
 
 shared.files = auto/shared/componentCreation.js \
     auto/shared/ViewComponent.qml \
