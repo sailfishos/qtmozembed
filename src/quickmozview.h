@@ -30,7 +30,6 @@ class QuickMozView : public QQuickItem
     Q_PROPERTY(bool privateMode READ privateMode WRITE setPrivateMode NOTIFY privateModeChanged FINAL)
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
-    Q_PROPERTY(QObject *child READ getChild NOTIFY childChanged)
     Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged RESET resetOrientation FINAL)
     Q_PROPERTY(qreal viewportWidth READ viewportWidth WRITE setViewportWidth NOTIFY viewportWidthChanged RESET resetViewportWidth)
     Q_PROPERTY(qreal viewportHeight READ viewportHeight WRITE setViewportHeight NOTIFY viewportHeightChanged RESET resetViewportHeight)
@@ -65,17 +64,12 @@ public:
     void resetViewportHeight();
 
 private:
-    QObject *getChild()
-    {
-        return this;
-    }
     void updateGLContextInfo();
 
 public Q_SLOTS:
     Q_MOZ_VIEW_PUBLIC_SLOTS
 
 Q_SIGNALS:
-    void childChanged();
     void setIsActive(bool);
     void privateModeChanged();
     void activeChanged();

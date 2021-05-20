@@ -8,7 +8,7 @@ QmlMozView {
     focus: true
     anchors.fill: parent
     Connections {
-        target: webViewport.child
+        target: webViewport
         onViewInitialized: {
             appWindow.mozViewInitialized = true
         }

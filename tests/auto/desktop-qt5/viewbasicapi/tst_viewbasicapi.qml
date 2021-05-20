@@ -30,8 +30,8 @@ Item {
             }
             MyScript.dumpTs("test_2viewInit start1")
             testcaseid.verify(MyScript.waitMozView())
+            testcaseid.verify(mozView)
             testcaseid.verify(mozView.uniqueId > 0)
-            testcaseid.verify(mozView.child)
             MyScript.dumpTs("test_2viewInit end")
         }
     }
