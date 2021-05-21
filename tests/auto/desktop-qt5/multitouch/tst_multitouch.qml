@@ -26,11 +26,11 @@ Item {
         active: true
         anchors.fill: parent
         Connections {
-            target: webViewport.child
+            target: webViewport
             onViewInitialized: {
-                webViewport.child.loadFrameScript("chrome://tests/content/testHelper.js")
+                webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
                 appWindow.mozViewInitialized = true
-                webViewport.child.addMessageListener("testembed:elementinnervalue")
+                webViewport.addMessageListener("testembed:elementinnervalue")
             }
             onHandleSingleTap: {
                 print("HandleSingleTap: [",point.x,",",point.y,"]")
