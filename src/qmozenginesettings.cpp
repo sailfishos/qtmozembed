@@ -31,6 +31,7 @@ const auto PREF_POPUP_DISABLE_DURING_LOAD = QStringLiteral("dom.disable_open_dur
 const auto PREF_COOKIE_BEHAVIOR = QStringLiteral("network.cookie.cookieBehavior");
 const auto PREF_USE_DOWNLOAD_DIR = QStringLiteral("browser.download.useDownloadDir");
 const auto PREF_DOWNLOAD_DIR = QStringLiteral("browser.download.dir");
+const auto PREF_PIXEL_RATIO = QStringLiteral("layout.css.devPixelsPerPx");
 
 const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_PERMISSIONS_DEFAULT_IMAGE,
@@ -38,7 +39,8 @@ const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_POPUP_DISABLE_DURING_LOAD,
     PREF_COOKIE_BEHAVIOR,
     PREF_USE_DOWNLOAD_DIR,
-    PREF_DOWNLOAD_DIR
+    PREF_DOWNLOAD_DIR,
+    PREF_PIXEL_RATIO
 };
 }
 
@@ -167,8 +169,11 @@ void QMozEngineSettingsPrivate::setTileSize(const QSize &size)
 
 void QMozEngineSettingsPrivate::setPixelRatio(qreal ratio)
 {
-    mPixelRatio = ratio;
-    setPreference(QStringLiteral("layout.css.devPixelsPerPx"), QString::number(ratio));
+    if (mPixelRatio != ratio) {
+        setPreference(PREF_PIXEL_RATIO, QString::number(ratio));
+        mPixelRatio = ratio;
+        Q_EMIT pixelRatioChanged();
+    }
 }
 
 qreal QMozEngineSettingsPrivate::pixelRatio() const
@@ -277,6 +282,12 @@ void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &
                     mDownloadDir = downloadDir;
                     Q_EMIT downloadDirChanged();
                 }
+            } else if (changedPreference == PREF_PIXEL_RATIO) {
+                qreal ratio = preferenceValue.toReal();
+                if (mPixelRatio != ratio) {
+                    mPixelRatio = ratio;
+                    Q_EMIT pixelRatioChanged();
+                }
             }
         }
     }
@@ -347,6 +358,7 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     connect(d, &QMozEngineSettingsPrivate::cookieBehaviorChanged, this, &QMozEngineSettings::cookieBehaviorChanged);
     connect(d, &QMozEngineSettingsPrivate::useDownloadDirChanged, this, &QMozEngineSettings::useDownloadDirChanged);
     connect(d, &QMozEngineSettingsPrivate::downloadDirChanged, this, &QMozEngineSettings::downloadDirChanged);
+    connect(d, &QMozEngineSettingsPrivate::pixelRatioChanged, this, &QMozEngineSettings::pixelRatioChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()

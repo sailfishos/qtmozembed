@@ -25,6 +25,7 @@ class QMozEngineSettings : public QObject {
     Q_PROPERTY(CookieBehavior cookieBehavior READ cookieBehavior WRITE setCookieBehavior NOTIFY cookieBehaviorChanged)
     Q_PROPERTY(bool useDownloadDir READ useDownloadDir WRITE setUseDownloadDir NOTIFY useDownloadDirChanged)
     Q_PROPERTY(QString downloadDir READ downloadDir WRITE setDownloadDir NOTIFY downloadDirChanged)
+    Q_PROPERTY(qreal pixelRatio READ pixelRatio WRITE setPixelRatio NOTIFY pixelRatioChanged)
 
 public:
     // C++ API
@@ -83,6 +84,7 @@ Q_SIGNALS:
     void useDownloadDirChanged();
     void downloadDirChanged();
     void initialized();
+    void pixelRatioChanged();
 
 private:
     QMozEngineSettingsPrivate *d_ptr;

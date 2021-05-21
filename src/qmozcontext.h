@@ -23,6 +23,7 @@ class QMozWindow;
 class QMozContext : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(bool initialized READ isInitialized NOTIFY initialized)
 public:
     typedef void (*TaskCallback)(void *data);
     typedef void *TaskHandle;
