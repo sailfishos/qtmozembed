@@ -384,18 +384,6 @@ EmbedLiteApp *QMozContext::GetApp()
     return d->mApp;
 }
 
-void QMozContext::setPixelRatio(float ratio)
-{
-    qCWarning(lcEmbedLiteExt) << "QMozContext::setPixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::setPixelRatio instead.";
-    QMozEngineSettings::instance()->setPixelRatio(ratio);
-}
-
-float QMozContext::pixelRatio() const
-{
-    qCWarning(lcEmbedLiteExt) << "QMozContext::pixelRatio is deprecated and will be removed 1st of December 2016. Use QMozEngineSettings::pixelRatio instead.";
-    return QMozEngineSettings::instance()->pixelRatio();
-}
-
 void QMozContext::stopEmbedding()
 {
     if (registeredWindow()) {

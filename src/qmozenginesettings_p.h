@@ -75,6 +75,7 @@ Q_SIGNALS:
     void useDownloadDirChanged();
     void downloadDirChanged();
     void initialized();
+    void pixelRatioChanged();
 
 private:
     void setDefaultPreferences();
