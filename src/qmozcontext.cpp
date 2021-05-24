@@ -116,8 +116,17 @@ void QMozContextPrivate::Initialized()
     }
 #endif
     mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
-    mApp->AddObservers(mObserversList);
-    mObserversList.clear();
+
+    std::vector<std::string> observersList;
+    observersList.reserve(mObservers.size());
+    for (const std::pair<std::string, int> &observer : mObservers) {
+        if (observer.second > 0) {
+            observersList.push_back(observer.first);
+        }
+    }
+    if (observersList.size() > 0) {
+        mApp->AddObservers(observersList);
+    }
 
     Q_EMIT initialized();
 }
@@ -230,23 +239,75 @@ void QMozContext::addComponentManifest(const QString &manifestPath)
 
 void QMozContext::addObserver(const QString &aTopic)
 {
-    if (!d->IsInitialized()) {
-        d->mObserversList.push_back(aTopic.toStdString());
-        return;
-    }
+    std::string topic = aTopic.toStdString();
+    uint &count = d->mObservers[topic];
 
-    QByteArray bytes = aTopic.toUtf8();
-    d->mApp->AddObserver(bytes.constData());
+    // Zero-initialized by default
+    ++count;
+    // Don't add observers that were already added
+    if ((count == 1) && d->IsInitialized()) {
+        d->mApp->AddObserver(topic.c_str());
+    }
+}
+
+void QMozContext::removeObserver(const QString &aTopic)
+{
+    std::string topic = aTopic.toStdString();
+    uint &count = d->mObservers[topic];
+
+    if (count > 0) {
+        // Only remove observers that have no interested listeners
+        --count;
+        if (count == 0) {
+            d->mObservers.erase(topic);
+            if (d->IsInitialized()) {
+                d->mApp->RemoveObserver(topic.c_str());
+            }
+        }
+    } else {
+        qWarning() << "Observer" << aTopic << "wasn't added so can't be removed";
+    }
 }
 
 void QMozContext::addObservers(const std::vector<std::string> &aObserversList)
 {
-    if (!d->IsInitialized()) {
-        d->mObserversList.insert(d->mObserversList.end(), aObserversList.begin(), aObserversList.end());
-        return;
+    std::vector<std::string> observersList;
+
+    // Don't add observers that were already added
+    for (const std::string topic : aObserversList) {
+        uint &count = d->mObservers[topic];
+        ++count;
+        if (count == 1) {
+            observersList.push_back(topic);
+        }
     }
 
-    d->mApp->AddObservers(aObserversList);
+    if (d->IsInitialized()) {
+        d->mApp->AddObservers(observersList);
+    }
+}
+
+void QMozContext::removeObservers(const std::vector<std::string> &aObserversList)
+{
+    std::vector<std::string> observersList;
+
+    // Only remove observers that have no interested listeners
+    for (const std::string topic : aObserversList) {
+        uint &count = d->mObservers[topic];
+        if (count > 0) {
+            --count;
+            if (count == 0) {
+                d->mObservers.erase(topic);
+                observersList.push_back(topic);
+            }
+        } else {
+            qWarning() << "Observer" << QString::fromStdString(topic) << "wasn't added so can't be removed";
+        }
+    }
+
+    if (d->IsInitialized()) {
+        d->mApp->RemoveObservers(observersList);
+    }
 }
 
 void QMozContext::notifyObservers(const QString &topic, const QString &value)

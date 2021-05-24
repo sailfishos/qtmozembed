@@ -46,6 +46,7 @@ public:
     void CancelTask(TaskHandle);
 
     void addObservers(const std::vector<std::string> &aObserversList);
+    void removeObservers(const std::vector<std::string> &aObserversList);
 
 Q_SIGNALS:
     void initialized();
@@ -58,6 +59,7 @@ public Q_SLOTS:
     void setIsAccelerated(bool aIsAccelerated);
     void addComponentManifest(const QString &manifestPath);
     void addObserver(const QString &aTopic);
+    void removeObserver(const QString &aTopic);
 
     void notifyObservers(const QString &topic, const QString &value);
     void notifyObservers(const QString &topic, const QVariant &value);
