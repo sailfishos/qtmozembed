@@ -196,7 +196,7 @@ QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         if (!node) {
             node = new QSGSimpleRectNode;
         }
-        node->setColor(d->mBgColor);
+        node->setColor(d->mBackgroundColor);
         node->setRect(boundingRect);
 
         return node;
@@ -524,9 +524,9 @@ bool QuickMozView::isPainted() const
     return d->mIsPainted;
 }
 
-QColor QuickMozView::bgcolor() const
+QColor QuickMozView::backgroundColor() const
 {
-    return d->mBgColor;
+    return d->mBackgroundColor;
 }
 
 bool QuickMozView::getUseQmlMouse()

@@ -97,7 +97,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mDesktopMode(false)
     , mActive(false)
     , mLoaded(false)
-    , mBgColor(Qt::white)
+    , mBackgroundColor(Qt::white)
     , mTopMargin(0.0)
     , mBottomMargin(0.0)
     , mTempTexture(nullptr)
@@ -800,9 +800,8 @@ void QMozViewPrivate::ViewInitialized()
 
 void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
 {
-    QMutexLocker locker(&mBgColorMutex);
-    mBgColor = QColor(r, g, b, a);
-    mViewIface->bgColorChanged();
+    mBackgroundColor = QColor(r, g, b, a);
+    mViewIface->backgroundColorChanged();
 }
 
 void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
@@ -822,13 +821,6 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             mDirtyState |= DirtyMargin;
         }
     }
-}
-
-// Can be read for instance from gecko compositor thread.
-QColor QMozViewPrivate::getBackgroundColor() const
-{
-    QMutexLocker locker(&mBgColorMutex);
-    return mBgColor;
 }
 
 void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward)

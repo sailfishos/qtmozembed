@@ -86,7 +86,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool atYEnd READ atYEnd NOTIFY atYEndChanged FINAL) \
     Q_PROPERTY(float resolution READ resolution) \
     Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL) \
-    Q_PROPERTY(QColor bgcolor READ bgcolor NOTIFY bgColorChanged FINAL) \
+    Q_PROPERTY(QColor backgroundColor READ backgroundColor NOTIFY backgroundColorChanged FINAL) \
     Q_PROPERTY(bool useQmlMouse READ getUseQmlMouse WRITE setUseQmlMouse) \
     Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL) \
     Q_PROPERTY(bool moving READ moving NOTIFY movingChanged FINAL) \
@@ -121,7 +121,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     bool atYEnd() const; \
     float resolution() const; \
     bool isPainted() const; \
-    QColor bgcolor() const; \
+    QColor backgroundColor() const; \
     bool getUseQmlMouse(); \
     void setUseQmlMouse(bool value); \
     void forceViewActiveFocus(); \
@@ -199,7 +199,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void handleSingleTap(QPoint point, QMozReturnValue *retval); \
     void handleDoubleTap(QPoint point, QMozReturnValue *retval); \
     void imeNotification(int state, bool open, int cause, int focusChange, const QString &type); \
-    void bgColorChanged(); \
+    void backgroundColorChanged(); \
     void useQmlMouse(bool value); \
     void draggingChanged(); \
     void movingChanged(); \

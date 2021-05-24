@@ -405,9 +405,9 @@ bool QOpenGLWebPage::isPainted() const
     return d->mIsPainted;
 }
 
-QColor QOpenGLWebPage::bgcolor() const
+QColor QOpenGLWebPage::backgroundColor() const
 {
-    return d->mBgColor;
+    return d->mBackgroundColor;
 }
 
 bool QOpenGLWebPage::getUseQmlMouse()
