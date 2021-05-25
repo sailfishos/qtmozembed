@@ -86,7 +86,6 @@ public:
 
     // Starting from here these are QMozViewPrivate methods.
     void setMargins(const QMargins &margins, bool updateTopBottom);
-    QColor getBackgroundColor() const;
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
     void setThrottlePainting(bool aThrottle);
@@ -166,11 +165,10 @@ protected:
     bool mDesktopMode;
     bool mActive;
     bool mLoaded;
-    QColor mBgColor;
+    QColor mBackgroundColor;
     qreal mTopMargin;
     qreal mBottomMargin;
     QMargins mMargins;
-    mutable QMutex mBgColorMutex;
     QImage mTempBufferImage;
     QSGTexture *mTempTexture;
     bool mEnabled;
