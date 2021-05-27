@@ -78,7 +78,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(QRectF contentRect READ contentRect NOTIFY viewAreaChanged FINAL) \
     Q_PROPERTY(qreal contentWidth READ contentWidth NOTIFY contentWidthChanged FINAL) \
     Q_PROPERTY(qreal contentHeight READ contentHeight NOTIFY contentHeightChanged FINAL) \
-    Q_PROPERTY(QSizeF scrollableSize READ scrollableSize FINAL) \
+    Q_PROPERTY(QSizeF scrollableSize READ scrollableSize NOTIFY scrollableSizeChanged FINAL) \
     Q_PROPERTY(QPointF scrollableOffset READ scrollableOffset NOTIFY scrollableOffsetChanged FINAL) \
     Q_PROPERTY(bool atXBeginning READ atXBeginning NOTIFY atXBeginningChanged FINAL) \
     Q_PROPERTY(bool atXEnd READ atXEnd NOTIFY atXEndChanged FINAL) \
@@ -216,5 +216,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void parentIdChanged(); \
     void uniqueIdChanged(); \
     void httpUserAgentChanged(); \
+    void scrollableSizeChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */
