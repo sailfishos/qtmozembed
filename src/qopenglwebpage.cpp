@@ -425,16 +425,6 @@ QColor QOpenGLWebPage::backgroundColor() const
     return d->mBackgroundColor;
 }
 
-bool QOpenGLWebPage::getUseQmlMouse()
-{
-    return false;
-}
-
-void QOpenGLWebPage::setUseQmlMouse(bool value)
-{
-    Q_UNUSED(value);
-}
-
 bool QOpenGLWebPage::dragging() const
 {
     return d->mDragging;

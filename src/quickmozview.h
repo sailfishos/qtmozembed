@@ -127,7 +127,6 @@ private:
     bool mExplicitViewportWidth;
     bool mExplicitViewportHeight;
     bool mExplicitOrientation;
-    bool mUseQmlMouse;
     bool mComposited;
     bool mFollowItemGeometry;
 };

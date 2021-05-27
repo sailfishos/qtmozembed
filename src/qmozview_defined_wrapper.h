@@ -87,7 +87,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(float resolution READ resolution) \
     Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL) \
     Q_PROPERTY(QColor backgroundColor READ backgroundColor NOTIFY backgroundColorChanged FINAL) \
-    Q_PROPERTY(bool useQmlMouse READ getUseQmlMouse WRITE setUseQmlMouse) \
     Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL) \
     Q_PROPERTY(bool moving READ moving NOTIFY movingChanged FINAL) \
     Q_PROPERTY(bool pinching READ pinching NOTIFY pinchingChanged FINAL) \
@@ -122,8 +121,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     float resolution() const; \
     bool isPainted() const; \
     QColor backgroundColor() const; \
-    bool getUseQmlMouse(); \
-    void setUseQmlMouse(bool value); \
     void forceViewActiveFocus(); \
     bool dragging() const; \
     bool moving() const; \
@@ -200,7 +197,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void handleDoubleTap(QPoint point, QMozReturnValue *retval); \
     void imeNotification(int state, bool open, int cause, int focusChange, const QString &type); \
     void backgroundColorChanged(); \
-    void useQmlMouse(bool value); \
     void draggingChanged(); \
     void movingChanged(); \
     void pinchingChanged(); \
