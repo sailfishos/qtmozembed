@@ -11,7 +11,7 @@
 #include <nsIWebProgressListener.h>
 #include <nsISerializationHelper.h>
 #include <nsServiceManagerUtils.h>
-#include <nsISSLStatus.h>
+#include <nsITransportSecurityInfo.h>
 #include <nsIX509Cert.h>
 #include <mozilla/embedlite/EmbedLiteApp.h>
 #include <mozilla/embedlite/EmbedLiteSecurity.h>
@@ -22,10 +22,10 @@
 #include "qmozsecurity.h"
 
 // Ensure the enum values in QMozSecurity match the enum values in nsISSLStatus
-static_assert((uint16_t)QMozSecurity::SSL_VERSION_3 == (uint16_t)nsISSLStatus::SSL_VERSION_3, "SSL/TLS version numbering mismatch: SSL_VERSION_3");
-static_assert((uint16_t)QMozSecurity::TLS_VERSION_1 == (uint16_t)nsISSLStatus::TLS_VERSION_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1");
-static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_1 == (uint16_t)nsISSLStatus::TLS_VERSION_1_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1_1");
-static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_2 == (uint16_t)nsISSLStatus::TLS_VERSION_1_2, "SSL/TLS version numbering mismatch. TLS_VERSION_1_2");
+static_assert((uint16_t)QMozSecurity::SSL_VERSION_3 == (uint16_t)nsITransportSecurityInfo::SSL_VERSION_3, "SSL/TLS version numbering mismatch: SSL_VERSION_3");
+static_assert((uint16_t)QMozSecurity::TLS_VERSION_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1");
+static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1_1");
+static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_2 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_2, "SSL/TLS version numbering mismatch. TLS_VERSION_1_2");
 
 #define STATUS_GETTER(METHODNAME, FLAGMASK) \
     bool QMozSecurity:: METHODNAME() const \
