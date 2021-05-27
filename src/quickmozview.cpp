@@ -76,7 +76,6 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mExplicitViewportWidth(false)
     , mExplicitViewportHeight(false)
     , mExplicitOrientation(false)
-    , mUseQmlMouse(false)
     , mComposited(false)
     , mFollowItemGeometry(true)
 {
@@ -367,35 +366,23 @@ void QuickMozView::updateMargins()
 
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
 {
-    if (!mUseQmlMouse) {
-        const bool accepted = e->isAccepted();
-        recvMouseMove(e->pos().x(), e->pos().y());
-        e->setAccepted(accepted);
-    } else {
-        QQuickItem::mouseMoveEvent(e);
-    }
+    const bool accepted = e->isAccepted();
+    recvMouseMove(e->pos().x(), e->pos().y());
+    e->setAccepted(accepted);
 }
 
 void QuickMozView::mousePressEvent(QMouseEvent *e)
 {
-    if (!mUseQmlMouse) {
-        const bool accepted = e->isAccepted();
-        recvMousePress(e->pos().x(), e->pos().y());
-        e->setAccepted(accepted);
-    } else {
-        QQuickItem::mousePressEvent(e);
-    }
+    const bool accepted = e->isAccepted();
+    recvMousePress(e->pos().x(), e->pos().y());
+    e->setAccepted(accepted);
 }
 
 void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
 {
-    if (!mUseQmlMouse) {
-        const bool accepted = e->isAccepted();
-        recvMouseRelease(e->pos().x(), e->pos().y());
-        e->setAccepted(accepted);
-    } else {
-        QQuickItem::mouseReleaseEvent(e);
-    }
+    const bool accepted = e->isAccepted();
+    recvMouseRelease(e->pos().x(), e->pos().y());
+    e->setAccepted(accepted);
 }
 
 void QuickMozView::setInputMethodHints(Qt::InputMethodHints hints)
@@ -527,16 +514,6 @@ bool QuickMozView::isPainted() const
 QColor QuickMozView::backgroundColor() const
 {
     return d->mBackgroundColor;
-}
-
-bool QuickMozView::getUseQmlMouse()
-{
-    return mUseQmlMouse;
-}
-
-void QuickMozView::setUseQmlMouse(bool value)
-{
-    mUseQmlMouse = value;
 }
 
 bool QuickMozView::dragging() const
@@ -873,11 +850,7 @@ void QuickMozView::recvMouseRelease(int posX, int posY)
 
 void QuickMozView::touchEvent(QTouchEvent *event)
 {
-    if (!mUseQmlMouse || event->touchPoints().count() > 1) {
-        d->touchEvent(event);
-    } else {
-        QQuickItem::touchEvent(event);
-    }
+    d->touchEvent(event);
 }
 
 void QuickMozView::timerEvent(QTimerEvent *event)

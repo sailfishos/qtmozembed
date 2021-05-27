@@ -23,7 +23,6 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.useQmlMouse = true
             appWindow.mozViewInitialized = true
             MyScript.dumpTs("tst_activatelinks onViewInitialized")
         }
@@ -86,7 +85,6 @@ Item {
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]});
             MyScript.dumpTs("test_ActiveHyperLink end")
-            webViewport.useQmlMouse = false
         }
     }
 }

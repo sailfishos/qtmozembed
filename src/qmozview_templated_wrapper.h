@@ -47,7 +47,6 @@ public:
     virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void imeNotification(int state, bool open, int cause, int focusChange, const QString &type) = 0;
     virtual void backgroundColorChanged() = 0;
-    virtual void useQmlMouse(bool value) = 0;
     virtual void draggingChanged() = 0;
     virtual void movingChanged() = 0;
     virtual void pinchingChanged() = 0;
@@ -210,11 +209,6 @@ public:
     void backgroundColorChanged()
     {
         Q_EMIT view.backgroundColorChanged();
-    }
-
-    void useQmlMouse(bool value)
-    {
-        Q_EMIT view.useQmlMouse(value);
     }
 
     void draggingChanged()
