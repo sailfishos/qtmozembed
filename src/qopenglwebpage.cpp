@@ -61,6 +61,7 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     , mCompleted(false)
     , mSizeUpdateScheduled(false)
     , mThrottlePainting(false)
+    , m_virtualKeyboardHeight(0)
 {
     d->mContext = QMozContext::instance();
 
@@ -211,6 +212,20 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
         mThrottlePainting = throttle;
         d->setThrottlePainting(throttle);
         Q_EMIT throttlePaintingChanged();
+    }
+}
+
+int QOpenGLWebPage::virtualKeyboardHeight() const
+{
+    return m_virtualKeyboardHeight;
+}
+
+void QOpenGLWebPage::setVirtualKeyboardHeight(int height)
+{
+    if (height != m_virtualKeyboardHeight) {
+        m_virtualKeyboardHeight = height;
+        d->SetVirtualKeyboardHeight(height);
+        Q_EMIT virtualKeyboardHeightChanged();
     }
 }
 
