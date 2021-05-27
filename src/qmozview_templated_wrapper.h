@@ -52,6 +52,7 @@ public:
     virtual void movingChanged() = 0;
     virtual void pinchingChanged() = 0;
     virtual void marginsChanged() = 0;
+    virtual void scrollableSizeChanged() = 0;
 
     virtual void desktopModeChanged() = 0;
     virtual void httpUserAgentChanged() = 0;
@@ -254,6 +255,11 @@ public:
     void httpUserAgentChanged()
     {
         Q_EMIT view.httpUserAgentChanged();
+    }
+
+    void scrollableSizeChanged()
+    {
+        Q_EMIT view.scrollableSizeChanged();
     }
 
     TMozQView &view;

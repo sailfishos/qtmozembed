@@ -255,6 +255,10 @@ void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight
     if (heightChanged) {
         mViewIface->contentHeightChanged();
     }
+
+    if (widthChanged || heightChanged) {
+        mViewIface->scrollableSizeChanged();
+    }
 }
 
 void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
