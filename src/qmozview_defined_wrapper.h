@@ -167,9 +167,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void synthTouchEnd(const QVariant &touches); \
     void suspendView(); \
     void resumeView(); \
-    void recvMouseMove(int posX, int posY); \
-    void recvMousePress(int posX, int posY); \
-    void recvMouseRelease(int posX, int posY); \
 
 #define Q_MOZ_VIEW_SIGNALS \
     void viewInitialized(); \
