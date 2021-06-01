@@ -28,14 +28,6 @@ Item {
         }
     }
 
-    MouseArea {
-        id: viewportMouse
-        anchors.fill: parent
-        onPressed: webViewport.recvMousePress(mouseX, mouseY)
-        onReleased: webViewport.recvMouseRelease(mouseX, mouseY)
-        onPositionChanged: webViewport.recvMouseMove(mouseX, mouseY)
-    }
-
     TestCase {
         id: testcaseid
         name: "tst_activatelinks"

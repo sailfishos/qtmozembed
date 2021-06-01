@@ -649,21 +649,6 @@ void QOpenGLWebPage::resumeView()
     d->mView->ResumeTimeouts();
 }
 
-void QOpenGLWebPage::recvMouseMove(int posX, int posY)
-{
-    d->recvMouseMove(posX, posY);
-}
-
-void QOpenGLWebPage::recvMousePress(int posX, int posY)
-{
-    d->recvMousePress(posX, posY);
-}
-
-void QOpenGLWebPage::recvMouseRelease(int posX, int posY)
-{
-    d->recvMouseRelease(posX, posY);
-}
-
 /*!
     \fn void QOpenGLWebPage::touchEvent(QTouchEvent *event)
 

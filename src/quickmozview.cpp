@@ -367,21 +367,21 @@ void QuickMozView::updateMargins()
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    recvMouseMove(e->pos().x(), e->pos().y());
+    d->recvMouseMove(e->pos().x(), e->pos().y());
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mousePressEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    recvMousePress(e->pos().x(), e->pos().y());
+    d->recvMousePress(e->pos().x(), e->pos().y());
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    recvMouseRelease(e->pos().x(), e->pos().y());
+    d->recvMouseRelease(e->pos().x(), e->pos().y());
     e->setAccepted(accepted);
 }
 
@@ -831,21 +831,6 @@ void QuickMozView::resumeView()
     }
     setActive(true);
     d->mView->ResumeTimeouts();
-}
-
-void QuickMozView::recvMouseMove(int posX, int posY)
-{
-    d->recvMouseMove(posX, posY);
-}
-
-void QuickMozView::recvMousePress(int posX, int posY)
-{
-    d->recvMousePress(posX, posY);
-}
-
-void QuickMozView::recvMouseRelease(int posX, int posY)
-{
-    d->recvMouseRelease(posX, posY);
 }
 
 void QuickMozView::touchEvent(QTouchEvent *event)
