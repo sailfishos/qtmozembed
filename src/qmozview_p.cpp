@@ -58,6 +58,8 @@ using namespace mozilla::embedlite;
 #define CONTENT_LOADED "chrome:contentloaded"
 #define RUN_JAVASCRIPT "embedui:runjavascript"
 #define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
+#define FORMASSIST_RESULT "FormAssist:AutoCompleteResult"
+#define FORMASSIST_HIDE "FormAssist:Hide"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -140,10 +142,14 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mOffsetY(0.0)
     , mHasCompositor(false)
     , mNextJSCallId(0)
+    , mAutoCompleteActive(false)
+    , mAutoCompleteList()
     , mDirtyState(0)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
+    addMessageListener(FORMASSIST_RESULT);
+    addMessageListener(FORMASSIST_HIDE);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -1072,7 +1078,7 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
             } else {
                 inputContext->hide();
             }
-            inputContext->update(Qt::ImQueryAll);
+            applyAutoCorrect();
 #endif
         }
     }
@@ -1473,9 +1479,37 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         }
 
         return true;
+    } else if (message == QLatin1String(FORMASSIST_RESULT)) {
+        mAutoCompleteActive = true;
+        mAutoCompleteList = data.toStringList();
+        applyAutoCorrect();
+        return true;
+    } else if (message == QLatin1String(FORMASSIST_HIDE)) {
+        mAutoCompleteActive = false;
+        mAutoCompleteList.clear();
+        applyAutoCorrect();
+        return true;
     }
 
     return false;
+}
+
+void QMozViewPrivate::applyAutoCorrect()
+{
+    QInputMethod *inputContext = qGuiApp->inputMethod();
+    QVariantMap extensions = q->property("__inputMethodExtensions").toMap();
+
+    if (mAutoCompleteActive && mViewIsFocused) {
+        extensions.insert(QStringLiteral("autoFillSuggestions"), mAutoCompleteList);
+        extensions.insert(QStringLiteral("autoFillCanRemove"), false);
+        q->setProperty("__inputMethodExtensions", extensions);
+        inputContext->update(Qt::ImPlatformData);
+    } else {
+        extensions.remove(QStringLiteral("autoFillSuggestions"));
+        extensions.remove(QStringLiteral("autoFillCanRemove"));
+        q->setProperty("__inputMethodExtensions", extensions);
+        inputContext->update(Qt::ImQueryAll);
+    }
 }
 
 void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)

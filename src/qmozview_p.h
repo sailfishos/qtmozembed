@@ -136,6 +136,8 @@ public:
 
     QPointF renderingOffset() const;
 
+    void applyAutoCorrect();
+
 public Q_SLOTS:
     void onCompositorCreated();
     void updateLoaded();
@@ -228,6 +230,8 @@ protected:
     QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
     uint mNextJSCallId;
     QString mHttpUserAgent;
+    bool mAutoCompleteActive;
+    QStringList mAutoCompleteList;
 
     DirtyState mDirtyState;
 
