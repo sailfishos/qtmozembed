@@ -9,8 +9,6 @@
 #include <QQueue>
 
 #include <nsIWebProgressListener.h>
-#include <nsISerializationHelper.h>
-#include <nsServiceManagerUtils.h>
 #include <nsITransportSecurityInfo.h>
 #include <nsIX509Cert.h>
 #include <mozilla/embedlite/EmbedLiteApp.h>
