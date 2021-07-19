@@ -50,10 +50,6 @@ class QMozSecurity : public QObject
     Q_PROPERTY(bool blockedMixedDisplayContent READ blockedMixedDisplayContent NOTIFY blockedMixedDisplayContentChanged)
     Q_PROPERTY(bool loadedMixedDisplayContent READ loadedMixedDisplayContent NOTIFY loadedMixedDisplayContentChanged)
     Q_PROPERTY(bool blockedTrackingContent READ blockedTrackingContent NOTIFY blockedTrackingContentChanged)
-    Q_PROPERTY(bool loadedTrackingContent READ loadedTrackingContent NOTIFY loadedTrackingContentChanged)
-    Q_PROPERTY(bool securityHigh READ securityHigh NOTIFY securityHighChanged)
-    Q_PROPERTY(bool securityMedium READ securityMedium NOTIFY securityMediumChanged)
-    Q_PROPERTY(bool securityLow READ securityLow NOTIFY securityLowChanged)
     Q_PROPERTY(bool identityEvToplevel READ identityEvToplevel NOTIFY identityEvToplevelChanged)
     Q_PROPERTY(bool usesSSL3 READ usesSSL3 NOTIFY usesSSL3Changed)
     Q_PROPERTY(bool usesWeakCrypto READ usesWeakCrypto NOTIFY usesWeakCryptoChanged)
@@ -103,10 +99,6 @@ Q_SIGNALS:
     void blockedMixedDisplayContentChanged();
     void loadedMixedDisplayContentChanged();
     void blockedTrackingContentChanged();
-    void loadedTrackingContentChanged();
-    void securityHighChanged();
-    void securityMediumChanged();
-    void securityLowChanged();
     void identityEvToplevelChanged();
     void usesSSL3Changed();
     void usesWeakCryptoChanged();
@@ -134,10 +126,6 @@ public Q_SLOTS:
     bool blockedMixedDisplayContent() const;
     bool loadedMixedDisplayContent() const;
     bool blockedTrackingContent() const;
-    bool loadedTrackingContent() const;
-    bool securityHigh() const;
-    bool securityMedium() const;
-    bool securityLow() const;
     bool identityEvToplevel() const;
     bool usesSSL3() const;
     bool usesWeakCrypto() const;
