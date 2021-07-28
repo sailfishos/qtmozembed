@@ -341,6 +341,16 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
     d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)QString(array).constData());
 }
 
+int QMozContext::getNumberOfViews() const
+{
+    return d->mApp ? d->mApp->GetNumberOfViews() : 0;
+}
+
+int QMozContext::getNumberOfWindows() const
+{
+    return d->mApp ? d->mApp->GetNumberOfWindows() : 0;
+}
+
 QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
     if (!d->mApp)
