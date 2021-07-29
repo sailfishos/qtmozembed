@@ -24,6 +24,7 @@ static_assert((uint16_t)QMozSecurity::SSL_VERSION_3 == (uint16_t)nsITransportSec
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1");
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1_1");
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_2 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_2, "SSL/TLS version numbering mismatch. TLS_VERSION_1_2");
+static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_3 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_3, "SSL/TLS version numbering mismatch. TLS_VERSION_1_3");
 
 #define STATUS_GETTER(METHODNAME, FLAGMASK) \
     bool QMozSecurity:: METHODNAME() const \

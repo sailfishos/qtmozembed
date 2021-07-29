@@ -72,7 +72,8 @@ public:
         SSL_VERSION_3 = 0,
         TLS_VERSION_1 = 1,
         TLS_VERSION_1_1 = 2,
-        TLS_VERSION_1_2 = 3
+        TLS_VERSION_1_2 = 3,
+        TLS_VERSION_1_3 = 4,
     };
     Q_ENUM(TLS_VERSION)
 
