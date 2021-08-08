@@ -31,9 +31,20 @@ QMozWindow::QMozWindow(const QSize &size, QObject *parent)
 
 QMozWindow::~QMozWindow()
 {
-    d->mWindow->SetListener(nullptr);
-    QMozContext::instance()->GetApp()->DestroyWindow(d->mWindow);
-    d->mWindow = nullptr;
+    Q_ASSERT(!d->mReserved);
+}
+
+void QMozWindow::release()
+{
+    if (d->mWindow) {
+        QMozContext::instance()->GetApp()->DestroyWindow(d->mWindow);
+        d->mWindow = nullptr;
+    }
+}
+
+bool QMozWindow::isReserved() const
+{
+    return d->mReserved;
 }
 
 void QMozWindow::setSize(const QSize &size)

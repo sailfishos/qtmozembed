@@ -65,6 +65,7 @@ QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     , mOrientation(Qt::PrimaryOrientation)
     , mPendingOrientation(Qt::PrimaryOrientation)
     , mOrientationFilterTimer(0)
+    , mReserved(false)
 {
 }
 
@@ -189,6 +190,12 @@ bool QMozWindowPrivate::setReadyToPaint(bool ready)
 void QMozWindowPrivate::WindowInitialized()
 {
     q.initialized();
+}
+
+void QMozWindowPrivate::WindowDestroyed()
+{
+    mReserved = false;
+    q.released();
 }
 
 void QMozWindowPrivate::DrawUnderlay()
