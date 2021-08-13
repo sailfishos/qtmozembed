@@ -64,7 +64,8 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     QByteArray binaryPath = QCoreApplication::applicationDirPath().toLocal8Bit();
     setenv("GRE_HOME", binaryPath.constData(), 1);
 
-    LoadEmbedLite();
+    Q_ASSERT_X(LoadEmbedLite(), __PRETTY_FUNCTION__, "Failed load XPCOMGlue");
+
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(this);
     mApp->SetIsAccelerated(true);
