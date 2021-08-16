@@ -9,8 +9,6 @@
 #include <QQueue>
 
 #include <nsIWebProgressListener.h>
-#include <nsISerializationHelper.h>
-#include <nsServiceManagerUtils.h>
 #include <nsITransportSecurityInfo.h>
 #include <nsIX509Cert.h>
 #include <mozilla/embedlite/EmbedLiteApp.h>
@@ -26,6 +24,7 @@ static_assert((uint16_t)QMozSecurity::SSL_VERSION_3 == (uint16_t)nsITransportSec
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1");
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_1 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_1, "SSL/TLS version numbering mismatch: TLS_VERSION_1_1");
 static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_2 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_2, "SSL/TLS version numbering mismatch. TLS_VERSION_1_2");
+static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_3 == (uint16_t)nsITransportSecurityInfo::TLS_VERSION_1_3, "SSL/TLS version numbering mismatch. TLS_VERSION_1_3");
 
 #define STATUS_GETTER(METHODNAME, FLAGMASK) \
     bool QMozSecurity:: METHODNAME() const \
@@ -129,8 +128,7 @@ bool QMozSecurity::allGood() const
             | nsIWebProgressListener::STATE_IS_BROKEN
             | nsIWebProgressListener::STATE_LOADED_MIXED_ACTIVE_CONTENT
             | nsIWebProgressListener::STATE_USES_WEAK_CRYPTO
-            | nsIWebProgressListener::STATE_LOADED_MIXED_DISPLAY_CONTENT
-            | nsIWebProgressListener::STATE_SECURE_LOW;
+            | nsIWebProgressListener::STATE_LOADED_MIXED_DISPLAY_CONTENT;
     const static uint required = nsIWebProgressListener::STATE_IS_SECURE;
 
     return !m_domainMismatch && !m_notValidAtThisTime && !m_untrusted
@@ -182,10 +180,6 @@ STATUS_GETTER(loadedMixedActiveContent, STATE_LOADED_MIXED_ACTIVE_CONTENT)
 STATUS_GETTER(blockedMixedDisplayContent, STATE_BLOCKED_MIXED_DISPLAY_CONTENT)
 STATUS_GETTER(loadedMixedDisplayContent, STATE_LOADED_MIXED_DISPLAY_CONTENT)
 STATUS_GETTER(blockedTrackingContent, STATE_BLOCKED_TRACKING_CONTENT)
-STATUS_GETTER(loadedTrackingContent, STATE_LOADED_TRACKING_CONTENT)
-STATUS_GETTER(securityHigh, STATE_SECURE_HIGH)
-STATUS_GETTER(securityMedium, STATE_SECURE_MED)
-STATUS_GETTER(securityLow, STATE_SECURE_LOW)
 STATUS_GETTER(identityEvToplevel, STATE_IDENTITY_EV_TOPLEVEL)
 STATUS_GETTER(usesSSL3, STATE_USES_SSL_3)
 STATUS_GETTER(usesWeakCrypto, STATE_USES_WEAK_CRYPTO)
@@ -218,10 +212,6 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
         STATUS_EMISSION(blockedMixedDisplayContent, STATE_BLOCKED_MIXED_DISPLAY_CONTENT)
         STATUS_EMISSION(loadedMixedDisplayContent, STATE_LOADED_MIXED_DISPLAY_CONTENT)
         STATUS_EMISSION(blockedTrackingContent, STATE_BLOCKED_TRACKING_CONTENT)
-        STATUS_EMISSION(loadedTrackingContent, STATE_LOADED_TRACKING_CONTENT)
-        STATUS_EMISSION(securityHigh, STATE_SECURE_HIGH)
-        STATUS_EMISSION(securityMedium, STATE_SECURE_MED)
-        STATUS_EMISSION(securityLow, STATE_SECURE_LOW)
         STATUS_EMISSION(identityEvToplevel, STATE_IDENTITY_EV_TOPLEVEL)
         STATUS_EMISSION(usesSSL3, STATE_USES_SSL_3)
         STATUS_EMISSION(usesWeakCrypto, STATE_USES_WEAK_CRYPTO)
