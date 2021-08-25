@@ -68,7 +68,10 @@ void QMozWindow::getPlatformImage(const std::function<void(void *image, int widt
 
 void QMozWindow::suspendRendering()
 {
+    // Revert this in context of JB#55286
+#if 0
     d->mWindow->SuspendRendering();
+#endif
 }
 
 void QMozWindow::resumeRendering()
