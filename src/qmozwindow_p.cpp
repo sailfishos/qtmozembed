@@ -178,17 +178,12 @@ void QMozWindowPrivate::getGLXContext(void *&context, void *&surface)
 
 bool QMozWindowPrivate::setReadyToPaint(bool ready)
 {
-    Q_UNUSED(ready);
-    return true;
-    // Revert this in context of JB#55286
-#if 0
     QMutexLocker lock(&mReadyToPaintMutex);
     if (mReadyToPaint != ready) {
         mReadyToPaint = ready;
         return true;
     }
     return false;
-#endif
 }
 
 void QMozWindowPrivate::WindowInitialized()
@@ -219,9 +214,6 @@ void QMozWindowPrivate::CompositingFinished()
 
 bool QMozWindowPrivate::PreRender()
 {
-    return true;
-#if 0
     QMutexLocker lock(&mReadyToPaintMutex);
     return mReadyToPaint;
-#endif
 }
