@@ -569,36 +569,23 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
     mPreedit = !event->preeditString().isEmpty();
     if (mViewInitialized) {
-        if (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly) {
-            bool ok;
-            int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
+        uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
+                          ? (int32_t)event->commitString()[0].unicode()
+                          : 0;
+        bool ok;
+        int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
+        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
+            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
+            mView->SendKeyPress(domKeyCode, 0, charCode);
+            mView->SendKeyRelease(domKeyCode, 0, charCode);
+            qGuiApp->inputMethod()->reset();
 
-            if (ok) {
-                int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
-                int32_t charCode = 0;
-
-                if (event->commitString().length() && event->commitString()[0].isPrint()) {
-                    charCode = (int32_t)event->commitString()[0].unicode();
-                }
-                mView->SendKeyPress(domKeyCode, 0, charCode);
-                mView->SendKeyRelease(domKeyCode, 0, charCode);
-                qGuiApp->inputMethod()->reset();
-            } else {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-            }
         } else {
-            if (event->commitString().isEmpty()) {
+            if (event->commitString().isEmpty() || event->commitString().size() > 1) {
                 mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
             } else {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-                // After commiting pre-edit, we send "dummy" keypress.
-                // Workaround for sites that enable "submit" button based on keypress events like
-                // comment fields in FB, and m.linkedin.com
-                // Chrome on Android does the same, but it does it also after each pre-edit change
-                // We cannot do exectly the same here since sending keyevent with active pre-edit would commit gecko's
-                // internal Input Engine's pre-edit
-                mView->SendKeyPress(0, 0, 0);
-                mView->SendKeyRelease(0, 0, 0);
+                mView->SendKeyPress(0, 0, charCode);
+                mView->SendKeyRelease(0, 0, charCode);
             }
         }
     }
