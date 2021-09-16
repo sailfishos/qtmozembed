@@ -331,6 +331,7 @@ void QuickMozView::prepareMozWindow()
     QMozWindow *mozWindow = d->mContext->registeredWindow();
     if (!mozWindow) {
         mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
+        mozWindow->reserve();
         d->mContext->registerWindow(mozWindow);
     } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
         mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());

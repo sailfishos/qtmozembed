@@ -24,14 +24,19 @@ QMozWindow::QMozWindow(const QSize &size, QObject *parent)
     Q_ASSERT_X(!size.isEmpty(),
                "QMozWindow::QMozWindow",
                QString("Window size is empty, width = %1 and height = %2").arg(size.width()).arg(size.height()).toUtf8().constData());
-
-    d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(size.width(), size.height());
-    d->mWindow->SetListener(d.data());
 }
 
 QMozWindow::~QMozWindow()
 {
     Q_ASSERT(!d->mReserved);
+}
+
+void QMozWindow::reserve()
+{
+    if (!d->mWindow) {
+        d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(d->mSize.width(), d->mSize.height(), d.data());
+        d->mReserved = true;
+    }
 }
 
 void QMozWindow::release()

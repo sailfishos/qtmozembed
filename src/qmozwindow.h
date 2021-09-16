@@ -24,6 +24,7 @@ public:
     explicit QMozWindow(const QSize &size, QObject *parent = nullptr);
     ~QMozWindow();
 
+    void reserve();
     void release();
     bool isReserved() const;
     void setSize(const QSize &size);
