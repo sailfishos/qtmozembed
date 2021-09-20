@@ -24,6 +24,9 @@ public:
     explicit QMozWindow(const QSize &size, QObject *parent = nullptr);
     ~QMozWindow();
 
+    void reserve();
+    void release();
+    bool isReserved() const;
     void setSize(const QSize &size);
     QSize size() const;
     void setContentOrientation(Qt::ScreenOrientation);
@@ -43,6 +46,7 @@ Q_SIGNALS:
     void orientationChangeFiltered(Qt::ScreenOrientation orientation);
     void requestGLContext();
     void initialized();
+    void released();
     void drawOverlay(QRect);
     void drawUnderlay();
     void compositorCreated();

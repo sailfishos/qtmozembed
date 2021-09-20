@@ -55,6 +55,7 @@ public:
 
     bool IsInitialized();
     EmbedLiteMessagePump *EmbedLoop();
+    void destroyWindow();
 
 Q_SIGNALS:
     void initialized();
@@ -74,7 +75,7 @@ private:
     MessagePumpQt *mQtPump;
     bool mAsyncContext;
     QMozViewCreator *mViewCreator;
-    QScopedPointer<QMozWindow> mMozWindow;
+    QPointer<QMozWindow> mMozWindow;
     QMap<QString, QVariant> mInitialPreferences;
 
     friend class QMozContext;
