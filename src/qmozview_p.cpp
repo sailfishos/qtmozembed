@@ -60,6 +60,8 @@ using namespace mozilla::embedlite;
 #define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
 #define FORMASSIST_RESULT "FormAssist:AutoCompleteResult"
 #define FORMASSIST_HIDE "FormAssist:Hide"
+#define INPUTMETHOD_SET_INPUT_CONTEXT "InputMethodHandler:SetInputContext"
+#define INPUTMETHOD_RESET_INPUT_CONTEXT "InputMethodHandler:ResetInputContext"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -150,6 +152,8 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(RUN_JAVASCRIPT_REPLY);
     addMessageListener(FORMASSIST_RESULT);
     addMessageListener(FORMASSIST_HIDE);
+    addMessageListener(INPUTMETHOD_SET_INPUT_CONTEXT);
+    addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -553,6 +557,12 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
         return QVariant((bool) mIsInputFieldFocused);
     case Qt::ImHints:
         return QVariant((int) mInputMethodHints);
+    case Qt::ImSurroundingText:
+        return mSurroundingText;
+    case Qt::ImCursorPosition:
+        return mCursorPosition;
+    case Qt::ImAnchorPosition:
+        return mAnchorPosition;
     default:
         return QVariant();
     }
@@ -1475,6 +1485,21 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         mAutoCompleteActive = false;
         mAutoCompleteList.clear();
         applyAutoCorrect();
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_SET_INPUT_CONTEXT)) {
+        QVariantMap map = data.toMap();
+        mSurroundingText = map.value(QLatin1String("surroundingText"));
+        mCursorPosition = map.value(QLatin1String("cursorPosition"));
+        mAnchorPosition = map.value(QLatin1String("anchorPosition"));
+        QInputMethod *inputContext = qGuiApp->inputMethod();
+        inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_RESET_INPUT_CONTEXT)) {
+        mSurroundingText = QVariant();
+        mCursorPosition = QVariant();
+        mAnchorPosition = QVariant();
+        QInputMethod *inputContext = qGuiApp->inputMethod();
+        inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
         return true;
     }
 
