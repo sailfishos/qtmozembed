@@ -592,7 +592,7 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
         } else {
             if (event->commitString().isEmpty() || event->commitString().size() > 1) {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementStart(), event->replacementLength());
             } else {
                 mView->SendKeyPress(0, 0, charCode);
                 mView->SendKeyRelease(0, 0, charCode);
@@ -629,7 +629,7 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     if (event->text().length() && event->text()[0].isPrint()) {
         charCode = (int32_t)event->text()[0].unicode();
         if (getenv("USE_TEXT_EVENTS")) {
-            mView->SendTextEvent(event->text().toUtf8().data(), "");
+            mView->SendTextEvent(event->text().toUtf8().data(), "", 0, 0);
             return;
         }
     }
