@@ -52,6 +52,9 @@ public:
     void setPixelRatio(qreal ratio);
     qreal pixelRatio() const;
 
+    bool doNotTrack() const;
+    void setDoNotTrack(bool doNotTrack);
+
     void enableProgressivePainting(bool enabled);
     void enableLowPrecisionBuffers(bool enabled);
 
@@ -76,6 +79,7 @@ Q_SIGNALS:
     void downloadDirChanged();
     void initialized();
     void pixelRatioChanged();
+    void doNotTrackChanged();
 
 private:
     void setDefaultPreferences();
@@ -88,6 +92,7 @@ private:
     bool mAutoLoadImages;
     qreal mPixelRatio;
     QString mDownloadDir;
+    bool mDoNotTrack;
 };
 
 #endif // QMOZENGINE_SETTINGS_P_H
