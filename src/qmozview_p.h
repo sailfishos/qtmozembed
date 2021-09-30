@@ -50,8 +50,9 @@ public:
     enum DirtyStateBit {
         DirtySize = 0x0001,
         DirtyMargin = 0x0002,
-        DirtyDotsPerInch = 0x0004,
-        DirtyActive = 0x0008,
+        DirtyDynamicToolbarHeight = 0x0004,
+        DirtyDotsPerInch = 0x0008,
+        DirtyActive = 0x0010,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -78,6 +79,7 @@ public:
     void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
                          const char16_t *inputType, const char16_t *inputMode) override;
     void OnTitleChanged(const char16_t *aTitle) override;
+    void OnDynamicToolbarHeightChanged() override;
     bool HandleLongTap(const nsIntPoint &aPoint) override;
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
@@ -85,6 +87,7 @@ public:
     void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent);
 
     // Starting from here these are QMozViewPrivate methods.
+    void setDynamicToolbarHeight(const int height);
     void setMargins(const QMargins &margins, bool updateTopBottom);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
@@ -171,6 +174,7 @@ protected:
     QColor mBackgroundColor;
     qreal mTopMargin;
     qreal mBottomMargin;
+    int mDynamicToolbarHeight;
     QMargins mMargins;
     QImage mTempBufferImage;
     QSGTexture *mTempTexture;

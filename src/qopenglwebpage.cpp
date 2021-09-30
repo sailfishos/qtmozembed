@@ -490,6 +490,16 @@ qreal QOpenGLWebPage::contentHeight() const
     return d->mScrollableSize.height();
 }
 
+int QOpenGLWebPage::dynamicToolbarHeight() const
+{
+    return d->mDynamicToolbarHeight;
+}
+
+void QOpenGLWebPage::setDynamicToolbarHeight(int height)
+{
+    d->setDynamicToolbarHeight(height);
+}
+
 QMargins QOpenGLWebPage::margins() const
 {
     return d->mMargins;

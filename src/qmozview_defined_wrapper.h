@@ -133,6 +133,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setChrome(bool value); \
     qreal chromeGestureThreshold() const; \
     void setChromeGestureThreshold(qreal value); \
+    int dynamicToolbarHeight() const; \
+    void setDynamicToolbarHeight(int height); \
     QMargins margins() const; \
     void setMargins(QMargins); \
     Q_INVOKABLE void scrollTo(int x, int y); \
@@ -204,6 +206,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void chromeGestureEnabledChanged(); \
     void chromeChanged(); \
     void chromeGestureThresholdChanged(); \
+    void dynamicToolbarHeightChanged(); \
     void marginsChanged(); \
     void desktopModeChanged(); \
     void parentIdChanged(); \
