@@ -32,6 +32,7 @@ const auto PREF_COOKIE_BEHAVIOR = QStringLiteral("network.cookie.cookieBehavior"
 const auto PREF_USE_DOWNLOAD_DIR = QStringLiteral("browser.download.useDownloadDir");
 const auto PREF_DOWNLOAD_DIR = QStringLiteral("browser.download.dir");
 const auto PREF_PIXEL_RATIO = QStringLiteral("layout.css.devPixelsPerPx");
+const auto PREF_DO_NOT_TRACK = QStringLiteral("privacy.donottrackheader.enabled");
 
 const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_PERMISSIONS_DEFAULT_IMAGE,
@@ -40,7 +41,8 @@ const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_COOKIE_BEHAVIOR,
     PREF_USE_DOWNLOAD_DIR,
     PREF_DOWNLOAD_DIR,
-    PREF_PIXEL_RATIO
+    PREF_PIXEL_RATIO,
+    PREF_DO_NOT_TRACK
 };
 }
 
@@ -58,6 +60,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     , mUseDownloadDir(false)
     , mAutoLoadImages(true)
     , mPixelRatio(1.0)
+    , mDoNotTrack(false)
 {
 
     QMozContext *context = QMozContext::instance();
@@ -181,6 +184,20 @@ qreal QMozEngineSettingsPrivate::pixelRatio() const
     return mPixelRatio;
 }
 
+bool QMozEngineSettingsPrivate::doNotTrack() const
+{
+    return mDoNotTrack;
+}
+
+void QMozEngineSettingsPrivate::setDoNotTrack(bool doNotTrack)
+{
+    if (mDoNotTrack != doNotTrack) {
+        setPreference(PREF_DO_NOT_TRACK, QVariant::fromValue<bool>(doNotTrack));
+        mDoNotTrack = doNotTrack;
+        Q_EMIT doNotTrackChanged();
+    }
+}
+
 void QMozEngineSettingsPrivate::enableProgressivePainting(bool enabled)
 {
     setPreference(QStringLiteral("layers.progressive-paint"), QVariant::fromValue<bool>(enabled));
@@ -288,6 +305,12 @@ void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &
                     mPixelRatio = ratio;
                     Q_EMIT pixelRatioChanged();
                 }
+            } else if (changedPreference == PREF_DO_NOT_TRACK) {
+                bool doNotTrack = preferenceValue.toBool();
+                if (mDoNotTrack != doNotTrack) {
+                    mDoNotTrack = doNotTrack;
+                    Q_EMIT doNotTrackChanged();
+                }
             }
         }
     }
@@ -359,6 +382,7 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     connect(d, &QMozEngineSettingsPrivate::useDownloadDirChanged, this, &QMozEngineSettings::useDownloadDirChanged);
     connect(d, &QMozEngineSettingsPrivate::downloadDirChanged, this, &QMozEngineSettings::downloadDirChanged);
     connect(d, &QMozEngineSettingsPrivate::pixelRatioChanged, this, &QMozEngineSettings::pixelRatioChanged);
+    connect(d, &QMozEngineSettingsPrivate::doNotTrackChanged, this, &QMozEngineSettings::doNotTrackChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()
@@ -460,6 +484,18 @@ qreal QMozEngineSettings::pixelRatio() const
 {
     Q_D(const QMozEngineSettings);
     return d->pixelRatio();
+}
+
+bool QMozEngineSettings::doNotTrack() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->doNotTrack();
+}
+
+void QMozEngineSettings::setDoNotTrack(bool doNotTrack)
+{
+    Q_D(QMozEngineSettings);
+    return d->setDoNotTrack(doNotTrack);
 }
 
 void QMozEngineSettings::enableProgressivePainting(bool enabled)
