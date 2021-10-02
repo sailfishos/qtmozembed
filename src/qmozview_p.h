@@ -213,6 +213,9 @@ protected:
     float mContentResolution;
     bool mIsPainted;
     Qt::InputMethodHints mInputMethodHints;
+    QVariant mSurroundingText;
+    QVariant mCursorPosition;
+    QVariant mAnchorPosition;
     bool mIsInputFieldFocused;
     bool mPreedit;
     bool mViewIsFocused;
