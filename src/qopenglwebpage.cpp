@@ -224,7 +224,6 @@ void QOpenGLWebPage::setVirtualKeyboardHeight(int height)
 {
     if (height != m_virtualKeyboardHeight) {
         m_virtualKeyboardHeight = height;
-        d->SetVirtualKeyboardHeight(height);
         Q_EMIT virtualKeyboardHeightChanged();
     }
 }

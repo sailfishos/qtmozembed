@@ -92,7 +92,6 @@ public:
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
     void setThrottlePainting(bool aThrottle);
-    void SetVirtualKeyboardHeight(int aHeight);
     void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void testFlickingMode(QTouchEvent *event);
     void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
