@@ -209,6 +209,7 @@ void QMozWindowPrivate::CompositorCreated()
 
 void QMozWindowPrivate::CompositingFinished()
 {
+    q.drawOverlay(QRect(0, 0, mSize.width(), mSize.height()));
     q.compositingFinished();
 }
 
