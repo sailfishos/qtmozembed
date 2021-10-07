@@ -835,6 +835,10 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
 
 void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward)
 {
+    if (QLatin1String(aLocation) == QLatin1String("about:blank") && !aCanGoBack && !aCanGoForward) {
+        return; // this is the preload location.  ignore it.
+    }
+
     if (mCanGoBack != aCanGoBack) {
         mCanGoBack = aCanGoBack;
         mViewIface->canGoBackChanged();
