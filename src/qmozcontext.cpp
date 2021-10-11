@@ -76,6 +76,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
 
 QMozContextPrivate::~QMozContextPrivate()
 {
+    destroyWindow();
 }
 
 bool QMozContextPrivate::ExecuteChildThread()
@@ -176,6 +177,20 @@ void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
         qCDebug(lcEmbedLiteExt) << "parse: s:'" << data.toUtf8().data() << "', errLine:" << error.offset;
 #endif
     }
+}
+
+void QMozContextPrivate::destroyWindow()
+{
+    if (!mMozWindow) return;
+
+    if (mMozWindow->isReserved()) {
+        connect(mMozWindow.data(), &QMozWindow::released,
+                mMozWindow.data(), &QObject::deleteLater);
+        mMozWindow->release();
+    } else {
+        delete mMozWindow;
+    }
+    mMozWindow = nullptr;
 }
 
 void QMozContextPrivate::LastViewDestroyed()
@@ -341,6 +356,16 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
     d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)QString(array).constData());
 }
 
+int QMozContext::getNumberOfViews() const
+{
+    return d->mApp ? d->mApp->GetNumberOfViews() : 0;
+}
+
+int QMozContext::getNumberOfWindows() const
+{
+    return d->mApp ? d->mApp->GetNumberOfWindows() : 0;
+}
+
 QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
     if (!d->mApp)
@@ -389,7 +414,7 @@ void QMozContext::stopEmbedding()
 {
     if (registeredWindow()) {
         connect(this, &QMozContext::lastWindowDestroyed, this, &QMozContext::stopEmbedding);
-        d->mMozWindow.reset();
+        d->destroyWindow();
     } else {
         GetApp()->Stop();
     }
@@ -417,7 +442,10 @@ bool QMozContext::isAccelerated() const
 
 void QMozContext::registerWindow(QMozWindow *window)
 {
-    d->mMozWindow.reset(window);
+    if (window != d->mMozWindow) {
+        d->destroyWindow();
+    }
+    d->mMozWindow = window;
 }
 
 QMozWindow *QMozContext::registeredWindow() const

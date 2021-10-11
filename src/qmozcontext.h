@@ -47,6 +47,9 @@ public:
     void addObservers(const std::vector<std::string> &aObserversList);
     void removeObservers(const std::vector<std::string> &aObserversList);
 
+    int getNumberOfViews() const;
+    int getNumberOfWindows() const;
+
 Q_SIGNALS:
     void initialized();
     void contextDestroyed();

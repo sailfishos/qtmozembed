@@ -60,6 +60,8 @@ using namespace mozilla::embedlite;
 #define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
 #define FORMASSIST_RESULT "FormAssist:AutoCompleteResult"
 #define FORMASSIST_HIDE "FormAssist:Hide"
+#define INPUTMETHOD_SET_INPUT_CONTEXT "InputMethodHandler:SetInputContext"
+#define INPUTMETHOD_RESET_INPUT_CONTEXT "InputMethodHandler:ResetInputContext"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -150,6 +152,8 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(RUN_JAVASCRIPT_REPLY);
     addMessageListener(FORMASSIST_RESULT);
     addMessageListener(FORMASSIST_HIDE);
+    addMessageListener(INPUTMETHOD_SET_INPUT_CONTEXT);
+    addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -553,6 +557,12 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
         return QVariant((bool) mIsInputFieldFocused);
     case Qt::ImHints:
         return QVariant((int) mInputMethodHints);
+    case Qt::ImSurroundingText:
+        return mSurroundingText;
+    case Qt::ImCursorPosition:
+        return mCursorPosition;
+    case Qt::ImAnchorPosition:
+        return mAnchorPosition;
     default:
         return QVariant();
     }
@@ -569,36 +579,23 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
     mPreedit = !event->preeditString().isEmpty();
     if (mViewInitialized) {
-        if (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly) {
-            bool ok;
-            int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
+        uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
+                          ? (int32_t)event->commitString()[0].unicode()
+                          : 0;
+        bool ok;
+        int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
+        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
+            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
+            mView->SendKeyPress(domKeyCode, 0, charCode);
+            mView->SendKeyRelease(domKeyCode, 0, charCode);
+            qGuiApp->inputMethod()->reset();
 
-            if (ok) {
-                int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
-                int32_t charCode = 0;
-
-                if (event->commitString().length() && event->commitString()[0].isPrint()) {
-                    charCode = (int32_t)event->commitString()[0].unicode();
-                }
-                mView->SendKeyPress(domKeyCode, 0, charCode);
-                mView->SendKeyRelease(domKeyCode, 0, charCode);
-                qGuiApp->inputMethod()->reset();
-            } else {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-            }
         } else {
-            if (event->commitString().isEmpty()) {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
+            if (event->commitString().isEmpty() || event->commitString().size() > 1) {
+                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementStart(), event->replacementLength());
             } else {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data());
-                // After commiting pre-edit, we send "dummy" keypress.
-                // Workaround for sites that enable "submit" button based on keypress events like
-                // comment fields in FB, and m.linkedin.com
-                // Chrome on Android does the same, but it does it also after each pre-edit change
-                // We cannot do exectly the same here since sending keyevent with active pre-edit would commit gecko's
-                // internal Input Engine's pre-edit
-                mView->SendKeyPress(0, 0, 0);
-                mView->SendKeyRelease(0, 0, 0);
+                mView->SendKeyPress(0, 0, charCode);
+                mView->SendKeyRelease(0, 0, charCode);
             }
         }
     }
@@ -632,7 +629,7 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     if (event->text().length() && event->text()[0].isPrint()) {
         charCode = (int32_t)event->text()[0].unicode();
         if (getenv("USE_TEXT_EVENTS")) {
-            mView->SendTextEvent(event->text().toUtf8().data(), "");
+            mView->SendTextEvent(event->text().toUtf8().data(), "", 0, 0);
             return;
         }
     }
@@ -1492,6 +1489,21 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         mAutoCompleteActive = false;
         mAutoCompleteList.clear();
         applyAutoCorrect();
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_SET_INPUT_CONTEXT)) {
+        QVariantMap map = data.toMap();
+        mSurroundingText = map.value(QLatin1String("surroundingText"));
+        mCursorPosition = map.value(QLatin1String("cursorPosition"));
+        mAnchorPosition = map.value(QLatin1String("anchorPosition"));
+        QInputMethod *inputContext = qGuiApp->inputMethod();
+        inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_RESET_INPUT_CONTEXT)) {
+        mSurroundingText = QVariant();
+        mCursorPosition = QVariant();
+        mAnchorPosition = QVariant();
+        QInputMethod *inputContext = qGuiApp->inputMethod();
+        inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
         return true;
     }
 
