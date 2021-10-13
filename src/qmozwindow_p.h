@@ -30,7 +30,6 @@ protected:
     bool RequestGLContext(void *&context, void *&surface, void *&display);
     void WindowInitialized() override;
     void WindowDestroyed() override;
-    void DrawUnderlay() override;
     void DrawOverlay(const nsIntRect &aRect) override;
     bool PreRender() override;
     void CompositorCreated() override;
