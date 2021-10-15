@@ -224,7 +224,6 @@ void QOpenGLWebPage::setVirtualKeyboardHeight(int height)
 {
     if (height != m_virtualKeyboardHeight) {
         m_virtualKeyboardHeight = height;
-        d->SetVirtualKeyboardHeight(height);
         Q_EMIT virtualKeyboardHeightChanged();
     }
 }
@@ -488,6 +487,16 @@ qreal QOpenGLWebPage::contentWidth() const
 qreal QOpenGLWebPage::contentHeight() const
 {
     return d->mScrollableSize.height();
+}
+
+int QOpenGLWebPage::dynamicToolbarHeight() const
+{
+    return d->mDynamicToolbarHeight;
+}
+
+void QOpenGLWebPage::setDynamicToolbarHeight(int height)
+{
+    d->setDynamicToolbarHeight(height);
 }
 
 QMargins QOpenGLWebPage::margins() const

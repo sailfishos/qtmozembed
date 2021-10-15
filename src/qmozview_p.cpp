@@ -104,6 +104,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mBackgroundColor(Qt::white)
     , mTopMargin(0.0)
     , mBottomMargin(0.0)
+    , mDynamicToolbarHeight(0)
     , mTempTexture(nullptr)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
@@ -789,6 +790,11 @@ void QMozViewPrivate::ViewInitialized()
         mSize = mMozWindow->size();
     }
 
+    if (mDirtyState & DirtyDynamicToolbarHeight) {
+        mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
+        mDirtyState &= ~DirtyDynamicToolbarHeight;
+    }
+
     if (mDirtyState & DirtyMargin) {
         mView->SetMargins(mMargins.top(), mMargins.right(), mMargins.bottom(), mMargins.left());
         mViewIface->marginsChanged();
@@ -809,6 +815,19 @@ void QMozViewPrivate::SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_
 {
     mBackgroundColor = QColor(r, g, b, a);
     mViewIface->backgroundColorChanged();
+}
+
+void QMozViewPrivate::setDynamicToolbarHeight(const int height)
+{
+    if (height != mDynamicToolbarHeight) {
+        mDynamicToolbarHeight = height;
+
+        if (mViewInitialized) {
+            mView->SetDynamicToolbarHeight(height);
+        } else {
+            mDirtyState |= DirtyDynamicToolbarHeight;
+        }
+    }
 }
 
 void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
@@ -1026,13 +1045,6 @@ void QMozViewPrivate::setThrottlePainting(bool aThrottle)
     }
 }
 
-void QMozViewPrivate::SetVirtualKeyboardHeight(int aHeight)
-{
-    if (mViewInitialized) {
-        mView->SetVirtualKeyboardHeight(aHeight);
-    }
-}
-
 void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
                                       const char16_t *inputType, const char16_t *inputMode)
 {
@@ -1094,6 +1106,11 @@ void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
 {
     mTitle = QString((QChar *)aTitle);
     mViewIface->titleChanged();
+}
+
+void QMozViewPrivate::OnDynamicToolbarHeightChanged()
+{
+    mViewIface->dynamicToolbarHeightChanged();
 }
 
 bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize)
