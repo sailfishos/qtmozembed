@@ -198,11 +198,6 @@ void QMozWindowPrivate::WindowDestroyed()
     q.released();
 }
 
-void QMozWindowPrivate::DrawUnderlay()
-{
-    q.drawUnderlay();
-}
-
 void QMozWindowPrivate::DrawOverlay(const nsIntRect &aRect)
 {
     q.drawOverlay(QRect(aRect.x, aRect.y, aRect.width, aRect.height));
@@ -216,6 +211,7 @@ void QMozWindowPrivate::CompositorCreated()
 
 void QMozWindowPrivate::CompositingFinished()
 {
+    q.drawOverlay(QRect(0, 0, mSize.width(), mSize.height()));
     q.compositingFinished();
 }
 

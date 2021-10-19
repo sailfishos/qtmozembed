@@ -48,7 +48,6 @@ Q_SIGNALS:
     void initialized();
     void released();
     void drawOverlay(QRect);
-    void drawUnderlay();
     void compositorCreated();
     void compositingFinished();
 
