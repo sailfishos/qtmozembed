@@ -118,6 +118,13 @@ void QMozGrabResult::captureImage(const QRect &rect)
         qSwap<int>(w, h);
     }
 
+    if (w > rect.width() || h > rect.height()) {
+        // If the requested size is too large, shrink it to fit while retaining the aspect ratio.
+        QSize size = QSize(w, h).scaled(rect.size(), Qt::KeepAspectRatio);
+        w = size.width();
+        h = size.height();
+    }
+
     int x = d->orientation == Qt::LandscapeOrientation ? rect.width() - w : 0;
     int y = (d->orientation == Qt::PortraitOrientation
              || d->orientation == Qt::LandscapeOrientation) ? rect.height() - h : 0;
