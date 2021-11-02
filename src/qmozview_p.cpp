@@ -755,6 +755,7 @@ void QMozViewPrivate::updateLoaded()
             mViewIface->domContentLoadedChanged();
         }
 
+        clearDirtyDynamicToolbarHeight();
         mViewIface->loadedChanged();
     }
 }
@@ -811,10 +812,7 @@ void QMozViewPrivate::ViewInitialized()
         mSize = mMozWindow->size();
     }
 
-    if (mDirtyState & DirtyDynamicToolbarHeight) {
-        mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
-        mDirtyState &= ~DirtyDynamicToolbarHeight;
-    }
+    clearDirtyDynamicToolbarHeight();
 
     if (mDirtyState & DirtyMargin) {
         mView->SetMargins(mMargins.top(), mMargins.right(), mMargins.bottom(), mMargins.left());
@@ -842,8 +840,7 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
 {
     if (height != mDynamicToolbarHeight) {
         mDynamicToolbarHeight = height;
-
-        if (mViewInitialized) {
+        if (mViewInitialized && mDOMContentLoaded) {
             mView->SetDynamicToolbarHeight(height);
         } else {
             mDirtyState |= DirtyDynamicToolbarHeight;
@@ -1487,6 +1484,7 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         if (!mDOMContentLoaded) {
             mDOMContentLoaded = true;
             mViewIface->domContentLoadedChanged();
+            clearDirtyDynamicToolbarHeight();
         }
         return false;
     } else if (message == QLatin1String(RUN_JAVASCRIPT_REPLY)) {
@@ -1553,6 +1551,14 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
     }
 
     return false;
+}
+
+void QMozViewPrivate::clearDirtyDynamicToolbarHeight()
+{
+    if ((mDirtyState & DirtyDynamicToolbarHeight) && mViewInitialized && mDOMContentLoaded) {
+        mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
+        mDirtyState &= ~DirtyDynamicToolbarHeight;
+    }
 }
 
 void QMozViewPrivate::applyAutoCorrect()
