@@ -886,3 +886,7 @@ void QuickMozView::setHttpUserAgent(const QString &httpUserAgent)
     d->setHttpUserAgent(httpUserAgent);
 }
 
+bool QuickMozView::domContentLoaded() const
+{
+    return d->domContentLoaded();
+}

@@ -100,6 +100,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
     Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
     Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
+    Q_PROPERTY(bool domContentLoaded READ domContentLoaded NOTIFY domContentLoadedChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -146,6 +147,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     int parentId() const; \
     QString httpUserAgent() const; \
     void setHttpUserAgent(const QString &httpUserAgent); \
+    bool domContentLoaded() const; \
     Q_INVOKABLE void runJavaScript(const QString &script, \
                                const QJSValue &callback = QJSValue::UndefinedValue, \
                                const QJSValue &errorCallback = QJSValue::UndefinedValue); \
@@ -212,6 +214,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void parentIdChanged(); \
     void uniqueIdChanged(); \
     void httpUserAgentChanged(); \
+    void domContentLoadedChanged(); \
     void scrollableSizeChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

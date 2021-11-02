@@ -56,6 +56,7 @@ public:
 
     virtual void desktopModeChanged() = 0;
     virtual void httpUserAgentChanged() = 0;
+    virtual void domContentLoadedChanged() = 0;
     virtual void chromeGestureEnabledChanged() = 0;
     virtual void chromeGestureThresholdChanged() = 0;
     virtual void chromeChanged() = 0;
@@ -255,6 +256,11 @@ public:
     void httpUserAgentChanged()
     {
         Q_EMIT view.httpUserAgentChanged();
+    }
+
+    void domContentLoadedChanged()
+    {
+        Q_EMIT view.domContentLoadedChanged();
     }
 
     void scrollableSizeChanged()

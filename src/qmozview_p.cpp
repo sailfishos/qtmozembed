@@ -101,6 +101,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mDesktopMode(false)
     , mActive(false)
     , mLoaded(false)
+    , mDOMContentLoaded(false)
     , mBackgroundColor(Qt::white)
     , mTopMargin(0.0)
     , mBottomMargin(0.0)
@@ -412,6 +413,12 @@ void QMozViewPrivate::load(const QString &url)
 #endif
     mProgress = 0;
     resetPainted();
+
+    if (mDOMContentLoaded) {
+        mDOMContentLoaded = false;
+        mViewIface->domContentLoadedChanged();
+    }
+
     mView->LoadURL(url.toUtf8().data());
 }
 
@@ -489,6 +496,11 @@ void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callb
     doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
 
     mPendingJSCalls.insert(callbackId, qMakePair(callback, errorCallback));
+}
+
+bool QMozViewPrivate::domContentLoaded() const
+{
+    return mDOMContentLoaded;
 }
 
 void QMozViewPrivate::loadFrameScript(const QString &frameScript)
@@ -734,6 +746,15 @@ void QMozViewPrivate::updateLoaded()
     bool loaded = mProgress == 100 && !mIsLoading;
     if (mLoaded != loaded) {
         mLoaded = loaded;
+
+        // E.g. when loading images directly we don't necessarily get domContentLoaded message from engine.
+        // So mark content loaded when webpage is loaded. This overloads "DOMContentLoaded" event a bit
+        // also makes sure thata we eventually have DOM content loaded.
+        if (mLoaded && !mDOMContentLoaded) {
+            mDOMContentLoaded = true;
+            mViewIface->domContentLoadedChanged();
+        }
+
         mViewIface->loadedChanged();
     }
 }
@@ -1457,9 +1478,16 @@ void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant 
 bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant &data)
 {
     // Check docuri if this is an error page
-    if (message == QLatin1String(CONTENT_LOADED) && data.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
-        // Mark security invalid, not used in error pages
-        mSecurity.setSecurityRaw(nullptr, 0);
+    if (message == QLatin1String(CONTENT_LOADED)) {
+        if (data.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {
+            // Mark security invalid, not used in error pages
+            mSecurity.setSecurityRaw(nullptr, 0);
+        }
+
+        if (!mDOMContentLoaded) {
+            mDOMContentLoaded = true;
+            mViewIface->domContentLoadedChanged();
+        }
         return false;
     } else if (message == QLatin1String(RUN_JAVASCRIPT_REPLY)) {
         QVariantMap map = data.toMap();

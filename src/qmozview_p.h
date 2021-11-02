@@ -108,6 +108,7 @@ public:
     void runJavaScript(const QString &script,
                        const QJSValue &callback,
                        const QJSValue &errorCallback);
+    bool domContentLoaded() const;
 
     void setSize(const QSizeF &size);
     void setDotsPerInch(qreal dpi);
@@ -170,6 +171,7 @@ protected:
     bool mDesktopMode;
     bool mActive;
     bool mLoaded;
+    bool mDOMContentLoaded;
     QColor mBackgroundColor;
     qreal mTopMargin;
     qreal mBottomMargin;
