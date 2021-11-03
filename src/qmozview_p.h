@@ -108,6 +108,7 @@ public:
     void runJavaScript(const QString &script,
                        const QJSValue &callback,
                        const QJSValue &errorCallback);
+    bool domContentLoaded() const;
 
     void setSize(const QSizeF &size);
     void setDotsPerInch(qreal dpi);
@@ -158,6 +159,7 @@ protected:
 
     void doSendAsyncMessage(const QString &message, const QVariant &value);
     bool handleAsyncMessage(const QString &message, const QVariant &data);
+    void clearDirtyDynamicToolbarHeight();
 
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
@@ -170,6 +172,7 @@ protected:
     bool mDesktopMode;
     bool mActive;
     bool mLoaded;
+    bool mDOMContentLoaded;
     QColor mBackgroundColor;
     qreal mTopMargin;
     qreal mBottomMargin;

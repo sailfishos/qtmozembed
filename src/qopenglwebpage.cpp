@@ -684,3 +684,8 @@ void QOpenGLWebPage::setHttpUserAgent(const QString &httpUserAgent)
 {
     d->setHttpUserAgent(httpUserAgent);
 }
+
+bool QOpenGLWebPage::domContentLoaded() const
+{
+    return d->domContentLoaded();
+}
