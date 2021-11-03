@@ -562,6 +562,16 @@ void QuickMozView::setChromeGestureThreshold(qreal value)
     d->setChromeGestureThreshold(value);
 }
 
+int QuickMozView::dynamicToolbarHeight() const
+{
+    return d->mDynamicToolbarHeight;
+}
+
+void QuickMozView::setDynamicToolbarHeight(int height)
+{
+    d->setDynamicToolbarHeight(height);
+}
+
 bool QuickMozView::chrome() const
 {
     return d->mChrome;

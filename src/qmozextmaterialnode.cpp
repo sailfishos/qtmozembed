@@ -100,44 +100,74 @@ void MozMaterialNode::preprocess()
 
         markDirty(QSGNode::DirtyGeometry);
 
+        // If the size of the texture doesn't match the size of the item then crop the size of the
+        // larger one to prevent the view being stretched.
+        QRectF geometryRect = m_rect;
+        QRectF textureRect = m_normalizedTextureSubRect;
+
+        const bool landscape = m_orientation & (Qt::LandscapeOrientation | Qt::InvertedLandscapeOrientation);
+        const qreal width = landscape ? m_rect.height() : m_rect.width();
+        const qreal height = landscape ? m_rect.width() : m_rect.height();
+        const QSizeF textureSize = m_texture ? QSizeF(m_texture->textureSize()) : QSizeF(width, height);
+
+        if (width > textureSize.width()) {
+            if (landscape) {
+                geometryRect.setHeight(textureSize.width());
+            } else {
+                geometryRect.setWidth(textureSize.width());
+            }
+        } else if (width < textureSize.width()) {
+            textureRect.setWidth(textureRect.width() * width / textureSize.width());
+        }
+
+        if (height > textureSize.height()) {
+            if (landscape) {
+                geometryRect.setWidth(textureSize.height());
+            } else {
+                geometryRect.setHeight(textureSize.height());
+            }
+        } else if (height < textureSize.height()) {
+            textureRect.setHeight(textureRect.height() * height / textureSize.height());
+        }
+
         // and then texture coordinates
         switch (m_orientation) {
         case Qt::LandscapeOrientation:
             updateRectGeometry(
                         &m_geometry,
-                        m_rect,
-                        m_normalizedTextureSubRect.topRight(),
-                        m_normalizedTextureSubRect.topLeft(),
-                        m_normalizedTextureSubRect.bottomRight(),
-                        m_normalizedTextureSubRect.bottomLeft());
+                        geometryRect,
+                        textureRect.topRight(),
+                        textureRect.topLeft(),
+                        textureRect.bottomRight(),
+                        textureRect.bottomLeft());
             break;
         case Qt::InvertedPortraitOrientation:
             updateRectGeometry(
                         &m_geometry,
-                        m_rect,
-                        m_normalizedTextureSubRect.bottomRight(),
-                        m_normalizedTextureSubRect.topRight(),
-                        m_normalizedTextureSubRect.bottomLeft(),
-                        m_normalizedTextureSubRect.topLeft());
+                        geometryRect,
+                        textureRect.bottomRight(),
+                        textureRect.topRight(),
+                        textureRect.bottomLeft(),
+                        textureRect.topLeft());
             break;
         case Qt::InvertedLandscapeOrientation:
             updateRectGeometry(
                         &m_geometry,
-                        m_rect,
-                        m_normalizedTextureSubRect.bottomLeft(),
-                        m_normalizedTextureSubRect.bottomRight(),
-                        m_normalizedTextureSubRect.topLeft(),
-                        m_normalizedTextureSubRect.topRight());
+                        geometryRect,
+                        textureRect.bottomLeft(),
+                        textureRect.bottomRight(),
+                        textureRect.topLeft(),
+                        textureRect.topRight());
             break;
         default:
             // Portrait / PrimaryOrientation
             updateRectGeometry(
                         &m_geometry,
-                        m_rect,
-                        m_normalizedTextureSubRect.topLeft(),
-                        m_normalizedTextureSubRect.bottomLeft(),
-                        m_normalizedTextureSubRect.topRight(),
-                        m_normalizedTextureSubRect.bottomRight());
+                        geometryRect,
+                        textureRect.topLeft(),
+                        textureRect.bottomLeft(),
+                        textureRect.topRight(),
+                        textureRect.bottomRight());
             break;
         }
     }
