@@ -388,14 +388,16 @@ void QMozViewPrivate::setSize(const QSizeF &size)
     }
 }
 
-void QMozViewPrivate::setDotsPerInch(qreal dpi)
+void QMozViewPrivate::setScreenProperties(int depth, qreal density, qreal dpi)
 {
     Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
+    mDepth = depth;
+    mDensity = density;
     mDpi = dpi;
     if (!mHasCompositor) {
-        mDirtyState |= DirtyDotsPerInch;
+        mDirtyState |= DirtyScreenProperties;
     } else {
-        mView->SetDPI(mDpi);
+        mView->SetScreenProperties(mDepth, mDensity, mDpi);
     }
 }
 
@@ -735,9 +737,9 @@ QPointF QMozViewPrivate::renderingOffset() const
 void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
-    if (mDirtyState & DirtyDotsPerInch) {
-        mView->SetDPI(mDpi);
-        mDirtyState &= ~DirtyDotsPerInch;
+    if (mDirtyState & DirtyScreenProperties) {
+        mView->SetScreenProperties(mDepth, mDensity, mDpi);
+        mDirtyState &= ~DirtyScreenProperties;
     }
 }
 
@@ -776,7 +778,9 @@ void QMozViewPrivate::createView()
         EmbedLiteWindow *win = mMozWindow->d->mWindow;
         mView = mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
         mView->SetListener(this);
-        setDotsPerInch(QGuiApplication::primaryScreen()->physicalDotsPerInch());
+        setScreenProperties(QGuiApplication::primaryScreen()->depth(),
+                            QGuiApplication::primaryScreen()->physicalDotsPerInch(),
+                            QGuiApplication::primaryScreen()->logicalDotsPerInch());
 
         if (mozView) {
             connect(mMozWindow.data(), &QMozWindow::compositingFinished,
