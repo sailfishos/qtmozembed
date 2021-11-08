@@ -51,7 +51,7 @@ public:
         DirtySize = 0x0001,
         DirtyMargin = 0x0002,
         DirtyDynamicToolbarHeight = 0x0004,
-        DirtyDotsPerInch = 0x0008,
+        DirtyScreenProperties = 0x0008,
         DirtyActive = 0x0010,
     };
 
@@ -111,7 +111,7 @@ public:
     bool domContentLoaded() const;
 
     void setSize(const QSizeF &size);
-    void setDotsPerInch(qreal dpi);
+    void setScreenProperties(int depth, qreal density, qreal dpi);
 
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
@@ -234,6 +234,8 @@ protected:
     qreal mOffsetY;
     bool mHasCompositor;
     QMozSecurity mSecurity;
+    int mDepth;
+    qreal mDensity;
     qreal mDpi;
     // Pair of success and error callbacks.
     QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
