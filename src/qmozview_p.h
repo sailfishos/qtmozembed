@@ -97,7 +97,7 @@ public:
     void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
     void resetState();
     void updateMoving(bool moving);
-    void resetPainted();
+    void reset();
     void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
     void setHttpUserAgent(const QString &httpUserAgent);
     QString httpUserAgent() const;

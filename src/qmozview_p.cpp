@@ -372,7 +372,7 @@ void QMozViewPrivate::updateMoving(bool moving)
     }
 }
 
-void QMozViewPrivate::resetPainted()
+void QMozViewPrivate::reset()
 {
     if (mIsPainted) {
         mIsPainted = false;
@@ -406,7 +406,7 @@ void QMozViewPrivate::goBack()
     if (!mViewInitialized)
         return;
 
-    resetPainted();
+    reset();
     mView->GoBack();
 }
 
@@ -415,7 +415,7 @@ void QMozViewPrivate::goForward()
     if (!mViewInitialized)
         return;
 
-    resetPainted();
+    reset();
     mView->GoForward();
 }
 
@@ -431,7 +431,7 @@ void QMozViewPrivate::reload()
     if (!mViewInitialized)
         return;
 
-    resetPainted();
+    reset();
     mView->Reload(false);
 }
 
@@ -448,7 +448,7 @@ void QMozViewPrivate::load(const QString &url)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    resetPainted();
+    reset();
 
     if (mDOMContentLoaded) {
         mDOMContentLoaded = false;
@@ -939,7 +939,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
-    resetPainted();
+    reset();
 
     if (!mIsLoading) {
         mIsLoading = true;
