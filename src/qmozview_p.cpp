@@ -383,6 +383,12 @@ void QMozViewPrivate::reset()
         mDOMContentLoaded = false;
         mViewIface->domContentLoadedChanged();
     }
+
+    // In case we had dynamic toolbar height set, mark it dirty
+    // to get it re-applied.
+    if (mDynamicToolbarHeight > 0) {
+        mDirtyState |= DirtyDynamicToolbarHeight;
+    }
 }
 
 void QMozViewPrivate::setSize(const QSizeF &size)
