@@ -378,6 +378,11 @@ void QMozViewPrivate::reset()
         mIsPainted = false;
         mViewIface->firstPaint(-1, -1);
     }
+
+    if (mDOMContentLoaded) {
+        mDOMContentLoaded = false;
+        mViewIface->domContentLoadedChanged();
+    }
 }
 
 void QMozViewPrivate::setSize(const QSizeF &size)
@@ -449,12 +454,6 @@ void QMozViewPrivate::load(const QString &url)
 #endif
     mProgress = 0;
     reset();
-
-    if (mDOMContentLoaded) {
-        mDOMContentLoaded = false;
-        mViewIface->domContentLoadedChanged();
-    }
-
     mView->LoadURL(url.toUtf8().data());
 }
 
