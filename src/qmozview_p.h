@@ -113,6 +113,10 @@ public:
     void setSize(const QSizeF &size);
     void setScreenProperties(int depth, qreal density, qreal dpi);
 
+    void goBack();
+    void goForward();
+    void stop();
+    void reload();
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);

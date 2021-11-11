@@ -524,31 +524,22 @@ void QOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
 
 void QOpenGLWebPage::goBack()
 {
-    if (!d->mViewInitialized)
-        return;
-    d->mView->GoBack();
+    d->goBack();
 }
 
 void QOpenGLWebPage::goForward()
 {
-    if (!d->mViewInitialized)
-        return;
-    d->mView->GoForward();
+    d->goForward();
 }
 
 void QOpenGLWebPage::stop()
 {
-    if (!d->mViewInitialized)
-        return;
-    d->mView->StopLoad();
+    d->stop();
 }
 
 void QOpenGLWebPage::reload()
 {
-    if (!d->mViewInitialized)
-        return;
-    d->resetPainted();
-    d->mView->Reload(false);
+    d->reload();
 }
 
 void QOpenGLWebPage::load(const QString &url)

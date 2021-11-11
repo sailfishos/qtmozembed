@@ -401,6 +401,40 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal density, qreal dpi)
     }
 }
 
+void QMozViewPrivate::goBack()
+{
+    if (!mViewInitialized)
+        return;
+
+    resetPainted();
+    mView->GoBack();
+}
+
+void QMozViewPrivate::goForward()
+{
+    if (!mViewInitialized)
+        return;
+
+    resetPainted();
+    mView->GoForward();
+}
+
+void QMozViewPrivate::stop()
+{
+    if (!mViewInitialized)
+        return;
+    mView->StopLoad();
+}
+
+void QMozViewPrivate::reload()
+{
+    if (!mViewInitialized)
+        return;
+
+    resetPainted();
+    mView->Reload(false);
+}
+
 void QMozViewPrivate::load(const QString &url)
 {
     if (url.isEmpty())
