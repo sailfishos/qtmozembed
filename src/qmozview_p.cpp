@@ -348,7 +348,7 @@ void QMozViewPrivate::handleTouchEnd(bool &draggingChanged, bool &pinchingChange
     }
 }
 
-void QMozViewPrivate::resetState()
+void QMozViewPrivate::resetTouchState()
 {
     // Invalid initial drag start Y.
     mDragStartY = -1.0;
@@ -576,7 +576,7 @@ void QMozViewPrivate::timerEvent(QTimerEvent *event)
         qreal offsetY = mScrollableOffset.y();
         qreal offsetX = mScrollableOffset.x();
         if (offsetX == mOffsetX && offsetY == mOffsetY) {
-            resetState();
+            resetTouchState();
             q->killTimer(mMovingTimerId);
             mMovingTimerId = 0;
         }
@@ -1253,7 +1253,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             mPinching = true;
             pinchingChanged = true;
         }
-        resetState();
+        resetTouchState();
     } else if (event->type() == QEvent::TouchUpdate) {
         Q_ASSERT(touchPointsCount > 0);
         if (!mDragging) {
@@ -1293,7 +1293,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             updateMoving(mCanFlick);
         } else {
             // From dragging (panning) end to clean state
-            resetState();
+            resetTouchState();
         }
     } else {
         updateMoving(mDragging);

@@ -95,7 +95,7 @@ public:
     void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void testFlickingMode(QTouchEvent *event);
     void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
-    void resetState();
+    void resetTouchState();
     void updateMoving(bool moving);
     void reset();
     void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
