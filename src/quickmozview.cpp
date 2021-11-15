@@ -688,36 +688,22 @@ void QuickMozView::loadText(const QString &text, const QString &mimeType)
 
 void QuickMozView::goBack()
 {
-    if (!d->mViewInitialized)
-        return;
-
-    d->resetPainted();
-    d->mView->GoBack();
+    d->goBack();
 }
 
 void QuickMozView::goForward()
 {
-    if (!d->mViewInitialized)
-        return;
-
-    d->resetPainted();
-    d->mView->GoForward();
+    d->goForward();
 }
 
 void QuickMozView::stop()
 {
-    if (!d->mViewInitialized)
-        return;
-    d->mView->StopLoad();
+    d->stop();
 }
 
 void QuickMozView::reload()
 {
-    if (!d->mViewInitialized)
-        return;
-
-    d->resetPainted();
-    d->mView->Reload(false);
+    d->reload();
 }
 
 void QuickMozView::load(const QString &url)

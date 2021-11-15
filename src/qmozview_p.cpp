@@ -348,7 +348,7 @@ void QMozViewPrivate::handleTouchEnd(bool &draggingChanged, bool &pinchingChange
     }
 }
 
-void QMozViewPrivate::resetState()
+void QMozViewPrivate::resetTouchState()
 {
     // Invalid initial drag start Y.
     mDragStartY = -1.0;
@@ -372,11 +372,22 @@ void QMozViewPrivate::updateMoving(bool moving)
     }
 }
 
-void QMozViewPrivate::resetPainted()
+void QMozViewPrivate::reset()
 {
     if (mIsPainted) {
         mIsPainted = false;
         mViewIface->firstPaint(-1, -1);
+    }
+
+    if (mDOMContentLoaded) {
+        mDOMContentLoaded = false;
+        mViewIface->domContentLoadedChanged();
+    }
+
+    // In case we had dynamic toolbar height set, mark it dirty
+    // to get it re-applied.
+    if (mDynamicToolbarHeight > 0) {
+        mDirtyState |= DirtyDynamicToolbarHeight;
     }
 }
 
@@ -401,6 +412,40 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal density, qreal dpi)
     }
 }
 
+void QMozViewPrivate::goBack()
+{
+    if (!mViewInitialized)
+        return;
+
+    reset();
+    mView->GoBack();
+}
+
+void QMozViewPrivate::goForward()
+{
+    if (!mViewInitialized)
+        return;
+
+    reset();
+    mView->GoForward();
+}
+
+void QMozViewPrivate::stop()
+{
+    if (!mViewInitialized)
+        return;
+    mView->StopLoad();
+}
+
+void QMozViewPrivate::reload()
+{
+    if (!mViewInitialized)
+        return;
+
+    reset();
+    mView->Reload(false);
+}
+
 void QMozViewPrivate::load(const QString &url)
 {
     if (url.isEmpty())
@@ -414,13 +459,7 @@ void QMozViewPrivate::load(const QString &url)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    resetPainted();
-
-    if (mDOMContentLoaded) {
-        mDOMContentLoaded = false;
-        mViewIface->domContentLoadedChanged();
-    }
-
+    reset();
     mView->LoadURL(url.toUtf8().data());
 }
 
@@ -543,7 +582,7 @@ void QMozViewPrivate::timerEvent(QTimerEvent *event)
         qreal offsetY = mScrollableOffset.y();
         qreal offsetX = mScrollableOffset.x();
         if (offsetX == mOffsetX && offsetY == mOffsetY) {
-            resetState();
+            resetTouchState();
             q->killTimer(mMovingTimerId);
             mMovingTimerId = 0;
         }
@@ -905,7 +944,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
-    resetPainted();
+    reset();
 
     if (!mIsLoading) {
         mIsLoading = true;
@@ -1220,7 +1259,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             mPinching = true;
             pinchingChanged = true;
         }
-        resetState();
+        resetTouchState();
     } else if (event->type() == QEvent::TouchUpdate) {
         Q_ASSERT(touchPointsCount > 0);
         if (!mDragging) {
@@ -1260,7 +1299,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
             updateMoving(mCanFlick);
         } else {
             // From dragging (panning) end to clean state
-            resetState();
+            resetTouchState();
         }
     } else {
         updateMoving(mDragging);

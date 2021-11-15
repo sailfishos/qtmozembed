@@ -95,9 +95,9 @@ public:
     void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void testFlickingMode(QTouchEvent *event);
     void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
-    void resetState();
+    void resetTouchState();
     void updateMoving(bool moving);
-    void resetPainted();
+    void reset();
     void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
     void setHttpUserAgent(const QString &httpUserAgent);
     QString httpUserAgent() const;
@@ -113,6 +113,10 @@ public:
     void setSize(const QSizeF &size);
     void setScreenProperties(int depth, qreal density, qreal dpi);
 
+    void goBack();
+    void goForward();
+    void stop();
+    void reload();
     void load(const QString &url);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);
