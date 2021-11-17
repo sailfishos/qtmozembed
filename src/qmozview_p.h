@@ -216,6 +216,7 @@ protected:
     float mContentResolution;
     bool mIsPainted;
     Qt::InputMethodHints mInputMethodHints;
+    Qt::InputMethodHints mInputMethodAttributes;
     QVariant mSurroundingText;
     QVariant mCursorPosition;
     QVariant mAnchorPosition;
