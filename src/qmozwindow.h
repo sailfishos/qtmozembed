@@ -30,6 +30,7 @@ public:
     void setSize(const QSize &size);
     QSize size() const;
     void setContentOrientation(Qt::ScreenOrientation);
+    void setPrimaryOrientation(Qt::ScreenOrientation);
     Qt::ScreenOrientation contentOrientation() const;
     Qt::ScreenOrientation pendingOrientation() const;
     void getPlatformImage(const std::function<void(void *image, int width, int height)> &callback);

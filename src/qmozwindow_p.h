@@ -22,6 +22,7 @@ public:
 
     void setSize(const QSize &size);
     void setContentOrientation(Qt::ScreenOrientation);
+    void setPrimaryOrientation(Qt::ScreenOrientation);
 
     void timerEvent(QTimerEvent *event);
 
@@ -52,6 +53,7 @@ private:
     bool mReadyToPaint;
     QSize mSize;
     Qt::ScreenOrientation mOrientation;
+    Qt::ScreenOrientation mPrimaryOrientation;
     Qt::ScreenOrientation mPendingOrientation;
     int mOrientationFilterTimer;
     bool mReserved;

@@ -67,6 +67,11 @@ void QMozWindow::setContentOrientation(Qt::ScreenOrientation orientation)
     d->setContentOrientation(orientation);
 }
 
+void QMozWindow::setPrimaryOrientation(Qt::ScreenOrientation orientation)
+{
+    d->setPrimaryOrientation(orientation);
+}
+
 Qt::ScreenOrientation QMozWindow::contentOrientation() const
 {
     return d->mOrientation;
