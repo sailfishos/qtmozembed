@@ -13,6 +13,8 @@
 #include "qmozwindow.h"
 
 #include <QGuiApplication>
+#include <QScreen>
+
 #include <dlfcn.h>
 #include <EGL/egl.h>
 #if defined(ENABLE_GLX)
@@ -36,17 +38,20 @@ GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
 
 namespace {
 
-mozilla::embedlite::ScreenRotation QtToMozillaRotation(Qt::ScreenOrientation orientation)
+mozilla::embedlite::ScreenRotation QtToMozillaRotation(int rotation)
 {
-    switch (orientation) {
-    case Qt::PrimaryOrientation:
-    case Qt::PortraitOrientation:
+    switch (rotation) {
+    case 0:
+    case 360:
         return mozilla::embedlite::ROTATION_0;
-    case Qt::LandscapeOrientation:
+    case 90:
+    case -270:
         return mozilla::embedlite::ROTATION_90;
-    case Qt::InvertedLandscapeOrientation:
+    case 270:
+    case -90:
         return mozilla::embedlite::ROTATION_270;
-    case Qt::InvertedPortraitOrientation:
+    case 180:
+    case -180:
         return mozilla::embedlite::ROTATION_180;
     default:
         Q_UNREACHABLE();
@@ -64,6 +69,7 @@ QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     , mSize(size)
     , mOrientation(Qt::PrimaryOrientation)
     , mPendingOrientation(Qt::PrimaryOrientation)
+    , mPrimaryOrientation(Qt::PortraitOrientation)
     , mOrientationFilterTimer(0)
     , mReserved(false)
 {
@@ -97,6 +103,13 @@ void QMozWindowPrivate::setContentOrientation(Qt::ScreenOrientation orientation)
     mOrientationFilterTimer = q.startTimer(MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT);
 }
 
+void QMozWindowPrivate::setPrimaryOrientation(Qt::ScreenOrientation orientation)
+{
+    if (mPrimaryOrientation != orientation) {
+        mPrimaryOrientation = orientation;
+    }
+}
+
 void QMozWindowPrivate::timerEvent(QTimerEvent *event)
 {
     if (event->timerId() == mOrientationFilterTimer) {
@@ -104,7 +117,8 @@ void QMozWindowPrivate::timerEvent(QTimerEvent *event)
         mOrientationFilterTimer = 0;
         if (mWindow) {
             if (mOrientation != mPendingOrientation) {
-                mWindow->SetContentOrientation(QtToMozillaRotation(mPendingOrientation));
+                int rotation = QGuiApplication::primaryScreen()->angleBetween(mPendingOrientation, mPrimaryOrientation);
+                mWindow->SetContentOrientation(QtToMozillaRotation(rotation));
                 mOrientation = mPendingOrientation;
             } else {
                 q.orientationChangeFiltered(mOrientation);

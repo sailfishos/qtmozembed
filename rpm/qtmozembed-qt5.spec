@@ -5,7 +5,7 @@
 
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
-Version:    1.52.12
+Version:    1.53.7
 Release:    1
 License:    MPLv2.0
 URL:        https://git.sailfishos.org/mer-core/qtmozembed
