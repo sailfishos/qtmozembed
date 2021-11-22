@@ -19,3 +19,8 @@ libqt5embedwidget.so*
 /src/pkgconfig/
 /src/libqt5embedwidget.prl
 /tests/qmlmoztestrunner/qmlmoztestrunner
+debugfiles.list
+debuglinks.list
+debugsourcefiles.list
+debugsources.list
+elfbins.list
