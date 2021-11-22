@@ -62,6 +62,8 @@ using namespace mozilla::embedlite;
 #define FORMASSIST_HIDE "FormAssist:Hide"
 #define INPUTMETHOD_SET_INPUT_CONTEXT "InputMethodHandler:SetInputContext"
 #define INPUTMETHOD_RESET_INPUT_CONTEXT "InputMethodHandler:ResetInputContext"
+#define INPUTMETHOD_SET_INPUT_ATTRIBUTES "InputMethodHandler:SetInputAttributes"
+#define INPUTMETHOD_RESET_INPUT_ATTRIBUTES "InputMethodHandler:ResetInputAttributes"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -134,6 +136,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mContentResolution(0.0)
     , mIsPainted(false)
     , mInputMethodHints(0)
+    , mInputMethodAttributes(0)
     , mIsInputFieldFocused(false)
     , mPreedit(false)
     , mViewIsFocused(false)
@@ -155,6 +158,8 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(FORMASSIST_HIDE);
     addMessageListener(INPUTMETHOD_SET_INPUT_CONTEXT);
     addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
+    addMessageListener(INPUTMETHOD_SET_INPUT_ATTRIBUTES);
+    addMessageListener(INPUTMETHOD_RESET_INPUT_ATTRIBUTES);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -557,7 +562,7 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
     case Qt::ImEnabled:
         return QVariant((bool) mIsInputFieldFocused);
     case Qt::ImHints:
-        return QVariant((int) mInputMethodHints);
+        return QVariant((int) mInputMethodHints | (int) mInputMethodAttributes);
     case Qt::ImSurroundingText:
         return mSurroundingText;
     case Qt::ImCursorPosition:
@@ -1517,6 +1522,24 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         mAnchorPosition = QVariant();
         QInputMethod *inputContext = qGuiApp->inputMethod();
         inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_SET_INPUT_ATTRIBUTES)) {
+        QVariantMap map = data.toMap();
+        mInputMethodAttributes = 0;
+        if (map.value(QLatin1String("autocomplete")) == QLatin1String("off")) {
+            mInputMethodAttributes |= Qt::ImhNoPredictiveText | Qt::ImhSensitiveData;
+        }
+        if (map.value(QLatin1String("autocapitalize")) == QLatin1String("off") ||
+                map.value(QLatin1String("autocapitalize")) == QLatin1String("none")) {
+            mInputMethodAttributes |= Qt::ImhNoAutoUppercase | Qt::ImhPreferLowercase;
+        } else if (map.value(QLatin1String("autocapitalize")) == QLatin1String("characters")) {
+            mInputMethodAttributes |= Qt::ImhPreferUppercase;
+        }
+        qGuiApp->inputMethod()->update(Qt::ImHints);
+        return true;
+    } else if (message == QLatin1String(INPUTMETHOD_RESET_INPUT_ATTRIBUTES)) {
+        mInputMethodAttributes = 0;
+        qGuiApp->inputMethod()->update(Qt::ImHints);
         return true;
     }
 
