@@ -83,7 +83,7 @@ public:
     bool HandleLongTap(const nsIntPoint &aPoint) override;
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
-    bool HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
+    bool HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
     void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent);
 
     // Starting from here these are QMozViewPrivate methods.

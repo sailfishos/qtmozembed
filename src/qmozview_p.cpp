@@ -1183,13 +1183,8 @@ void QMozViewPrivate::OnDynamicToolbarHeightChanged()
     mViewIface->dynamicToolbarHeightChanged();
 }
 
-bool QMozViewPrivate::HandleScrollEvent(bool aIsRootScrollFrame, const gfxRect &aContentRect, const gfxSize &aScrollableSize)
+bool QMozViewPrivate::HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
-    // aIsRootScrollFrame makes it possible to handle chrome gesture also in case that we have
-    // an iframe that is of the size of the screen. We may need to add still a scrollable layer id or similar.
-    if (!aIsRootScrollFrame)
-        return false;
-
     if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
             mContentRect.width() != aContentRect.width ||
             mContentRect.height() != aContentRect.height) {
