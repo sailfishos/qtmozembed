@@ -1078,8 +1078,10 @@ void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aH
     // Normally these come from HandleScrollEvent but for some documents no such event is generated.
 
     const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
-    if (!qFuzzyIsNull(contentResoution)) {
+
+    if (!qFuzzyIsNull(contentResoution) && contentResoution != mContentResolution) {
         mContentResolution = contentResoution;
+        mViewIface->resolutionChanged();
     }
 
     if (mContentRect.isEmpty()) {
@@ -1197,7 +1199,10 @@ bool QMozViewPrivate::HandleScrollEvent(const gfxRect &aContentRect, const gfxSi
 
     float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
     if (!qFuzzyIsNull(contentResoution)) {
-        mContentResolution = contentResoution;
+        if (mContentResolution != contentResoution) {
+            mContentResolution = contentResoution;
+            mViewIface->resolutionChanged();
+        }
         updateScrollArea(
                     aScrollableSize.width * mContentResolution,
                     aScrollableSize.height * mContentResolution,
