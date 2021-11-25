@@ -1034,7 +1034,10 @@ char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t 
 
     QVariant responseMessage = response.getMessage();
     QJsonDocument responseDocument;
-    if (responseMessage.userType() == QMetaType::type("QJSValue")) {
+    if (!responseMessage.isValid()) {
+        // Default to an empty json
+        responseDocument = QJsonDocument::fromJson("{\"\":\"\"}");
+    } else if (responseMessage.userType() == QMetaType::type("QJSValue")) {
         // Qt 5.6 likes to pass a QJSValue
         QJSValue jsValue = qvariant_cast<QJSValue>(responseMessage);
         responseDocument = QJsonDocument::fromVariant(jsValue.toVariant());
