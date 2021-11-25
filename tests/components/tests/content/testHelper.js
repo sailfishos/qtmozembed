@@ -4,20 +4,6 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
-Cu.import("resource://gre/modules/XPCOMUtils.jsm");
-Cu.import("resource://gre/modules/Services.jsm");
-Cu.import("resource://gre/modules/Geometry.jsm");
-Cu.import("resource://gre/modules/AddonManager.jsm");
-Cu.import("resource://gre/modules/FileUtils.jsm");
-
-let HTMLSelectElement = Ci.nsIDOMHTMLSelectElement;
-let HTMLLabelElement = Ci.nsIDOMHTMLLabelElement;
-let HTMLIFrameElement = Ci.nsIDOMHTMLIFrameElement;
-let HTMLFrameElement = Ci.nsIDOMHTMLFrameElement;
-
-XPCOMUtils.defineLazyServiceGetter(this, "DOMUtils",
-  "@mozilla.org/inspector/dom-utils;1", "inIDOMUtils");
-
 XPCOMUtils.defineLazyServiceGetter(Services, "embedlite",
                                     "@mozilla.org/embedlite-app-service;1",
                                     "nsIEmbedAppService");
@@ -33,8 +19,8 @@ function TestHelper() {
 }
 
 TestHelper.prototype = {
-  QueryInterface: XPCOMUtils.generateQI([Ci.nsIObserver,
-                                         Ci.nsISupportsWeakReference]),
+  QueryInterface: ChromeUtils.generateQI([Ci.nsIObserver,
+                                          Ci.nsISupportsWeakReference]),
 
   _fastFind: null,
   _init: function()
