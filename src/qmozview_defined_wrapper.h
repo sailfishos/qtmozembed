@@ -84,7 +84,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool atXEnd READ atXEnd NOTIFY atXEndChanged FINAL) \
     Q_PROPERTY(bool atYBeginning READ atYBeginning NOTIFY atYBeginningChanged FINAL) \
     Q_PROPERTY(bool atYEnd READ atYEnd NOTIFY atYEndChanged FINAL) \
-    Q_PROPERTY(float resolution READ resolution) \
+    Q_PROPERTY(float resolution READ resolution NOTIFY resolutionChanged FINAL) \
     Q_PROPERTY(bool painted READ isPainted NOTIFY firstPaint FINAL) \
     Q_PROPERTY(QColor backgroundColor READ backgroundColor NOTIFY backgroundColorChanged FINAL) \
     Q_PROPERTY(bool dragging READ dragging NOTIFY draggingChanged FINAL) \
@@ -193,6 +193,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void atXEndChanged(); \
     void atYBeginningChanged(); \
     void atYEndChanged(); \
+    void resolutionChanged(); \
     void handleLongTap(QPoint point, QMozReturnValue *retval); \
     void handleSingleTap(QPoint point, QMozReturnValue *retval); \
     void handleDoubleTap(QPoint point, QMozReturnValue *retval); \

@@ -42,6 +42,7 @@ public:
     virtual void atXEndChanged() = 0;
     virtual void atYBeginningChanged() = 0;
     virtual void atYEndChanged() = 0;
+    virtual void resolutionChanged() = 0;
     virtual void handleLongTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleSingleTap(QPoint point, QMozReturnValue *retval) = 0;
     virtual void handleDoubleTap(QPoint point, QMozReturnValue *retval) = 0;
@@ -165,6 +166,10 @@ public:
     void atYEndChanged()
     {
         Q_EMIT view.atYEndChanged();
+    }
+    void resolutionChanged()
+    {
+        Q_EMIT view.resolutionChanged();
     }
 
     void chromeGestureEnabledChanged() override
