@@ -434,12 +434,17 @@ void QuickMozView::forceViewActiveFocus()
 
 QUrl QuickMozView::url() const
 {
-    return QUrl(d->mLocation);
+    return d->url();
 }
 
 void QuickMozView::setUrl(const QUrl &url)
 {
     load(url.toString());
+}
+
+bool QuickMozView::isUrlResolved() const
+{
+    return d->isUrlResolved();
 }
 
 QString QuickMozView::title() const

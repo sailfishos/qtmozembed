@@ -105,6 +105,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
     void setUrl(const QUrl&); \
+    bool isUrlResolved() const; \
     QString title() const; \
     int loadProgress() const; \
     bool canGoBack() const; \

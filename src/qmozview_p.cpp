@@ -417,6 +417,16 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal density, qreal dpi)
     }
 }
 
+QUrl QMozViewPrivate::url() const
+{
+    return !mPendingUrl.isEmpty() ? QUrl(mPendingUrl) : QUrl(mUrl);
+}
+
+bool QMozViewPrivate::isUrlResolved() const
+{
+    return mPendingUrl.isEmpty() && !mUrl.isEmpty();
+}
+
 void QMozViewPrivate::goBack()
 {
     if (!mViewInitialized)
@@ -458,6 +468,7 @@ void QMozViewPrivate::load(const QString &url)
 
     if (!mViewInitialized) {
         mPendingUrl = url;
+        mViewIface->urlChanged();
         return;
     }
 #ifdef DEVELOPMENT_BUILD
@@ -466,6 +477,11 @@ void QMozViewPrivate::load(const QString &url)
     mProgress = 0;
     reset();
     mView->LoadURL(url.toUtf8().data());
+
+    if (mPendingUrl != url) {
+        mPendingUrl = url;
+        mViewIface->urlChanged();
+    }
 }
 
 void QMozViewPrivate::scrollTo(int x, int y)
@@ -850,7 +866,6 @@ void QMozViewPrivate::ViewInitialized()
 
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl);
-        mPendingUrl.clear();
     }
 
     if (mDirtyState & DirtySize) {
@@ -931,8 +946,10 @@ void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, 
         mViewIface->canGoForwardChanged();
     }
 
-    if (mLocation != aLocation) {
-        mLocation = QString(aLocation);
+    mPendingUrl.clear();
+
+    if (mUrl != aLocation) {
+        mUrl = QString(aLocation);
         mViewIface->urlChanged();
     }
 }
@@ -961,6 +978,13 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 
 void QMozViewPrivate::OnLoadFinished(void)
 {
+    // if loading has stopped before location change, restore back
+    // previous none empty url. Normally OnLocationChange clears pending url.
+    if (!mPendingUrl.isEmpty() && !mUrl.isEmpty() && (mUrl != mPendingUrl)) {
+        mPendingUrl.clear();
+        mViewIface->urlChanged();
+    }
+
     if (mIsLoading) {
         mProgress = 100;
         mIsLoading = false;

@@ -113,6 +113,8 @@ public:
     void setSize(const QSizeF &size);
     void setScreenProperties(int depth, qreal density, qreal dpi);
 
+    QUrl url() const;
+    bool isUrlResolved() const;
     void goBack();
     void goForward();
     void stop();
@@ -201,7 +203,7 @@ protected:
     QMap<int, QPointF> mActiveTouchPoints;
     bool mCanFlick;
     bool mPendingTouchEvent;
-    QString mLocation;
+    QString mUrl;
     QString mTitle;
     int mProgress;
     bool mCanGoBack;
