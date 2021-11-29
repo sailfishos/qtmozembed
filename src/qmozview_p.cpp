@@ -974,7 +974,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 
     if (!mIsLoading) {
         mIsLoading = true;
-        mProgress = 1;
+        mProgress = 15;
         mViewIface->loadingChanged();
     }
     mSecurity.reset();
