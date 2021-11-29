@@ -457,8 +457,12 @@ void QMozViewPrivate::reload()
     if (!mViewInitialized)
         return;
 
-    reset();
-    mView->Reload(false);
+    if (!mPendingUrl.isEmpty()) {
+        load(mPendingUrl);
+    } else {
+        reset();
+        mView->Reload(false);
+    }
 }
 
 void QMozViewPrivate::load(const QString &url)
