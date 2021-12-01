@@ -341,12 +341,17 @@ void QOpenGLWebPage::forceViewActiveFocus()
 
 QUrl QOpenGLWebPage::url() const
 {
-    return QUrl(d->mLocation);
+    return d->url();
 }
 
 void QOpenGLWebPage::setUrl(const QUrl &url)
 {
     load(url.toString());
+}
+
+bool QOpenGLWebPage::isUrlResolved() const
+{
+    return d->isUrlResolved();
 }
 
 QString QOpenGLWebPage::title() const
