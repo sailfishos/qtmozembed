@@ -58,19 +58,11 @@ Item {
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
             testcaseid.compare(webViewport.loadProgress, 100);
             testcaseid.verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            webViewport.sendAsyncMessage("Browser:SelectionStart", {
-                                                xPos: 56,
-                                                yPos: 16
-                                              })
-            webViewport.sendAsyncMessage("Browser:SelectionMoveStart", {
-                                                change: "start"
-                                              })
-            webViewport.sendAsyncMessage("Browser:SelectionCopy", {
-                                                xPos: 56,
-                                                yPos: 16
-                                              })
+            webViewport.sendAsyncMessage("Browser:SelectionStart", {xPos: 0, yPos: 0})
+            webViewport.sendAsyncMessage("Browser:SelectionSelectAll", {})
+            webViewport.sendAsyncMessage("Browser:SelectionCopy", {xPos: 10, yPos: 10})
             testcaseid.verify(MyScript.wrtWait(function() { return (appWindow.selectedContent == ""); }))
-            testcaseid.compare(appWindow.selectedContent, "test");
+            testcaseid.compare(appWindow.selectedContent, "hello test selection");
             MyScript.dumpTs("test_SelectionInit end")
         }
     }

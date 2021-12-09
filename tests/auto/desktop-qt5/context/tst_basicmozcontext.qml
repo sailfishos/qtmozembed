@@ -10,6 +10,7 @@ Item {
     height: 800
 
     property var lastObserveMessage
+    property var mozView
 
     Connections {
         target: QmlMozContext
@@ -26,13 +27,12 @@ Item {
         function cleanupTestCase()
         {
             MyScript.dumpTs("tst_basicmozcontext cleanupTestCase")
-            // Stop embedding explicitly as we do not have any views.
-            QmlMozContext.stopEmbedding()
         }
         function test_context1Init()
         {
             MyScript.dumpTs("test_context1Init start")
             verify(MyScript.wrtWait(function() { return (QmlMozContext.isInitialized() === false); }, 100, 500))
+            MyScript.createSpriteObjects()
             verify(QmlMozContext.isInitialized())
             MyScript.dumpTs("test_context1Init end")
         }

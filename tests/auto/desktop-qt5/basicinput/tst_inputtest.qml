@@ -4,7 +4,7 @@ import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
-Item {
+Rectangle {
     id: appWindow
     width: 480
     height: 800
@@ -38,8 +38,6 @@ Item {
 
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
-            webViewport.addMessageListener("testembed:elementpropvalue")
             appWindow.mozViewInitialized = true
         }
         onHandleSingleTap: {
@@ -64,6 +62,10 @@ Item {
             appWindow.cause = cause
             appWindow.focusChange = focusChange
             appWindow.inputType = type
+        }
+        Component.onCompleted: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.addMessageListener("testembed:elementpropvalue")
         }
     }
 
@@ -126,5 +128,10 @@ Item {
             compare(appWindow.inputContent, "1234");
             MyScript.dumpTs("test_Test1LoadInputURLPage end");
         }
+    }
+
+    Component.onCompleted: {
+        QMozEngineSettings.setPreference("embedlite.azpc.handle.singletap", false);
+        QMozEngineSettings.setPreference("embedlite.azpc.json.singletap", true);
     }
 }

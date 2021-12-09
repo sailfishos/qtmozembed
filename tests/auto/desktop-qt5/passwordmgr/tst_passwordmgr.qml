@@ -52,6 +52,7 @@ Item {
         }
 
         function test_TestLoginMgrPage() {
+            skip("Not working properly, please see JB#56715")
             MyScript.dumpTs("test_TestLoginMgrPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())

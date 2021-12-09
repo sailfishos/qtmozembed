@@ -54,12 +54,12 @@ Item {
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]});
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:license>ActiveLink</a>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a>";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             mouseClick(webViewport, 10, 20)
-            verify(MyScript.wrtWait(function() { return webViewport.url != "about:license"; }))
+            verify(MyScript.wrtWait(function() { return webViewport.url != "about:blank"; }))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))

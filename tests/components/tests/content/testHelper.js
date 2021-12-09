@@ -30,6 +30,9 @@ TestHelper.prototype = {
     // Services.obs.addObserver(this, "before-first-paint", true);
     addMessageListener("embedtest:getelementprop", this);
     addMessageListener("embedtest:getelementinner", this);
+    addMessageListener("embedtest:focustoelement", this);
+    addMessageListener("embedtest:clickelement", this);
+    addMessageListener("embedtest:useragent", this);
   },
 
   observe: function(aSubject, aTopic, data) {
@@ -47,6 +50,20 @@ TestHelper.prototype = {
       case "embedtest:getelementinner": {
         let element = content.document.getElementById(aMessage.json.name);
         sendAsyncMessage("testembed:elementinnervalue", {value: element.innerHTML});
+        break;
+      }
+      case "embedtest:focustoelement": {
+        let element = content.document.getElementById(aMessage.json.name);
+        element.focus();
+        break;
+      }
+      case "embedtest:clickelement": {
+        let element = content.document.getElementById(aMessage.json.name);
+        element.click();
+        break;
+      }
+      case "embedtest:useragent": {
+        sendAsyncMessage("testembed:useragent", {value: content.navigator.userAgent});
         break;
       }
       default: {

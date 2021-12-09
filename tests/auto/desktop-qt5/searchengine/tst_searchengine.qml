@@ -11,6 +11,8 @@ Item {
 
     property bool mozViewInitialized
     property var testResult
+    property var testEngines
+    property var testDefault
 
     Connections {
         target: QmlMozContext
@@ -27,13 +29,12 @@ Item {
                 switch (data.msg) {
                     case "init": {
                         print("Received: search:" + message, ", msg: ", data.msg, data.defaultEngine)
+                        appWindow.testEngines = data.engines
+                        appWindow.testDefault = data.defaultEngine
                         break
                     }
-                    case "pluginslist": {
-                        for (var i = 0; i < data.list.length; ++i) {
-                            print("Received: search:" + message, ", msg: ", data.msg, data.list[i].name, data.list[i].isDefault, data.list[i].isCurrent)
-                        }
-                        appWindow.testResult = data.list
+                    case "search-engine-added": {
+                        appWindow.testEngines.push(data.engine)
                         break
                     }
                 }
@@ -73,12 +74,8 @@ Item {
             var engineExistsPredicate = function() {
                 var found = false;
 
-                if (!Array.isArray(appWindow.testResult)) {
-                    return true;
-                }
-
-                appWindow.testResult.forEach(function(e) {
-                    if (e.name === "QMOZTest") {
+                appWindow.testEngines.forEach(function(e) {
+                    if (e === "QMOZTest") {
                         found = true;
                     }
                 });
@@ -102,7 +99,7 @@ Item {
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            compare(webViewport.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
+            verify(webViewport.url.toString().indexOf(appWindow.testDefault.toLowerCase()) !== -1)
             MyScript.dumpTs("TestCheckDefaultSearch end");
         }
     }

@@ -41,7 +41,6 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.addMessageListener("embed:downloadpicker")
             appWindow.mozViewInitialized = true
         }
         onRecvAsyncMessage: {
@@ -51,6 +50,9 @@ Item {
                                                  defaultFileName: data.defaultFileName,                                             })
                                                  suggestedFileExtension: data.suggestedFileExtension
             }
+        }
+        Component.onCompleted: {
+            webViewport.addMessageListener("embed:downloadpicker")
         }
     }
 
