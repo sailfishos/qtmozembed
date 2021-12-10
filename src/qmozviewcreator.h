@@ -23,7 +23,7 @@ public:
     /*
      * @returns ID of created web view
      */
-    virtual quint32 createView(const quint32 &parentId) = 0;
+    virtual quint32 createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext) = 0;
 };
 
 #endif

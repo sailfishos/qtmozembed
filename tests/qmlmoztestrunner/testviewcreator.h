@@ -22,7 +22,7 @@ public:
     explicit TestViewCreator(QObject *parent = 0);
     ~TestViewCreator() {}
 
-    virtual quint32 createView(const quint32 &parentId);
+    virtual quint32 createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext) override;
 
 signals:
     void newWindowRequested(const quint32 &parentId);

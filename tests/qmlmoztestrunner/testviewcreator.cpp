@@ -18,8 +18,10 @@ TestViewCreator::TestViewCreator(QObject *parent)
     QMozContext::instance()->setViewCreator(this);
 };
 
-quint32 TestViewCreator::createView(const quint32 &parentId)
+quint32 TestViewCreator::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext)
 {
+    Q_UNUSED(parentBrowsingContext)
+
     emit newWindowRequested(parentId);
     // NB: actual new ID is supposed to be set synchronously in the slot handling newWindowRequested signal
     return 2;

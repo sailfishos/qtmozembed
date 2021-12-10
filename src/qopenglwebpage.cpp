@@ -613,6 +613,11 @@ void QOpenGLWebPage::setParentId(unsigned parentId)
     d->setParentId(parentId);
 }
 
+void QOpenGLWebPage::setParentBrowsingContext(uintptr_t parentBrowsingContext)
+{
+    d->setParentBrowsingContext(parentBrowsingContext);
+}
+
 void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);

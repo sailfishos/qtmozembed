@@ -74,7 +74,7 @@ public Q_SLOTS:
     void setProfile(const QString &);
 
     void setViewCreator(QMozViewCreator *viewCreator);
-    quint32 createView(const quint32 &parentId = 0);
+    quint32 createView(const quint32 &parentId = 0, const uintptr_t &parentBrowsingContext = 0);
 
 private:
     QMozContextPrivate *d;

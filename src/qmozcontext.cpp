@@ -209,10 +209,13 @@ bool QMozContextPrivate::IsInitialized()
 }
 
 uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags,
-                                                      EmbedLiteView *aParentView)
+                                                      EmbedLiteView *aParentView, const uintptr_t &parentBrowsingContext)
 {
-    qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView;
-    uint32_t viewId = QMozContext::instance()->createView(aParentView ? aParentView->GetUniqueID() : 0);
+    Q_UNUSED(chromeFlags)
+
+    uint32_t parentId = aParentView ? aParentView->GetUniqueID() : 0;
+    qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView << parentId;
+    uint32_t viewId = QMozContext::instance()->createView(parentId, parentBrowsingContext);
     return viewId;
 }
 
@@ -420,9 +423,9 @@ void QMozContext::stopEmbedding()
     }
 }
 
-quint32 QMozContext::createView(const quint32 &parentId)
+quint32 QMozContext::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext)
 {
-    return d->mViewCreator ? d->mViewCreator->createView(parentId) : 0;
+    return d->mViewCreator ? d->mViewCreator->createView(parentId, parentBrowsingContext) : 0;
 }
 
 void QMozContext::setIsAccelerated(bool aIsAccelerated)

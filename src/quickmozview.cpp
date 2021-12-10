@@ -777,6 +777,11 @@ void QuickMozView::setParentId(unsigned parentId)
     d->setParentId(parentId);
 }
 
+void QuickMozView::setParentBrowsingContext(uintptr_t parentBrowsingContext)
+{
+    d->setParentBrowsingContext(parentBrowsingContext);
+}
+
 void QuickMozView::setPrivateMode(bool aPrivateMode)
 {
     if (isComponentComplete()) {
