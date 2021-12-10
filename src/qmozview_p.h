@@ -136,6 +136,7 @@ public:
     void setMozWindow(QMozWindow *);
 
     void setParentId(unsigned parentId);
+    void setParentBrowsingContext(uintptr_t parentBrowsingContext);
     void setChromeGestureEnabled(bool value);
     void setChromeGestureThreshold(qreal value);
     void setChrome(bool value);
@@ -174,6 +175,7 @@ protected:
     mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
     unsigned mParentID;
+    uintptr_t mParentBrowsingContext;
     bool mPrivateMode;
     bool mDesktopMode;
     bool mActive;

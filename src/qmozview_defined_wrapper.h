@@ -167,6 +167,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void newWindow(const QString &url = "about:blank"); \
     quint32 uniqueId() const; \
     void setParentId(unsigned parentId); \
+    void setParentBrowsingContext(uintptr_t parentBrowsingContext); \
     void synthTouchBegin(const QVariant &touches); \
     void synthTouchMove(const QVariant &touches); \
     void synthTouchEnd(const QVariant &touches); \

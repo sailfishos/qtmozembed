@@ -99,6 +99,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mView(nullptr)
     , mViewInitialized(false)
     , mParentID(0)
+    , mParentBrowsingContext(0)
     , mPrivateMode(false)
     , mDesktopMode(false)
     , mActive(false)
@@ -746,6 +747,12 @@ void QMozViewPrivate::setParentId(unsigned parentId)
     }
 }
 
+void QMozViewPrivate::setParentBrowsingContext(uintptr_t parentBrowsingContext)
+{
+    Q_ASSERT(mParentBrowsingContext == 0);
+    mParentBrowsingContext = parentBrowsingContext;
+}
+
 void QMozViewPrivate::setChromeGestureEnabled(bool value)
 {
     if (value != mChromeGestureEnabled) {
@@ -840,7 +847,7 @@ void QMozViewPrivate::createView()
         Q_ASSERT(mMozWindow);
 
         EmbedLiteWindow *win = mMozWindow->d->mWindow;
-        mView = mContext->GetApp()->CreateView(win, mParentID, mPrivateMode, mDesktopMode);
+        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext, mPrivateMode, mDesktopMode);
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
                             QGuiApplication::primaryScreen()->physicalDotsPerInch(),
