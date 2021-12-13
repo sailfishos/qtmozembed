@@ -1,7 +1,7 @@
 /****************************************************************************
 **
-** Copyright (C) 2014 Jolla Ltd.
-** Contact: Dmitry Rozhkov <dmitry.rozhkov@jolla.com>
+** Copyright (c) 2014 - 2021 Jolla Ltd.
+** Copyright (c) 2021 Open Mobile Platform LLC.
 **
 ****************************************************************************/
 
@@ -13,19 +13,37 @@
 #define testviewcreator_h
 
 #include "qmozviewcreator.h"
+#include "quickmozview.h"
+
+#include <QPointer>
 
 class TestViewCreator : public QMozViewCreator
 {
     Q_OBJECT
+    Q_PROPERTY(QQuickItem *parentItem READ parentItem WRITE setParentItem NOTIFY parentItemChanged)
+    Q_PROPERTY(QQmlComponent *webViewComponent READ webViewComponent WRITE setWebViewComponent NOTIFY webViewComponentChanged)
 
 public:
     explicit TestViewCreator(QObject *parent = 0);
     ~TestViewCreator() {}
 
+    QQuickItem *parentItem() const;
+    void setParentItem(QQuickItem *parentItem);
+
+    QQmlComponent *webViewComponent() const;
+    void setWebViewComponent(QQmlComponent *webViewComponent);
+
     virtual quint32 createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext) override;
 
 signals:
-    void newWindowRequested(const quint32 &parentId);
+    void aboutToCreateNewView();
+    void newViewCreated(QuickMozView *view);
+    void webViewComponentChanged();
+    void parentItemChanged();
+
+private:
+    QPointer<QQuickItem> m_parentItem;
+    QPointer<QQmlComponent> m_webViewComponent;
 };
 
 #endif

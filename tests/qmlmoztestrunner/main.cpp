@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 
     while (!contextDestroyed) {
         QEventLoop::ProcessEventsFlags flags = QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents;
-        QCoreApplication::processEvents(flags, 100);
+        QCoreApplication::processEvents(flags, 500);
     }
 
     return ret;
