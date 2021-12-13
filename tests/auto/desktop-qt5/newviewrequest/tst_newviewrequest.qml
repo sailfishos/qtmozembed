@@ -4,10 +4,10 @@ import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
 
-Item {
+Rectangle {
     id: appWindow
-    width: 480
-    height: 800
+    anchors.fill: parent
+    color: "red"
 
     property bool mozViewInitialized
     property var mozView
@@ -15,16 +15,22 @@ Item {
     property int createParentID
 
     WebViewCreator {
-        onNewWindowRequested: {
-            print("New Window Requested: url: ", mozView.url, ", parentID:", parentId)
-            appWindow.oldMozView = appWindow.mozView
-            appWindow.mozView = null
-            appWindow.createParentID = parentId
-            MyScript.createSpriteObjects()
-            while (appWindow.mozView === null) {
-                testcaseid.wait()
-            }
+        parentItem: appWindow
+        webViewComponent: Qt.createComponent(TestHelper.getenv("QTTESTSROOT") + "/auto/shared/ViewComponent.qml")
+        onAboutToCreateNewView: {
+              appWindow.oldMozView = appWindow.mozView
+              appWindow.mozView = null
+        }
+        onNewViewCreated: {
+            testcaseid.verify(view)
+
+            print("New Window created: url: ", view.url, ", parentID:", view.parentId)
+            appWindow.createParentID = view.parentId
+            appWindow.mozView = view
             testcaseid.verify(mozView.uniqueId > 0)
+            view.viewInitialized.connect(function() {
+                mozViewInitialized = true
+            })
         }
     }
 
@@ -55,7 +61,7 @@ Item {
             MyScript.dumpTs("test_2newviewInit end")
         }
 
-        function test_viewTestNewWindowAPI() {
+        function test_3viewTestNewWindowAPI() {
             MyScript.dumpTs("test_viewTestNewWindowAPI start")
             verify(MyScript.wrtWait(function() { return (mozView === undefined); }, 100, 500))
             verify(mozView !== undefined)
@@ -63,15 +69,20 @@ Item {
             verify(MyScript.waitLoadFinished(mozView))
             compare(mozView.title, "NewWinExample")
             verify(MyScript.wrtWait(function() { return (!mozView.painted); }))
-            mozViewInitialized = false;
+            mozViewInitialized = false
             mouseClick(mozView, 10, 10)
-            verify(MyScript.wrtWait(function() { return (!mozView || !oldMozView); }))
             verify(MyScript.wrtWait(function() { return (mozViewInitialized !== true); }))
             verify(mozView !== undefined)
+            waitForRendering(mozView, 1000)
             verify(MyScript.waitLoadFinished(mozView))
-            verify(MyScript.wrtWait(function() { return (!mozView.painted); }))
-            compare(mozView.url, "about:license")
+            compare(mozView.title, "Created window")
             MyScript.dumpTs("test_viewTestNewWindowAPI end")
+            wait(1000)
         }
+    }
+
+    Component.onCompleted: {
+        QMozEngineSettings.setPreference("embedlite.azpc.handle.singletap", false);
+        QMozEngineSettings.setPreference("embedlite.azpc.json.singletap", true);
     }
 }

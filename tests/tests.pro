@@ -25,7 +25,7 @@ shared.files = auto/shared/componentCreation.js \
     auto/shared/downloadmgr/tt.bin \
     auto/shared/favicons/favicon.html \
     auto/shared/multitouch/touch.html \
-    auto/shared/newviewrequest/newwin.html \
+    auto/shared/newviewrequest/*.html \
     auto/shared/passwordmgr/subtst_notifications_1.html \
     auto/shared/promptbasic/prompt.html \
     auto/shared/searchengine/test.xml
