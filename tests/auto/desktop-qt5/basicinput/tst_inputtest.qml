@@ -3,13 +3,11 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Rectangle {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
     property string inputContent
     property int inputState: -1
     property bool changed
@@ -21,6 +19,8 @@ Rectangle {
     {
         return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause
     }
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext

@@ -3,16 +3,14 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Rectangle {
+TestWindow {
     id: appWindow
-    anchors.fill: parent
-    color: "red"
 
-    property bool mozViewInitialized
-    property var mozView
     property var oldMozView
-    property int createParentID
+
+    name: testcaseid.name
 
     WebViewCreator {
         parentItem: appWindow

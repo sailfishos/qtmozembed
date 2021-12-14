@@ -3,15 +3,16 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
     readonly property string override_default: "Default domain-specific override"
     readonly property string override_developer: "Developer specified override"
     readonly property string test_page: "https://browser.sailfishos.org/tests/testuseragent.html"
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
