@@ -3,14 +3,14 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
     property bool promptReceived
+
+    name: testcaseid.name
 
     Component.onCompleted: {
         QMozEngineSettings.setPreference("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
@@ -41,7 +41,6 @@ Item {
         active: true
         anchors.fill: parent
         onViewInitialized: {
-            webViewport.addMessageListener("embed:downloadpicker")
             appWindow.mozViewInitialized = true
         }
         onRecvAsyncMessage: {
@@ -51,6 +50,9 @@ Item {
                                                  defaultFileName: data.defaultFileName,                                             })
                                                  suggestedFileExtension: data.suggestedFileExtension
             }
+        }
+        Component.onCompleted: {
+            webViewport.addMessageListener("embed:downloadpicker")
         }
     }
 

@@ -2,15 +2,24 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
+import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
     readonly property string override_default: "Default domain-specific override"
     readonly property string override_developer: "Developer specified override"
     readonly property string test_page: "https://browser.sailfishos.org/tests/testuseragent.html"
+
+    name: testcaseid.name
+
+    Connections {
+        target: QmlMozContext
+        onOnInitialized: {
+            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+        }
+    }
 
     QmlMozView {
         id: webViewport
@@ -18,6 +27,21 @@ Item {
         focus: true
         active: true
         anchors.fill: parent
+        property string useragent: ""
+
+        Component.onCompleted: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+            webViewport.addMessageListener("testembed:useragent")
+        }
+
+        onRecvAsyncMessage: {
+            switch (message) {
+            case "testembed:useragent": {
+                webViewport.useragent = data.value
+                break;
+                }
+            }
+        }
     }
 
     SignalSpy {
@@ -50,7 +74,7 @@ Item {
         when: windowShown
 
         function initTestCase() {
-            QMozEngineSettings.setPreference("general.useragent.override.sailfishos.org", override_default)
+            QMozEngineSettings.setPreference("general.useragent.override", override_default)
 
             webViewportSpy.wait()
             compare(webViewportSpy.count, 1)
@@ -59,13 +83,17 @@ Item {
 
         function test_TestUserAgentDefaultPage() {
             // Check empty httpUserAgent string gets set to actual
-            webViewport.httpUserAgent = ""
-            verify(webViewport.httpUserAgent === "")
+            webViewport.useragent = ""
+            verify(webViewport.useragent === "")
             loadPage(test_page)
-            verify(webViewport.httpUserAgent === override_default)
+            webViewport.sendAsyncMessage("embedtest:useragent", {})
+            verify(MyScript.wrtWait(function() { return (webViewport.useragent === ""); }))
+            verify(webViewport.useragent === override_default)
         }
 
         function test_TestUserAgentDeveloperPage() {
+            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
+
             // Check non-empty httpUserAgent string is not changed
             webViewport.httpUserAgent = override_developer
             verify(webViewport.httpUserAgent === override_developer)
@@ -74,6 +102,8 @@ Item {
         }
 
         function test_TestUserAgentClearPage() {
+            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
+
             // Check non-empty httpUserAgent string is not changed
             webViewport.httpUserAgent = override_developer
             verify(webViewport.httpUserAgent === override_developer)
@@ -88,6 +118,8 @@ Item {
         }
 
         function test_TestUserAgentSignalSent() {
+            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
+
             // Check signal is sent when the empty httpUserAgent is updated
             webViewport.httpUserAgent = ""
             verify(webViewport.httpUserAgent === "")

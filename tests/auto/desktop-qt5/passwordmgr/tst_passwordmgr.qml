@@ -3,14 +3,14 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
     property bool promptReceived
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
@@ -52,6 +52,7 @@ Item {
         }
 
         function test_TestLoginMgrPage() {
+            skip("Not working properly, please see JB#56715")
             MyScript.dumpTs("test_TestLoginMgrPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())

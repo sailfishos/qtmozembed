@@ -3,13 +3,12 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
@@ -54,12 +53,12 @@ Item {
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]});
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:license>ActiveLink</a>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a>";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
             mouseClick(webViewport, 10, 20)
-            verify(MyScript.wrtWait(function() { return webViewport.url != "about:license"; }))
+            verify(MyScript.wrtWait(function() { return webViewport.url != "about:blank"; }))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))

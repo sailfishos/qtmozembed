@@ -3,14 +3,16 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
     property var testResult
+    property var testEngines
+    property var testDefault
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
@@ -27,13 +29,12 @@ Item {
                 switch (data.msg) {
                     case "init": {
                         print("Received: search:" + message, ", msg: ", data.msg, data.defaultEngine)
+                        appWindow.testEngines = data.engines
+                        appWindow.testDefault = data.defaultEngine
                         break
                     }
-                    case "pluginslist": {
-                        for (var i = 0; i < data.list.length; ++i) {
-                            print("Received: search:" + message, ", msg: ", data.msg, data.list[i].name, data.list[i].isDefault, data.list[i].isCurrent)
-                        }
-                        appWindow.testResult = data.list
+                    case "search-engine-added": {
+                        appWindow.testEngines.push(data.engine)
                         break
                     }
                 }
@@ -67,18 +68,15 @@ Item {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_searchengine cleanupTestCase")
+            wait(1000)
         }
 
         function test_TestCheckDefaultSearch() {
             var engineExistsPredicate = function() {
                 var found = false;
 
-                if (!Array.isArray(appWindow.testResult)) {
-                    return true;
-                }
-
-                appWindow.testResult.forEach(function(e) {
-                    if (e.name === "QMOZTest") {
+                appWindow.testEngines.forEach(function(e) {
+                    if (e === "QMOZTest") {
                         found = true;
                     }
                 });
@@ -102,7 +100,7 @@ Item {
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            compare(webViewport.url.toString().substr(0, 34), "https://webhook/?search=linux+home")
+            verify(webViewport.url.toString().indexOf(appWindow.testDefault.toLowerCase()) !== -1)
             MyScript.dumpTs("TestCheckDefaultSearch end");
         }
     }

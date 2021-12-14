@@ -3,15 +3,12 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
-    property var mozView
-    property int createParentID
+    name: testcaseid.name
 
     TestCase {
         id: testcaseid
@@ -20,6 +17,7 @@ Item {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_basicview cleanupTestCase")
+            wait(1000)
         }
 
         function test_1contextPrepareViewContext() {

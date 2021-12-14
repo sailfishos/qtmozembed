@@ -3,13 +3,14 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
     property var lastObserveMessage
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
@@ -26,13 +27,12 @@ Item {
         function cleanupTestCase()
         {
             MyScript.dumpTs("tst_basicmozcontext cleanupTestCase")
-            // Stop embedding explicitly as we do not have any views.
-            QmlMozContext.stopEmbedding()
         }
         function test_context1Init()
         {
             MyScript.dumpTs("test_context1Init start")
             verify(MyScript.wrtWait(function() { return (QmlMozContext.isInitialized() === false); }, 100, 500))
+            MyScript.createSpriteObjects()
             verify(QmlMozContext.isInitialized())
             MyScript.dumpTs("test_context1Init end")
         }

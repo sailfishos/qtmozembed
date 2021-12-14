@@ -2,13 +2,12 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
 
-    property bool mozViewInitialized
+    name: testcaseid.name
 
     QmlMozView {
         id: webViewport
@@ -26,6 +25,7 @@ Item {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_viewtest cleanupTestCase")
+            wait(1000)
         }
 
         function test_Test1LoadSimpleBlank()

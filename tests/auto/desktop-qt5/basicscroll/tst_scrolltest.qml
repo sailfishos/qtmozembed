@@ -3,16 +3,15 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Item {
+TestWindow {
     id: appWindow
-    width: 480
-    height: 800
-    focus: true
 
-    property bool mozViewInitialized
     property int scrollX
     property int scrollY
+
+    name: testcaseid.name
 
     Connections {
         target: QmlMozContext
@@ -50,7 +49,7 @@ Item {
             MyScript.dumpTs("test_TestScrollPaintOperations start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:1200px;'>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:12000px;'>";
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))

@@ -3,16 +3,14 @@ import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
+import "../../shared"
 
-Rectangle {
+TestWindow {
     id: appWindow
-    anchors.fill: parent
-    color: "red"
 
-    property bool mozViewInitialized
-    property var mozView
     property var oldMozView
-    property int createParentID
+
+    name: testcaseid.name
 
     WebViewCreator {
         parentItem: appWindow
@@ -41,6 +39,9 @@ Rectangle {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_newviewrequest cleanupTestCase")
+            oldMozView.destroy()
+            oldMozView = null
+            wait(1000)
         }
 
         function test_1newcontextPrepareViewContext() {
@@ -78,6 +79,8 @@ Rectangle {
             compare(mozView.title, "Created window")
             MyScript.dumpTs("test_viewTestNewWindowAPI end")
             wait(1000)
+            mozView.destroy()
+            mozView = null
         }
     }
 
