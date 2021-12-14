@@ -17,6 +17,7 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_basicview cleanupTestCase")
+            wait(1000)
         }
 
         function test_1contextPrepareViewContext() {

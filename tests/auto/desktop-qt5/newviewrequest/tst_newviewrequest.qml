@@ -39,6 +39,7 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_newviewrequest cleanupTestCase")
+            wait(1000)
         }
 
         function test_1newcontextPrepareViewContext() {

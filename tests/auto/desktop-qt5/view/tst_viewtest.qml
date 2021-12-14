@@ -25,6 +25,7 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_viewtest cleanupTestCase")
+            wait(1000)
         }
 
         function test_Test1LoadSimpleBlank()

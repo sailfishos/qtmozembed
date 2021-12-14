@@ -68,6 +68,7 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_searchengine cleanupTestCase")
+            wait(1000)
         }
 
         function test_TestCheckDefaultSearch() {
