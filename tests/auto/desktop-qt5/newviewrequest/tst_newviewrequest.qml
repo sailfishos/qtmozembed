@@ -39,6 +39,8 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_newviewrequest cleanupTestCase")
+            oldMozView.destroy()
+            oldMozView = null
             wait(1000)
         }
 
@@ -77,6 +79,8 @@ TestWindow {
             compare(mozView.title, "Created window")
             MyScript.dumpTs("test_viewTestNewWindowAPI end")
             wait(1000)
+            mozView.destroy()
+            mozView = null
         }
     }
 
