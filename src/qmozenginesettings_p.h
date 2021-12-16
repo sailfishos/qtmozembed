@@ -58,7 +58,7 @@ public:
     void enableProgressivePainting(bool enabled);
     void enableLowPrecisionBuffers(bool enabled);
 
-    void setPreference(const QString &key, const QVariant &value);
+    void setPreference(const QString &key, const QVariant &value, QMozEngineSettings::PreferenceType preferenceType = QMozEngineSettings::UnknownPref) ;
     void requestPreference(const QString &key);
 
     bool isInitialized() const;

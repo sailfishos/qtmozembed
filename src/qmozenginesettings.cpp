@@ -208,7 +208,7 @@ void QMozEngineSettingsPrivate::enableLowPrecisionBuffers(bool enabled)
     setPreference(QStringLiteral("layers.low-precision-buffer"), QVariant::fromValue<bool>(enabled));
 }
 
-void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value)
+void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value, QMozEngineSettings::PreferenceType preferenceType)
 {
     qCDebug(lcEmbedLiteExt) << "name:" << key.toUtf8().data() << ", type:" << value.type() << ", user type:" << value.userType();
 
@@ -220,24 +220,37 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
 
     mozilla::embedlite::EmbedLiteApp *app = QMozContext::instance()->GetApp();
 
-    int type = value.type();
-    switch (type) {
-    case QMetaType::QString:
-    case QMetaType::Float:
-    case QMetaType::Double:
-        app->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
-        break;
-    case QMetaType::Int:
-    case QMetaType::UInt:
-    case QMetaType::LongLong:
-    case QMetaType::ULongLong:
-        app->SetIntPref(key.toUtf8().data(), value.toInt());
-        break;
-    case QMetaType::Bool:
+    switch (preferenceType) {
+    case QMozEngineSettings::BoolPref:
         app->SetBoolPref(key.toUtf8().data(), value.toBool());
         break;
+    case QMozEngineSettings::StringPref:
+        app->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
+        break;
+    case QMozEngineSettings::IntPref:
+        app->SetIntPref(key.toUtf8().data(), value.toInt());
+        break;
     default:
-        qCWarning(lcEmbedLiteExt) << "Unknown pref" << key << "value" << value << "type:" << value.type() << "userType:" << value.userType();
+        int type = value.type();
+        switch (type) {
+        case QMetaType::QString:
+        case QMetaType::Float:
+        case QMetaType::Double:
+            app->SetCharPref(key.toUtf8().data(), value.toString().toUtf8().data());
+            break;
+        case QMetaType::Int:
+        case QMetaType::UInt:
+        case QMetaType::LongLong:
+        case QMetaType::ULongLong:
+            app->SetIntPref(key.toUtf8().data(), value.toInt());
+            break;
+        case QMetaType::Bool:
+            app->SetBoolPref(key.toUtf8().data(), value.toBool());
+            break;
+        default:
+            qCWarning(lcEmbedLiteExt) << "Unknown pref" << key << "value" << value << "type:" << value.type() << "userType:" << value.userType();
+        }
+        break;
     }
 }
 
@@ -510,8 +523,8 @@ void QMozEngineSettings::enableLowPrecisionBuffers(bool enabled)
     d->enableLowPrecisionBuffers(enabled);
 }
 
-void QMozEngineSettings::setPreference(const QString &key, const QVariant &value)
+void QMozEngineSettings::setPreference(const QString &key, const QVariant &value, PreferenceType preferenceType)
 {
     Q_D(QMozEngineSettings);
-    d->setPreference(key, value);
+    d->setPreference(key, value, preferenceType);
 }
