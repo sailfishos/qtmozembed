@@ -523,6 +523,12 @@ void QMozEngineSettings::enableLowPrecisionBuffers(bool enabled)
     d->enableLowPrecisionBuffers(enabled);
 }
 
+void QMozEngineSettings::setPreference(const QString &key, const QVariant &value)
+{
+    Q_D(QMozEngineSettings);
+    d->setPreference(key, value);
+}
+
 void QMozEngineSettings::setPreference(const QString &key, const QVariant &value, PreferenceType preferenceType)
 {
     Q_D(QMozEngineSettings);
