@@ -88,7 +88,8 @@ public:
     void enableLowPrecisionBuffers(bool enabled);
 
     // Low-level API to set engine preferences.
-    Q_INVOKABLE void setPreference(const QString &key, const QVariant &value, PreferenceType preferenceType = UnknownPref);
+    Q_INVOKABLE void setPreference(const QString &key, const QVariant &value);
+    Q_INVOKABLE void setPreference(const QString &key, const QVariant &value, PreferenceType preferenceType);
 
 Q_SIGNALS:
     void autoLoadImagesChanged();
