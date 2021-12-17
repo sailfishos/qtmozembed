@@ -27,21 +27,6 @@ TestWindow {
         focus: true
         active: true
         anchors.fill: parent
-        property string useragent: ""
-
-        Component.onCompleted: {
-            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
-            webViewport.addMessageListener("testembed:useragent")
-        }
-
-        onRecvAsyncMessage: {
-            switch (message) {
-            case "testembed:useragent": {
-                webViewport.useragent = data.value
-                break;
-                }
-            }
-        }
     }
 
     SignalSpy {
@@ -83,17 +68,14 @@ TestWindow {
 
         function test_TestUserAgentDefaultPage() {
             // Check empty httpUserAgent string gets set to actual
-            webViewport.useragent = ""
-            verify(webViewport.useragent === "")
+            webViewport.httpUserAgent = ""
+            verify(webViewport.httpUserAgent === "")
             loadPage(test_page)
-            webViewport.sendAsyncMessage("embedtest:useragent", {})
-            verify(MyScript.wrtWait(function() { return (webViewport.useragent === ""); }))
-            verify(webViewport.useragent === override_default)
+            verify(MyScript.wrtWait(function() { return (webViewport.httpUserAgent === ""); }))
+            verify(webViewport.httpUserAgent === override_default)
         }
 
         function test_TestUserAgentDeveloperPage() {
-            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
-
             // Check non-empty httpUserAgent string is not changed
             webViewport.httpUserAgent = override_developer
             verify(webViewport.httpUserAgent === override_developer)
@@ -102,8 +84,6 @@ TestWindow {
         }
 
         function test_TestUserAgentClearPage() {
-            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
-
             // Check non-empty httpUserAgent string is not changed
             webViewport.httpUserAgent = override_developer
             verify(webViewport.httpUserAgent === override_developer)
@@ -118,8 +98,6 @@ TestWindow {
         }
 
         function test_TestUserAgentSignalSent() {
-            skip("QuickMozView::httpUserAgent is always empty with current esr78 engine, please see JB#56714")
-
             // Check signal is sent when the empty httpUserAgent is updated
             webViewport.httpUserAgent = ""
             verify(webViewport.httpUserAgent === "")
