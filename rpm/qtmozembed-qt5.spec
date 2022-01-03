@@ -8,7 +8,7 @@ Summary:    Qt embeddings for Gecko
 Version:    1.53.9
 Release:    1
 License:    MPLv2.0
-URL:        https://git.sailfishos.org/mer-core/qtmozembed
+URL:        https://github.com/sailfishos/qtmozembed/
 Source0:    %{name}-%{version}.tar.bz2
 BuildRequires:  pkgconfig(Qt5Core)
 BuildRequires:  pkgconfig(Qt5Gui)
@@ -74,6 +74,7 @@ CONFIGURE_VARIABLE=""
 
 %files
 %defattr(-,root,root,-)
+%license LICENSE.txt
 %{_libdir}/*.so.*
 %{_libdir}/qt5/qml/Qt5Mozilla/*
 
