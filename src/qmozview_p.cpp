@@ -1106,6 +1106,11 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 #endif
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
+    if (!mDOMContentLoaded) {
+        // Pages loaded with window.history.pushState do not send content loaded
+        mDOMContentLoaded = true;
+        mViewIface->domContentLoadedChanged();
+    }
 }
 
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
