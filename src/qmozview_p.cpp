@@ -657,7 +657,6 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
                             << ", replSt:" << event->replacementStart();
 #endif
 
-    mPreedit = !event->preeditString().isEmpty();
     if (mViewInitialized) {
         uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
                           ? (int32_t)event->commitString()[0].unicode()
@@ -671,7 +670,7 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
             qGuiApp->inputMethod()->reset();
 
         } else {
-            if (event->commitString().isEmpty() || event->commitString().size() > 1) {
+            if (mPreedit || event->commitString().isEmpty() || event->commitString().size() > 1) {
                 mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementStart(), event->replacementLength());
             } else {
                 mView->SendKeyPress(0, 0, charCode);
@@ -679,6 +678,7 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
             }
         }
     }
+    mPreedit = !event->preeditString().isEmpty();
 }
 
 void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
