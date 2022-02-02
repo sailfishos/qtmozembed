@@ -45,6 +45,7 @@ static_assert((uint16_t)QMozSecurity::TLS_VERSION_1_3 == (uint16_t)nsITransportS
 
 QMozSecurity::QMozSecurity(QObject *parent)
     : QObject(parent)
+    , m_state(0)
 {
     resetState(nullptr);
     resetStatus(nullptr);
@@ -52,6 +53,7 @@ QMozSecurity::QMozSecurity(QObject *parent)
 
 QMozSecurity::QMozSecurity(const char *aStatus, unsigned int aState, QObject *parent)
     : QObject(parent)
+    , m_state(0)
 {
     resetState(nullptr);
     resetStatus(nullptr);
