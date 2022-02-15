@@ -232,10 +232,10 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
     }
     else {
         if (!aStatus || !*aStatus) {
-            qDebug() << "Security state could not be imported: empty status";
+            qCDebug(lcEmbedLiteExt) << "Security state could not be imported: empty status";
         }
         if (!context) {
-            qDebug() << "Security state could not be imported: no app context";
+            qCDebug(lcEmbedLiteExt) << "Security state could not be imported: no app context";
         }
     }
 
