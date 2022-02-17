@@ -61,10 +61,25 @@ TestWindow {
         }
     }
 
+    SignalSpy {
+        id: initializedSpy
+        target: QmlMozContext
+        signalName: "initialized"
+    }
+
     TestCase {
         id: testcaseid
         name: "tst_searchengine"
         when: windowShown
+
+        function initTestCase() {
+            QmlMozContext.addObserver("embed:search");
+            QMozEngineSettings.setPreference("keyword.enabled", true);
+
+            if (!QmlMozContext.isInitialized()) {
+                initializedSpy.wait()
+            }
+        }
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_searchengine cleanupTestCase")
