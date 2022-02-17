@@ -2,27 +2,29 @@ import QtTest 1.0
 import QtQuick 2.0
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
+import Nemo.Connectivity 1.0
+
 import "../../shared/componentCreation.js" as MyScript
 import "../../shared"
 
 TestWindow {
     id: appWindow
 
-    property var testResult
+    property string testResult
     property var testEngines
-    property var testDefault
+    property string testDefault
 
     name: testcaseid.name
 
     Connections {
         target: QmlMozContext
         onOnInitialized: {
-            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
             QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
+            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
             QMozEngineSettings.setPreference("browser.search.log", true)
+            QMozEngineSettings.setPreference("keyword.enabled", true)
             QmlMozContext.addObserver("browser-search-engine-modified")
             QmlMozContext.addObserver("embed:search")
-            QMozEngineSettings.setPreference("keyword.enabled", true)
         }
         onRecvObserve: {
             if (message == "embed:search") {
@@ -30,11 +32,17 @@ TestWindow {
                     case "init": {
                         print("Received: search:" + message, ", msg: ", data.msg, data.defaultEngine)
                         appWindow.testEngines = data.engines
-                        appWindow.testDefault = data.defaultEngine
+                        appWindow.testDefault = data.defaultEngine || ""
                         break
                     }
                     case "search-engine-added": {
                         appWindow.testEngines.push(data.engine)
+
+                        break
+                    }
+                    case "search-engine-default-changed": {
+                        print("Default search engine changed:", data.msg, data.defaultEngine)
+                        appWindow.testDefault = data.defaultEngine || ""
                         break
                     }
                 }
@@ -59,6 +67,11 @@ TestWindow {
         onRecvAsyncMessage: {
             print("onRecvAsyncMessage:" + message + ", data:" + data)
         }
+    }
+
+    ConnectionHelper {
+        id: connectionHelper
+        readonly property bool connected: status >= ConnectionHelper.Connected
     }
 
     SignalSpy {
@@ -86,11 +99,12 @@ TestWindow {
             wait(1000)
         }
 
-        function test_TestCheckDefaultSearch() {
+        function test_001_addSearchEngine() {
             var engineExistsPredicate = function() {
                 var found = false;
 
                 appWindow.testEngines.forEach(function(e) {
+                    MyScript.dumpTs("Engine:", e)
                     if (e === "QMOZTest") {
                         found = true;
                     }
@@ -98,25 +112,40 @@ TestWindow {
 
                 return !found;
             };
-            MyScript.dumpTs("TestCheckDefaultSearch start")
+            MyScript.dumpTs("AddSearchEngine start")
             verify(MyScript.waitMozContext())
-            QMozEngineSettings.setPreference("browser.search.log", true);
-            QmlMozContext.addObserver("browser-search-engine-modified");
-            QmlMozContext.addObserver("embed:search");
-            QMozEngineSettings.setPreference("keyword.enabled", true);
+
             verify(MyScript.waitMozView())
             QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
             verify(MyScript.wrtWait(function() { return (!engineExistsPredicate()); }))
             QmlMozContext.notifyObservers("embedui:search", {msg:"loadxml", uri: "file://" + TestHelper.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
             verify(MyScript.wrtWait(function() { return (appWindow.testResult !== "loaded"); }))
-            QmlMozContext.notifyObservers("embedui:search", {msg:"getlist"})
             verify(MyScript.wrtWait(engineExistsPredicate));
-            webViewport.load("linux home");
+            MyScript.dumpTs("AddSearchEngine end");
+        }
+
+        function test_002_setDefaultSearchEngine() {
+            MyScript.dumpTs("setDefaultSearchEngine start")
+            QmlMozContext.notifyObservers("embedui:search", { msg: "setdefault", name: "QMOZTest"})
+            verify(MyScript.wrtWait(function() { return (appWindow.testDefault !== "QMOZTest"); }))
+            MyScript.dumpTs("setDefaultSearchEngine end")
+        }
+
+        function test_003_searchFromWeb() {
+            MyScript.dumpTs("searchFromWeb start")
+
+            if (!connectionHelper.connected) {
+                skip("searching with a search engine requires network access.")
+            }
+
+            webViewport.load("QMOZTest");
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            verify(webViewport.url.toString().indexOf(appWindow.testDefault.toLowerCase()) !== -1)
-            MyScript.dumpTs("TestCheckDefaultSearch end");
+
+            compare(webViewport.url.toString(), "https://qmoztest/?search=qmoztest")
+
+            MyScript.dumpTs("searchFromWeb end")
         }
     }
 }

@@ -6,6 +6,6 @@
 <ShortName>QMOZTest</ShortName>
 <Description>Qt Moz Embed search</Description>
 <InputEncoding>UTF-8</InputEncoding>
-<Url type="text/html" method="GET" template="https://webhook/?search={searchTerms}"/>
+<Url type="text/html" method="GET" template="https://qmoztest/?search={searchTerms}"/>
 <SearchForm>https://webhook/</SearchForm>
 </SearchPlugin>
