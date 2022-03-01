@@ -1361,11 +1361,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
 
     // Add active touch point to cancelled touch sequence.
     if (event->type() == QEvent::TouchCancel && touchPointsCount == 0) {
-        QMapIterator<int, QPointF> i(mActiveTouchPoints);
+        QMapIterator<int, QPair<QPointF, ulong>> i(mActiveTouchPoints);
         EmbedTouchInput touchEnd(EmbedTouchInput::MULTITOUCH_END, timeStamp);
         while (i.hasNext()) {
             i.next();
-            QPointF pos = i.value();
+            QPointF pos = i.value().first;
             touchEnd.touches.push_back(TouchData(i.key(),
                                                  createEmbedTouchPoint(pos),
                                                  0));
@@ -1384,7 +1384,7 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         idHash.insert(pt.id(), i);
         switch (pt.state()) {
         case Qt::TouchPointPressed: {
-            mActiveTouchPoints.insert(pt.id(), pt.pos());
+            mActiveTouchPoints.insert(pt.id(), {pt.pos(), event->timestamp()});
             pressedIds.append(pt.id());
             break;
         }
@@ -1395,8 +1395,11 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
         case Qt::TouchPointMoved:
         case Qt::TouchPointStationary: {
-            mActiveTouchPoints.insert(pt.id(), pt.pos());
-            moveIds.append(pt.id());
+            QMap<int, QPair<QPointF, ulong>>::const_iterator i = mActiveTouchPoints.find(pt.id());
+            if (i == mActiveTouchPoints.end() || (event->timestamp() - i.value().second) > 1) {
+                mActiveTouchPoints.insert(pt.id(), {pt.pos(), event->timestamp()});
+                moveIds.append(pt.id());
+            }
             break;
         }
         default:
