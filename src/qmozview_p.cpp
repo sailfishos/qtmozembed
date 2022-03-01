@@ -45,6 +45,10 @@
 #define MOZVIEW_FLICK_THRESHOLD 200
 #endif
 
+#ifndef MOZVIEW_TOOLBAR_THRESHOLD
+#define MOZVIEW_TOOLBAR_THRESHOLD 5.0
+#endif
+
 #ifndef MOZVIEW_FLICK_STOP_TIMEOUT
 #define MOZVIEW_FLICK_STOP_TIMEOUT 500
 #endif
@@ -137,6 +141,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mContentRect(0.0, 0.0, 0.0, 0.0)
     , mScrollableSize(0.0, 0.0)
     , mScrollableOffset(0, 0)
+    , mScrollable(false)
     , mAtXBeginning(false)
     , mAtXEnd(false)
     , mAtYBeginning(false)
@@ -244,19 +249,6 @@ void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight
                 mDragStartY = offset;
             }
 
-            if (currentDelta > mChromeGestureThreshold) {
-                qCDebug(lcEmbedLiteExt) << "currentDelta > mChromeGestureThreshold:" << mChrome;
-                if (mChrome) {
-                    mChrome = false;
-                    mViewIface->chromeChanged();
-                }
-            } else if (currentDelta < -mChromeGestureThreshold) {
-                qCDebug(lcEmbedLiteExt) << "currentDelta < -mChromeGestureThreshold:" << mChrome;
-                if (!mChrome) {
-                    mChrome = true;
-                    mViewIface->chromeChanged();
-                }
-            }
             mMoveDelta = qAbs(currentDelta);
         }
     }
@@ -286,6 +278,13 @@ void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight
     if (widthChanged || heightChanged) {
         mViewIface->scrollableSizeChanged();
     }
+
+    scrollableUpdate();
+}
+
+void QMozViewPrivate::scrollableUpdate()
+{
+    mScrollable = mScrollableSize.height() > (mContentResolution * mContentRect.height() - mDynamicToolbarHeight);
 }
 
 void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
@@ -928,6 +927,7 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
         } else {
             mDirtyState |= DirtyDynamicToolbarHeight;
         }
+        scrollableUpdate();
     }
 }
 
@@ -1377,6 +1377,8 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         return;
     }
 
+    qreal yDelta = 0.0;
+
     QList<int> pressedIds, moveIds, endIds;
     QHash<int, int> idHash;
     for (int i = 0; i < touchPointsCount; ++i) {
@@ -1395,12 +1397,35 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         }
         case Qt::TouchPointMoved:
         case Qt::TouchPointStationary: {
+            QMap<int, QPointF>::const_iterator i = mActiveTouchPoints.find(pt.id());
+            if (i != mActiveTouchPoints.end()) {
+                yDelta -= pt.pos().y() - i.value().y();
+            }
             mActiveTouchPoints.insert(pt.id(), pt.pos());
             moveIds.append(pt.id());
             break;
         }
         default:
             break;
+        }
+    }
+
+    if (moveIds.size()) {
+        static qreal yDeltaBuffer = 0.0;
+        yDeltaBuffer += yDelta / moveIds.size();
+
+        if (yDeltaBuffer > MOZVIEW_TOOLBAR_THRESHOLD) {
+            if (mChrome && mScrollable) {
+                mChrome = false;
+                mViewIface->chromeChanged();
+            }
+            yDeltaBuffer = MOZVIEW_TOOLBAR_THRESHOLD;
+        } else if (yDeltaBuffer < -MOZVIEW_TOOLBAR_THRESHOLD) {
+            if (!mChrome) {
+                mChrome = true;
+                mViewIface->chromeChanged();
+            }
+            yDeltaBuffer = -MOZVIEW_TOOLBAR_THRESHOLD;
         }
     }
 
