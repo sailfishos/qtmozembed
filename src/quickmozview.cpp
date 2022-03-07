@@ -145,7 +145,12 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
         if (data.window) {
             connect(data.window, &QQuickWindow::contentOrientationChanged, this, &QuickMozView::updateOrientation);
 
+            // Update the orientation, but without emitting an orientationChanged signal
+            // Emitting the signal at this point will cause a SIGSEGV because
+            // the QML item isn't ready to be activated just yet, see JB#57688
+            blockSignals(true);
             updateOrientation(data.window->contentOrientation());
+            blockSignals(false);
         }
     }
     QQuickItem::itemChange(change, data);
