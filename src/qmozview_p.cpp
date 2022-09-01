@@ -156,7 +156,6 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mOffsetY(0.0)
     , mHasCompositor(false)
     , mDepth(0)
-    , mDensity(0.0)
     , mDpi(0.0)
     , mNextJSCallId(0)
     , mAutoCompleteActive(false)
@@ -414,16 +413,15 @@ void QMozViewPrivate::setSize(const QSizeF &size)
     }
 }
 
-void QMozViewPrivate::setScreenProperties(int depth, qreal density, qreal dpi)
+void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
 {
     Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
     mDepth = depth;
-    mDensity = density;
     mDpi = dpi;
     if (!mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
-        mView->SetScreenProperties(mDepth, mDensity, mDpi);
+        mView->SetScreenProperties(mDepth, mDpi, mDpi);
     }
 }
 
@@ -818,7 +816,7 @@ void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
     if (mDirtyState & DirtyScreenProperties) {
-        mView->SetScreenProperties(mDepth, mDensity, mDpi);
+        mView->SetScreenProperties(mDepth, mDpi, mDpi);
         mDirtyState &= ~DirtyScreenProperties;
     }
 }
@@ -859,8 +857,7 @@ void QMozViewPrivate::createView()
         mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext, mPrivateMode, mDesktopMode);
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
-                            QGuiApplication::primaryScreen()->physicalDotsPerInch(),
-                            QGuiApplication::primaryScreen()->logicalDotsPerInch());
+                            QGuiApplication::primaryScreen()->physicalDotsPerInch());
 
         if (mozView) {
             connect(mMozWindow.data(), &QMozWindow::compositingFinished,
