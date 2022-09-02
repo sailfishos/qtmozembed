@@ -111,7 +111,7 @@ public:
     bool domContentLoaded() const;
 
     void setSize(const QSizeF &size);
-    void setScreenProperties(int depth, qreal density, qreal dpi);
+    void setScreenProperties(int depth, qreal dpi);
 
     QUrl url() const;
     bool isUrlResolved() const;
@@ -244,7 +244,6 @@ protected:
     bool mHasCompositor;
     QMozSecurity mSecurity;
     int mDepth;
-    qreal mDensity;
     qreal mDpi;
     // Pair of success and error callbacks.
     QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
