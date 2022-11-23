@@ -33,6 +33,7 @@ const auto PREF_USE_DOWNLOAD_DIR = QStringLiteral("browser.download.useDownloadD
 const auto PREF_DOWNLOAD_DIR = QStringLiteral("browser.download.dir");
 const auto PREF_PIXEL_RATIO = QStringLiteral("layout.css.devPixelsPerPx");
 const auto PREF_DO_NOT_TRACK = QStringLiteral("privacy.donottrackheader.enabled");
+const auto PREF_COLOR_MODE =  QStringLiteral("ui.systemUsesDarkTheme");
 
 const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_PERMISSIONS_DEFAULT_IMAGE,
@@ -42,7 +43,8 @@ const QStringList PREF_CHANGED_OBSERVERS = {
     PREF_USE_DOWNLOAD_DIR,
     PREF_DOWNLOAD_DIR,
     PREF_PIXEL_RATIO,
-    PREF_DO_NOT_TRACK
+    PREF_DO_NOT_TRACK,
+    PREF_COLOR_MODE
 };
 }
 
@@ -61,6 +63,7 @@ QMozEngineSettingsPrivate::QMozEngineSettingsPrivate(QObject *parent)
     , mAutoLoadImages(true)
     , mPixelRatio(1.0)
     , mDoNotTrack(false)
+    , mColorScheme(QMozEngineSettings::FollowsAmbience)
 {
 
     QMozContext *context = QMozContext::instance();
@@ -198,6 +201,20 @@ void QMozEngineSettingsPrivate::setDoNotTrack(bool doNotTrack)
     }
 }
 
+QMozEngineSettings::ColorScheme QMozEngineSettingsPrivate::colorScheme() const
+{
+    return mColorScheme;
+}
+
+void QMozEngineSettingsPrivate::setColorScheme(QMozEngineSettings::ColorScheme colorScheme)
+{
+    if (mColorScheme != colorScheme) {
+        setPreference(PREF_COLOR_MODE, colorSchemeToInt(colorScheme));
+        mColorScheme = colorScheme;
+        Q_EMIT colorSchemeChanged();
+    }
+}
+
 void QMozEngineSettingsPrivate::enableProgressivePainting(bool enabled)
 {
     setPreference(QStringLiteral("layers.progressive-paint"), QVariant::fromValue<bool>(enabled));
@@ -269,6 +286,16 @@ int QMozEngineSettingsPrivate::cookieBehaviorToInt(QMozEngineSettings::CookieBeh
     return static_cast<int>(cookieBehavior);
 }
 
+QMozEngineSettings::ColorScheme QMozEngineSettingsPrivate::intToColorScheme(int colorScheme)
+{
+    return static_cast<QMozEngineSettings::ColorScheme>(colorScheme);
+}
+
+int QMozEngineSettingsPrivate::colorSchemeToInt(QMozEngineSettings::ColorScheme colorScheme)
+{
+    return static_cast<int>(colorScheme);
+}
+
 void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &data)
 {
     if (topic == NS_PREF_CHANGED) {
@@ -323,6 +350,15 @@ void QMozEngineSettingsPrivate::onObserve(const QString &topic, const QVariant &
                 if (mDoNotTrack != doNotTrack) {
                     mDoNotTrack = doNotTrack;
                     Q_EMIT doNotTrackChanged();
+                }
+            } else if (changedPreference == PREF_COLOR_MODE) {
+                QMozEngineSettings::ColorScheme colorScheme = QMozEngineSettings::FollowsAmbience;
+                if (!preferenceValue.toString().isEmpty()) {
+                    colorScheme = intToColorScheme((preferenceValue.toInt()));
+                }
+                if (mColorScheme != colorScheme) {
+                    mColorScheme = colorScheme;
+                    Q_EMIT colorSchemeChanged();
                 }
             }
         }
@@ -396,6 +432,7 @@ QMozEngineSettings::QMozEngineSettings(QObject *parent)
     connect(d, &QMozEngineSettingsPrivate::downloadDirChanged, this, &QMozEngineSettings::downloadDirChanged);
     connect(d, &QMozEngineSettingsPrivate::pixelRatioChanged, this, &QMozEngineSettings::pixelRatioChanged);
     connect(d, &QMozEngineSettingsPrivate::doNotTrackChanged, this, &QMozEngineSettings::doNotTrackChanged);
+    connect(d, &QMozEngineSettingsPrivate::colorSchemeChanged, this, &QMozEngineSettings::colorSchemeChanged);
 }
 
 QMozEngineSettings::~QMozEngineSettings()
@@ -509,6 +546,17 @@ void QMozEngineSettings::setDoNotTrack(bool doNotTrack)
 {
     Q_D(QMozEngineSettings);
     return d->setDoNotTrack(doNotTrack);
+}
+
+QMozEngineSettings::ColorScheme QMozEngineSettings::colorScheme() const
+{
+    Q_D(const QMozEngineSettings);
+    return d->colorScheme();
+}
+
+void QMozEngineSettings::setColorScheme(ColorScheme colorScheme) {
+    Q_D(QMozEngineSettings);
+    d->setColorScheme(colorScheme);
 }
 
 void QMozEngineSettings::enableProgressivePainting(bool enabled)

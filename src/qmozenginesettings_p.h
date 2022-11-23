@@ -55,6 +55,9 @@ public:
     bool doNotTrack() const;
     void setDoNotTrack(bool doNotTrack);
 
+    QMozEngineSettings::ColorScheme colorScheme() const;
+    void setColorScheme(QMozEngineSettings::ColorScheme colorScheme);
+
     void enableProgressivePainting(bool enabled);
     void enableLowPrecisionBuffers(bool enabled);
 
@@ -65,6 +68,9 @@ public:
 
     static QMozEngineSettings::CookieBehavior intToCookieBehavior(int cookieBehavior);
     static int cookieBehaviorToInt(QMozEngineSettings::CookieBehavior cookieBehavior);
+    static QMozEngineSettings::ColorScheme intToColorScheme(int colorScheme);
+    static int colorSchemeToInt(QMozEngineSettings::ColorScheme colorScheme);
+
 
 public Q_SLOTS:
     void onObserve(const QString &topic, const QVariant &data);
@@ -80,6 +86,7 @@ Q_SIGNALS:
     void initialized();
     void pixelRatioChanged();
     void doNotTrackChanged();
+    void colorSchemeChanged();
 
 private:
     void setDefaultPreferences();
@@ -93,6 +100,7 @@ private:
     qreal mPixelRatio;
     QString mDownloadDir;
     bool mDoNotTrack;
+    QMozEngineSettings::ColorScheme mColorScheme;
 };
 
 #endif // QMOZENGINE_SETTINGS_P_H
