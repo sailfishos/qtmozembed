@@ -28,6 +28,7 @@ class QMozEngineSettings : public QObject {
     Q_PROPERTY(QString downloadDir READ downloadDir WRITE setDownloadDir NOTIFY downloadDirChanged)
     Q_PROPERTY(qreal pixelRatio READ pixelRatio WRITE setPixelRatio NOTIFY pixelRatioChanged)
     Q_PROPERTY(bool doNotTrack READ doNotTrack WRITE setDoNotTrack NOTIFY doNotTrackChanged)
+    Q_PROPERTY(ColorScheme colorScheme READ colorScheme WRITE setColorScheme NOTIFY colorSchemeChanged)
 
 public:
     // C++ API
@@ -46,6 +47,13 @@ public:
         Deprecated = 3
     };
     Q_ENUM(CookieBehavior)
+
+    enum ColorScheme {
+        PrefersLightMode = 0,
+        PrefersDarkMode = 1,
+        FollowsAmbience = 2
+    };
+    Q_ENUM(ColorScheme)
 
     // See https://github.com/sailfishos-mirror/gecko-dev/blob/esr78/modules/libpref/nsIPrefBranch.idl
     enum PreferenceType {
@@ -84,6 +92,9 @@ public:
     bool doNotTrack() const;
     void setDoNotTrack(bool doNotTrack);
 
+    ColorScheme colorScheme() const;
+    void setColorScheme(ColorScheme colorScheme);
+
     void enableProgressivePainting(bool enabled);
     void enableLowPrecisionBuffers(bool enabled);
 
@@ -101,6 +112,7 @@ Q_SIGNALS:
     void initialized();
     void pixelRatioChanged();
     void doNotTrackChanged();
+    void colorSchemeChanged();
 
 private:
     QMozEngineSettingsPrivate *d_ptr;
