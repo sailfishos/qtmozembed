@@ -441,7 +441,7 @@ void QMozViewPrivate::goBack()
         return;
 
     reset();
-    mView->GoBack();
+    mView->GoBack(true, true);
 }
 
 void QMozViewPrivate::goForward()
@@ -450,7 +450,7 @@ void QMozViewPrivate::goForward()
         return;
 
     reset();
-    mView->GoForward();
+    mView->GoForward(true, true);
 }
 
 void QMozViewPrivate::stop()
