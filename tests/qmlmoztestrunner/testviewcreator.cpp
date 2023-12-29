@@ -48,7 +48,7 @@ void TestViewCreator::setWebViewComponent(QQmlComponent *webViewComponent)
     }
 };
 
-quint32 TestViewCreator::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext)
+quint32 TestViewCreator::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext, const bool hidden)
 {
     emit aboutToCreateNewView();
 
@@ -63,6 +63,7 @@ quint32 TestViewCreator::createView(const quint32 &parentId, const uintptr_t &pa
             webView->setParentId(parentId);
             webView->setParentItem(m_parentItem);
             webView->setParentBrowsingContext(parentBrowsingContext);
+            webView->setHidden(hidden);
             QQmlEngine::setObjectOwnership(webView, QQmlEngine::JavaScriptOwnership);
             m_webViewComponent->completeCreate();
             uniqueId = webView->uniqueId();

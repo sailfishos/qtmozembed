@@ -801,6 +801,25 @@ void QuickMozView::setPrivateMode(bool aPrivateMode)
     }
 }
 
+bool QuickMozView::hidden() const
+{
+    return d->mHidden;
+}
+
+void QuickMozView::setHidden(bool aHidden)
+{
+    if (isComponentComplete()) {
+        // View is created directly in componentComplete() if mozcontext ready
+        qmlInfo(this) << "hidden state cannot be changed after view is created";
+        return;
+    }
+
+    if (aHidden != d->mHidden) {
+        d->mHidden = aHidden;
+        Q_EMIT hiddenChanged();
+    }
+}
+
 bool QuickMozView::desktopMode() const
 {
     return d->mDesktopMode;

@@ -68,7 +68,7 @@ private: \
 }; \
 Q_DECLARE_METATYPE(QMozReturnValue) \
 
-#define Q_MOZ_VIEW_PRORERTIES \
+#define Q_MOZ_VIEW_PROPERTIES \
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged) \
     Q_PROPERTY(QString title READ title NOTIFY titleChanged) \
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY canGoBackChanged FINAL) \

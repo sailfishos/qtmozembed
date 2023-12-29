@@ -760,6 +760,11 @@ void QMozViewPrivate::setParentBrowsingContext(uintptr_t parentBrowsingContext)
     mParentBrowsingContext = parentBrowsingContext;
 }
 
+void QMozViewPrivate::setHidden(bool hidden)
+{
+    mHidden = hidden;
+}
+
 void QMozViewPrivate::setChromeGestureEnabled(bool value)
 {
     if (value != mChromeGestureEnabled) {

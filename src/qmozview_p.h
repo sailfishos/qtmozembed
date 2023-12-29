@@ -137,6 +137,7 @@ public:
 
     void setParentId(unsigned parentId);
     void setParentBrowsingContext(uintptr_t parentBrowsingContext);
+    void setHidden(bool hidden);
     void setChromeGestureEnabled(bool value);
     void setChromeGestureThreshold(qreal value);
     void setChrome(bool value);
@@ -177,6 +178,7 @@ protected:
     unsigned mParentID;
     uintptr_t mParentBrowsingContext;
     bool mPrivateMode;
+    bool mHidden;
     bool mDesktopMode;
     bool mActive;
     bool mLoaded;
