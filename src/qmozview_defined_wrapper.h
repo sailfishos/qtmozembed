@@ -160,7 +160,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void goForward(); \
     void stop(); \
     void reload(); \
-    void load(const QString&); \
+    void load(const QString&, const bool& fromExternal); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
     void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \

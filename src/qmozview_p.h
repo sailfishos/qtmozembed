@@ -119,7 +119,7 @@ public:
     void goForward();
     void stop();
     void reload();
-    void load(const QString &url);
+    void load(const QString &url, const bool& fromExternal);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);
     void addMessageListeners(const std::vector<std::string> &messageNamesList);
@@ -257,6 +257,7 @@ protected:
     DirtyState mDirtyState;
 
     QString mPendingUrl;
+    bool mPendingFromExternal;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };
