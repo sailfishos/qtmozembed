@@ -40,7 +40,7 @@ class QOpenGLWebPage : public QObject
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
     Q_PROPERTY(int virtualKeyboardHeight WRITE setVirtualKeyboardHeight READ virtualKeyboardHeight NOTIFY virtualKeyboardHeightChanged FINAL)
 
-    Q_MOZ_VIEW_PRORERTIES
+    Q_MOZ_VIEW_PROPERTIES
 
 public:
     explicit QOpenGLWebPage(QObject *parent = nullptr);

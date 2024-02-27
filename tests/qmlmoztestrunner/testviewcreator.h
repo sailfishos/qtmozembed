@@ -33,7 +33,7 @@ public:
     QQmlComponent *webViewComponent() const;
     void setWebViewComponent(QQmlComponent *webViewComponent);
 
-    virtual quint32 createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext) override;
+    virtual quint32 createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext, const bool hidden) override;
 
 signals:
     void aboutToCreateNewView();

@@ -51,6 +51,7 @@ public:
     virtual void LastViewDestroyed() override;
     virtual void LastWindowDestroyed() override;
     virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
+                                              const bool &hidden,
                                               EmbedLiteView *aParentView,
                                               const uintptr_t &parentBrowsingContext) override;
 

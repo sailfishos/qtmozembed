@@ -68,7 +68,7 @@ private: \
 }; \
 Q_DECLARE_METATYPE(QMozReturnValue) \
 
-#define Q_MOZ_VIEW_PRORERTIES \
+#define Q_MOZ_VIEW_PROPERTIES \
     Q_PROPERTY(QUrl url READ url WRITE setUrl NOTIFY urlChanged) \
     Q_PROPERTY(QString title READ title NOTIFY titleChanged) \
     Q_PROPERTY(bool canGoBack READ canGoBack NOTIFY canGoBackChanged FINAL) \
@@ -160,7 +160,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void goForward(); \
     void stop(); \
     void reload(); \
-    void load(const QString&); \
+    void load(const QString&, const bool& fromExternal); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
     void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \

@@ -9,6 +9,7 @@
 #include "EmbedQtKeyUtils.h"
 
 #include "nsIDOMWindowUtils.h"
+#include "mozilla/ArrayUtils.h"      // for ArrayLength
 
 
 struct nsKeyConverter {
