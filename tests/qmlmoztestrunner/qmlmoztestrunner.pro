@@ -4,6 +4,7 @@ CONFIG += warn_on link_pkgconfig
 SOURCES += main.cpp \
     testhelper.cpp \
     testviewcreator.cpp
+
 HEADERS += testhelper.h \
     testviewcreator.h
 

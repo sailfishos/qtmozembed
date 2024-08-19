@@ -11,16 +11,10 @@
 
 #include <qglobal.h>
 #include <qqmlinfo.h>
-#include <QOpenGLContext>
-#include <QOpenGLFunctions_ES2>
-#include <QWindow>
-#include <QGuiApplication>
-#include <QScreen>
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
 
 #include "qmozview_p.h"
-#include "mozilla/embedlite/EmbedLiteWindow.h"
 #include "qmozcontext.h"
 #include "qmozembedlog.h"
 #include "qmozgrabresult.h"
@@ -29,10 +23,6 @@
 #include "qmozwindow_p.h"
 
 #define LOG_COMPONENT "QOpenGLWebPage"
-
-using namespace mozilla;
-using namespace mozilla::embedlite;
-
 
 /*!
     \fn void QOpenGLWebPage::afterRendering()
@@ -53,7 +43,7 @@ using namespace mozilla::embedlite;
 /*!
     \fn void QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
 
-    In order to use this, embedlite.compositor.external_gl_context preference  needs to be set.
+    In order to use this, embedlite.compositor.external_gl_context preference needs to be set.
 */
 QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
     : QObject(parent)
@@ -523,7 +513,8 @@ void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 
 void QOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
 {
-    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,")
+             + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
 

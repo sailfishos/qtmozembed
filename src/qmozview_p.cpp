@@ -314,7 +314,8 @@ void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
                 mLastStationaryPos = touchPos;
             } else if (qAbs(mLastPos.x() - touchPos.x()) <= touchHorizontalThreshold
                        && qAbs(mLastPos.y() - touchPos.y()) <= touchVerticalThreshold) {
-                // Handle stationary position when panning stops and continues. Eventually mCanFlick is based on timestamps + positions between events, see touch end block.
+                // Handle stationary position when panning stops and continues. Eventually mCanFlick is based on
+                // timestamps + positions between events, see touch end block.
                 if (mCanFlick) {
                     mLastStationaryTimestamp = current_timestamp(event);
                     mLastStationaryPos = touchPos;
@@ -680,7 +681,8 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
         } else {
             if (mPreedit || event->commitString().isEmpty() || event->commitString().size() > 1) {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(), event->replacementStart(), event->replacementLength());
+                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(),
+                                     event->replacementStart(), event->replacementLength());
             } else {
                 mView->SendKeyPress(0, 0, charCode);
                 mView->SendKeyRelease(0, 0, charCode);

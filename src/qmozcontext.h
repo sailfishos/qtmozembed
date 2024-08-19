@@ -17,6 +17,7 @@ namespace embedlite {
 class EmbedLiteApp;
 }
 }
+
 class QMozViewCreator;
 class QMozWindow;
 

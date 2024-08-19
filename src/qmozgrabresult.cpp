@@ -67,10 +67,8 @@ public:
 
 QMozGrabResult::~QMozGrabResult()
 {
-    if (d_ptr) {
-        delete d_ptr;
-        d_ptr = 0;
-    }
+    delete d_ptr;
+    d_ptr = 0;
 }
 
 /*!

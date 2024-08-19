@@ -10,6 +10,7 @@ class QPoint;
 class QString;
 class QRect;
 class QMozReturnValue;
+
 class IMozQViewIface
 {
 public:
