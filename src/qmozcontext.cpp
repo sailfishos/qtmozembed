@@ -16,6 +16,9 @@
 #include <QJsonParseError>
 #include <QtQml/QtQml>
 
+#include <dlfcn.h>
+#include <link.h>
+
 #include "qmessagepump.h"
 #include "qmozembedlog.h"
 #include "qmozcontext.h"
@@ -37,6 +40,53 @@ using namespace mozilla::embedlite;
 Q_GLOBAL_STATIC(QMozContext, mozContextInstance)
 Q_GLOBAL_STATIC(QMozContextPrivate, mozContextPrivateInstance)
 
+// Pre-load the eglplatform_wayland.so dynamic library to avoid it being
+// closed too early later, which will cause a crash. This is due to a
+// lack of reference counting in ws_init and ws_Terminate here:
+// https://github.com/libhybris/libhybris/blob/master/hybris/egl/ws.c#L99
+// This should be reverted once the following change to libhybris has
+// been rolled out:
+// https://github.com/libhybris/libhybris/pull/563
+static const bool platformEglWorkaround = !getenv("DISABLE_PLAT_EGL_FIX");
+static void *platformEglHandle = nullptr;
+
+static void platform_egl_workaround_open() {
+  if (platformEglHandle || !platformEglWorkaround) {
+    // Only load once
+    return;
+  }
+
+  // Find the location of the library
+  QString foundPath;
+  dl_iterate_phdr(
+      [](dl_phdr_info* info, size_t, void* data) {
+        QString& foundPath = *reinterpret_cast<QString*>(data);
+        QString thisPath(info->dlpi_name);
+        if (thisPath.endsWith("/eglplatform_wayland.so")) {
+          foundPath = thisPath;
+          return 1;
+        }
+        return 0;
+      },
+      &foundPath);
+
+  // Open the library
+  qCDebug(lcEmbedLiteExt) << "Pre-loading eglplatform_wayland.so at from" << foundPath;
+  if (!foundPath.isEmpty()) {
+    platformEglHandle = dlopen(foundPath.toLatin1(), RTLD_LAZY);
+    if (!platformEglHandle) {
+      qCWarning(lcEmbedLiteExt) << "Error pre-loading eglplatform_wayland.so";
+    }
+  }
+}
+
+static void platform_egl_workaround_close() {
+  if (platformEglHandle && platformEglWorkaround) {
+    dlclose(platformEglHandle);
+    platformEglHandle = nullptr;
+  }
+}
+
 QMozContextPrivate *QMozContextPrivate::instance()
 {
     return mozContextPrivateInstance();
@@ -54,6 +104,9 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mMozWindow(nullptr)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
+
+    platform_egl_workaround_open();
+
     setenv("BUILD_GRE_HOME", BUILD_GRE_HOME, 1);
     // See JB#11625: JSON message are locale aware avoid breaking them
     // This is moved from the sailfish-components-webview.
@@ -77,6 +130,8 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
 QMozContextPrivate::~QMozContextPrivate()
 {
     destroyWindow();
+
+    platform_egl_workaround_close();
 }
 
 bool QMozContextPrivate::ExecuteChildThread()
