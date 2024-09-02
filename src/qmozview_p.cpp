@@ -441,7 +441,7 @@ void QMozViewPrivate::goBack()
         return;
 
     reset();
-    mView->GoBack();
+    mView->GoBack(true, true);
 }
 
 void QMozViewPrivate::goForward()
@@ -450,7 +450,7 @@ void QMozViewPrivate::goForward()
         return;
 
     reset();
-    mView->GoForward();
+    mView->GoForward(true, true);
 }
 
 void QMozViewPrivate::stop()
@@ -466,20 +466,21 @@ void QMozViewPrivate::reload()
         return;
 
     if (!mPendingUrl.isEmpty()) {
-        load(mPendingUrl);
+        load(mPendingUrl, mPendingFromExternal);
     } else {
         reset();
         mView->Reload(false);
     }
 }
 
-void QMozViewPrivate::load(const QString &url)
+void QMozViewPrivate::load(const QString &url, const bool& fromExternal)
 {
     if (url.isEmpty())
         return;
 
     if (!mViewInitialized) {
         mPendingUrl = url;
+        mPendingFromExternal = fromExternal;
         mViewIface->urlChanged();
         return;
     }
@@ -488,10 +489,11 @@ void QMozViewPrivate::load(const QString &url)
 #endif
     mProgress = 0;
     reset();
-    mView->LoadURL(url.toUtf8().data());
+    mView->LoadURL(url.toUtf8().data(), fromExternal);
 
     if (mPendingUrl != url) {
         mPendingUrl = url;
+        mPendingFromExternal = fromExternal;
         mViewIface->urlChanged();
     }
 }
@@ -760,6 +762,11 @@ void QMozViewPrivate::setParentBrowsingContext(uintptr_t parentBrowsingContext)
     mParentBrowsingContext = parentBrowsingContext;
 }
 
+void QMozViewPrivate::setHidden(bool hidden)
+{
+    mHidden = hidden;
+}
+
 void QMozViewPrivate::setChromeGestureEnabled(bool value)
 {
     if (value != mChromeGestureEnabled) {
@@ -882,7 +889,7 @@ void QMozViewPrivate::ViewInitialized()
     mPendingMessageListeners.clear();
 
     if (!mPendingUrl.isEmpty()) {
-        load(mPendingUrl);
+        load(mPendingUrl, mPendingFromExternal);
     }
 
     if (mDirtyState & DirtySize) {
@@ -964,6 +971,7 @@ void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, 
     }
 
     mPendingUrl.clear();
+    mPendingFromExternal = false;
 
     if (mUrl != aLocation) {
         mUrl = QString(aLocation);
@@ -999,6 +1007,7 @@ void QMozViewPrivate::OnLoadFinished(void)
     // previous none empty url. Normally OnLocationChange clears pending url.
     if (!mPendingUrl.isEmpty() && !mUrl.isEmpty() && (mUrl != mPendingUrl)) {
         mPendingUrl.clear();
+        mPendingFromExternal = false;
         mViewIface->urlChanged();
     }
 

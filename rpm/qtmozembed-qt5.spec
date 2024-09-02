@@ -1,4 +1,4 @@
-%global min_xulrunner_version 60.9.1
+%global min_xulrunner_version 90.9.1
 
 %define system_nspr       1
 %define system_pixman     1

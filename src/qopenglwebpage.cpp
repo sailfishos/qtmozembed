@@ -346,7 +346,7 @@ QUrl QOpenGLWebPage::url() const
 
 void QOpenGLWebPage::setUrl(const QUrl &url)
 {
-    load(url.toString());
+    load(url.toString(), false);
 }
 
 bool QOpenGLWebPage::isUrlResolved() const
@@ -523,7 +523,7 @@ void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 
 void QOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
 {
-    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))));
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
 
@@ -547,9 +547,9 @@ void QOpenGLWebPage::reload()
     d->reload();
 }
 
-void QOpenGLWebPage::load(const QString &url)
+void QOpenGLWebPage::load(const QString &url, const bool &fromExternal)
 {
-    d->load(url);
+    d->load(url, fromExternal);
 }
 
 void QOpenGLWebPage::scrollTo(int x, int y)

@@ -444,7 +444,7 @@ QUrl QuickMozView::url() const
 
 void QuickMozView::setUrl(const QUrl &url)
 {
-    load(url.toString());
+    load(url.toString(), false);
 }
 
 bool QuickMozView::isUrlResolved() const
@@ -693,7 +693,7 @@ void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
 
 void QuickMozView::loadText(const QString &text, const QString &mimeType)
 {
-    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))));
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
 void QuickMozView::goBack()
@@ -716,9 +716,9 @@ void QuickMozView::reload()
     d->reload();
 }
 
-void QuickMozView::load(const QString &url)
+void QuickMozView::load(const QString &url, const bool &fromExternal)
 {
-    d->load(url);
+    d->load(url, fromExternal);
 }
 
 void QuickMozView::scrollTo(int x, int y)
@@ -798,6 +798,25 @@ void QuickMozView::setPrivateMode(bool aPrivateMode)
     if (aPrivateMode != d->mPrivateMode) {
         d->mPrivateMode = aPrivateMode;
         Q_EMIT privateModeChanged();
+    }
+}
+
+bool QuickMozView::hidden() const
+{
+    return d->mHidden;
+}
+
+void QuickMozView::setHidden(bool aHidden)
+{
+    if (isComponentComplete()) {
+        // View is created directly in componentComplete() if mozcontext ready
+        qmlInfo(this) << "hidden state cannot be changed after view is created";
+        return;
+    }
+
+    if (aHidden != d->mHidden) {
+        d->mHidden = aHidden;
+        Q_EMIT hiddenChanged();
     }
 }
 

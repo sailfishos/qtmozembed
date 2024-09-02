@@ -119,7 +119,7 @@ public:
     void goForward();
     void stop();
     void reload();
-    void load(const QString &url);
+    void load(const QString &url, const bool& fromExternal);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);
     void addMessageListeners(const std::vector<std::string> &messageNamesList);
@@ -137,6 +137,7 @@ public:
 
     void setParentId(unsigned parentId);
     void setParentBrowsingContext(uintptr_t parentBrowsingContext);
+    void setHidden(bool hidden);
     void setChromeGestureEnabled(bool value);
     void setChromeGestureThreshold(qreal value);
     void setChrome(bool value);
@@ -177,6 +178,7 @@ protected:
     unsigned mParentID;
     uintptr_t mParentBrowsingContext;
     bool mPrivateMode;
+    bool mHidden;
     bool mDesktopMode;
     bool mActive;
     bool mLoaded;
@@ -255,6 +257,7 @@ protected:
     DirtyState mDirtyState;
 
     QString mPendingUrl;
+    bool mPendingFromExternal;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };
