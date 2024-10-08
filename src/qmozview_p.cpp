@@ -1029,8 +1029,8 @@ void QMozViewPrivate::OnWindowCloseRequested()
 void QMozViewPrivate::ViewDestroyed()
 {
     // TODO : Can this be removed?
-    // Both ~QOpenGLWebPage and ~QuickMozView are
-    // setting lisnener to null. Hence, EmbedLiteView::Destroyed()
+    // Both ~QMozOpenGLWebPage and ~QuickMozView are
+    // setting listener to null. Hence, EmbedLiteView::Destroyed()
     // will never be able to call this.
 
 #ifdef DEVELOPMENT_BUILD

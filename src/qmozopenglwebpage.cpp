@@ -7,7 +7,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "qopenglwebpage.h"
+#include "qmozopenglwebpage.h"
 
 #include <qglobal.h>
 #include <qqmlinfo.h>
@@ -22,10 +22,10 @@
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
 
-#define LOG_COMPONENT "QOpenGLWebPage"
+#define LOG_COMPONENT "QMozOpenGLWebPage"
 
 /*!
-    \fn void QOpenGLWebPage::afterRendering()
+    \fn void QMozOpenGLWebPage::afterRendering()
 
     This signal is emitted after web content has been rendered, before swapbuffers
     has been called.
@@ -41,13 +41,13 @@
 */
 
 /*!
-    \fn void QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
+    \fn void QMozOpenGLWebPage::QMozOpenGLWebPage(QObject *parent)
 
     In order to use this, embedlite.compositor.external_gl_context preference needs to be set.
 */
-QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
+QMozOpenGLWebPage::QMozOpenGLWebPage(QObject *parent)
     : QObject(parent)
-    , d(new QMozViewPrivate(new IMozQView<QOpenGLWebPage>(*this), this))
+    , d(new QMozViewPrivate(new IMozQView<QMozOpenGLWebPage>(*this), this))
     , mCompleted(false)
     , mSizeUpdateScheduled(false)
     , mThrottlePainting(false)
@@ -55,12 +55,12 @@ QOpenGLWebPage::QOpenGLWebPage(QObject *parent)
 {
     d->mContext = QMozContext::instance();
 
-    connect(this, &QOpenGLWebPage::viewInitialized, this, &QOpenGLWebPage::processViewInitialization);
-    connect(this, &QOpenGLWebPage::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
-    connect(this, &QOpenGLWebPage::loadingChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QMozOpenGLWebPage::viewInitialized, this, &QMozOpenGLWebPage::processViewInitialization);
+    connect(this, &QMozOpenGLWebPage::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
+    connect(this, &QMozOpenGLWebPage::loadingChanged, d, &QMozViewPrivate::updateLoaded);
 }
 
-QOpenGLWebPage::~QOpenGLWebPage()
+QMozOpenGLWebPage::~QMozOpenGLWebPage()
 {
     if (d->mView) {
         d->mView->SetIsActive(false);
@@ -73,7 +73,7 @@ QOpenGLWebPage::~QOpenGLWebPage()
     d = nullptr;
 }
 
-void QOpenGLWebPage::processViewInitialization()
+void QMozOpenGLWebPage::processViewInitialization()
 {
     // This is connected to view initialization. View must be initialized
     // over here.
@@ -84,7 +84,7 @@ void QOpenGLWebPage::processViewInitialization()
     Q_EMIT completedChanged();
 }
 
-void QOpenGLWebPage::onDrawOverlay(const QRect &rect)
+void QMozOpenGLWebPage::onDrawOverlay(const QRect &rect)
 {
     {
         QMutexLocker lock(&mGrabResultListLock);
@@ -102,17 +102,17 @@ void QOpenGLWebPage::onDrawOverlay(const QRect &rect)
     Q_EMIT afterRendering();
 }
 
-int QOpenGLWebPage::parentId() const
+int QMozOpenGLWebPage::parentId() const
 {
     return d->mParentID;
 }
 
-bool QOpenGLWebPage::privateMode() const
+bool QMozOpenGLWebPage::privateMode() const
 {
     return d->mPrivateMode;
 }
 
-void QOpenGLWebPage::setPrivateMode(bool privateMode)
+void QMozOpenGLWebPage::setPrivateMode(bool privateMode)
 {
     if (d->mView) {
         // View is created directly in componentComplete() if mozcontext ready
@@ -126,12 +126,12 @@ void QOpenGLWebPage::setPrivateMode(bool privateMode)
     }
 }
 
-bool QOpenGLWebPage::enabled() const
+bool QMozOpenGLWebPage::enabled() const
 {
     return d->mEnabled;
 }
 
-void QOpenGLWebPage::setEnabled(bool enabled)
+void QMozOpenGLWebPage::setEnabled(bool enabled)
 {
     if (d->mEnabled != enabled) {
         d->mEnabled = enabled;
@@ -139,12 +139,12 @@ void QOpenGLWebPage::setEnabled(bool enabled)
     }
 }
 
-bool QOpenGLWebPage::active() const
+bool QMozOpenGLWebPage::active() const
 {
     return d->mActive;
 }
 
-void QOpenGLWebPage::setActive(bool active)
+void QMozOpenGLWebPage::setActive(bool active)
 {
     // WebPage is in inactive state until the view is initialized.
     // ::processViewInitialization always forces active state so we
@@ -159,17 +159,17 @@ void QOpenGLWebPage::setActive(bool active)
     }
 }
 
-bool QOpenGLWebPage::loaded() const
+bool QMozOpenGLWebPage::loaded() const
 {
     return d->mLoaded;
 }
 
-QMozWindow *QOpenGLWebPage::mozWindow() const
+QMozWindow *QMozOpenGLWebPage::mozWindow() const
 {
     return d->mMozWindow;
 }
 
-void QOpenGLWebPage::setMozWindow(QMozWindow *window)
+void QMozOpenGLWebPage::setMozWindow(QMozWindow *window)
 {
     d->setMozWindow(window);
 
@@ -178,25 +178,25 @@ void QOpenGLWebPage::setMozWindow(QMozWindow *window)
     }
 
     connect(window, &QMozWindow::drawOverlay,
-            this, &QOpenGLWebPage::onDrawOverlay, Qt::DirectConnection);
+            this, &QMozOpenGLWebPage::onDrawOverlay, Qt::DirectConnection);
 }
 
-bool QOpenGLWebPage::desktopMode() const
+bool QMozOpenGLWebPage::desktopMode() const
 {
     return d->mDesktopMode;
 }
 
-void QOpenGLWebPage::setDesktopMode(bool desktopMode)
+void QMozOpenGLWebPage::setDesktopMode(bool desktopMode)
 {
     d->setDesktopMode(desktopMode);
 }
 
-bool QOpenGLWebPage::throttlePainting() const
+bool QMozOpenGLWebPage::throttlePainting() const
 {
     return mThrottlePainting;
 }
 
-void QOpenGLWebPage::setThrottlePainting(bool throttle)
+void QMozOpenGLWebPage::setThrottlePainting(bool throttle)
 {
     if (mThrottlePainting != throttle) {
         mThrottlePainting = throttle;
@@ -205,12 +205,12 @@ void QOpenGLWebPage::setThrottlePainting(bool throttle)
     }
 }
 
-int QOpenGLWebPage::virtualKeyboardHeight() const
+int QMozOpenGLWebPage::virtualKeyboardHeight() const
 {
     return m_virtualKeyboardHeight;
 }
 
-void QOpenGLWebPage::setVirtualKeyboardHeight(int height)
+void QMozOpenGLWebPage::setVirtualKeyboardHeight(int height)
 {
     if (height != m_virtualKeyboardHeight) {
         m_virtualKeyboardHeight = height;
@@ -219,16 +219,16 @@ void QOpenGLWebPage::setVirtualKeyboardHeight(int height)
 }
 
 /*!
-    \fn void QOpenGLWebPage::initialize()
+    \fn void QMozOpenGLWebPage::initialize()
 
     Call initialize to complete web page creation.
 */
-void QOpenGLWebPage::initialize()
+void QMozOpenGLWebPage::initialize()
 {
     d->createView();
 }
 
-bool QOpenGLWebPage::event(QEvent *event)
+bool QMozOpenGLWebPage::event(QEvent *event)
 {
     switch (event->type()) {
     case QEvent::InputMethodQuery: {
@@ -263,12 +263,12 @@ bool QOpenGLWebPage::event(QEvent *event)
     return true;
 }
 
-bool QOpenGLWebPage::completed() const
+bool QMozOpenGLWebPage::completed() const
 {
     return mCompleted;
 }
 
-void QOpenGLWebPage::update()
+void QMozOpenGLWebPage::update()
 {
     if (!d->mViewInitialized) {
         return;
@@ -277,7 +277,7 @@ void QOpenGLWebPage::update()
     d->mView->ScheduleUpdate();
 }
 
-void QOpenGLWebPage::forceActiveFocus()
+void QMozOpenGLWebPage::forceActiveFocus()
 {
     if (!d->mViewInitialized) {
         return;
@@ -287,273 +287,273 @@ void QOpenGLWebPage::forceActiveFocus()
     d->setIsFocused(true);
 }
 
-void QOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
+void QMozOpenGLWebPage::setInputMethodHints(Qt::InputMethodHints hints)
 {
     d->mInputMethodHints = hints;
 }
 
-void QOpenGLWebPage::inputMethodEvent(QInputMethodEvent *event)
+void QMozOpenGLWebPage::inputMethodEvent(QInputMethodEvent *event)
 {
     d->inputMethodEvent(event);
 }
 
-void QOpenGLWebPage::keyPressEvent(QKeyEvent *event)
+void QMozOpenGLWebPage::keyPressEvent(QKeyEvent *event)
 {
     d->keyPressEvent(event);
 }
 
-void QOpenGLWebPage::keyReleaseEvent(QKeyEvent *event)
+void QMozOpenGLWebPage::keyReleaseEvent(QKeyEvent *event)
 {
     return d->keyReleaseEvent(event);
 }
 
-QVariant QOpenGLWebPage::inputMethodQuery(Qt::InputMethodQuery property) const
+QVariant QMozOpenGLWebPage::inputMethodQuery(Qt::InputMethodQuery property) const
 {
     return d->inputMethodQuery(property);
 }
 
-void QOpenGLWebPage::focusInEvent(QFocusEvent *event)
+void QMozOpenGLWebPage::focusInEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
     d->setIsFocused(true);
 }
 
-void QOpenGLWebPage::focusOutEvent(QFocusEvent *event)
+void QMozOpenGLWebPage::focusOutEvent(QFocusEvent *event)
 {
     Q_UNUSED(event);
     d->setIsFocused(false);
 }
 
-void QOpenGLWebPage::forceViewActiveFocus()
+void QMozOpenGLWebPage::forceViewActiveFocus()
 {
     forceActiveFocus();
 }
 
-QUrl QOpenGLWebPage::url() const
+QUrl QMozOpenGLWebPage::url() const
 {
     return d->url();
 }
 
-void QOpenGLWebPage::setUrl(const QUrl &url)
+void QMozOpenGLWebPage::setUrl(const QUrl &url)
 {
     load(url.toString(), false);
 }
 
-bool QOpenGLWebPage::isUrlResolved() const
+bool QMozOpenGLWebPage::isUrlResolved() const
 {
     return d->isUrlResolved();
 }
 
-QString QOpenGLWebPage::title() const
+QString QMozOpenGLWebPage::title() const
 {
     return d->mTitle;
 }
 
-int QOpenGLWebPage::loadProgress() const
+int QMozOpenGLWebPage::loadProgress() const
 {
     return d->mProgress;
 }
 
-bool QOpenGLWebPage::canGoBack() const
+bool QMozOpenGLWebPage::canGoBack() const
 {
     return d->mCanGoBack;
 }
 
-bool QOpenGLWebPage::canGoForward() const
+bool QMozOpenGLWebPage::canGoForward() const
 {
     return d->mCanGoForward;
 }
 
-bool QOpenGLWebPage::loading() const
+bool QMozOpenGLWebPage::loading() const
 {
     return d->mIsLoading;
 }
 
-QRectF QOpenGLWebPage::contentRect() const
+QRectF QMozOpenGLWebPage::contentRect() const
 {
     return d->mContentRect;
 }
 
-QSizeF QOpenGLWebPage::scrollableSize() const
+QSizeF QMozOpenGLWebPage::scrollableSize() const
 {
     return d->mScrollableSize;
 }
 
-QPointF QOpenGLWebPage::scrollableOffset() const
+QPointF QMozOpenGLWebPage::scrollableOffset() const
 {
     return d->mScrollableOffset;
 }
 
-bool QOpenGLWebPage::atXBeginning() const
+bool QMozOpenGLWebPage::atXBeginning() const
 {
     return d->mAtXBeginning;
 }
 
-bool QOpenGLWebPage::atXEnd() const
+bool QMozOpenGLWebPage::atXEnd() const
 {
     return d->mAtXEnd;
 }
 
-bool QOpenGLWebPage::atYBeginning() const
+bool QMozOpenGLWebPage::atYBeginning() const
 {
     return d->mAtYBeginning;
 }
 
-bool QOpenGLWebPage::atYEnd() const
+bool QMozOpenGLWebPage::atYEnd() const
 {
     return d->mAtYEnd;
 }
 
-float QOpenGLWebPage::resolution() const
+float QMozOpenGLWebPage::resolution() const
 {
     return d->mContentResolution;
 }
 
-bool QOpenGLWebPage::isPainted() const
+bool QMozOpenGLWebPage::isPainted() const
 {
     return d->mIsPainted;
 }
 
-QColor QOpenGLWebPage::backgroundColor() const
+QColor QMozOpenGLWebPage::backgroundColor() const
 {
     return d->mBackgroundColor;
 }
 
-bool QOpenGLWebPage::dragging() const
+bool QMozOpenGLWebPage::dragging() const
 {
     return d->mDragging;
 }
 
-bool QOpenGLWebPage::moving() const
+bool QMozOpenGLWebPage::moving() const
 {
     return d->mMoving;
 }
 
-bool QOpenGLWebPage::pinching() const
+bool QMozOpenGLWebPage::pinching() const
 {
     return d->mPinching;
 }
 
-QMozScrollDecorator *QOpenGLWebPage::verticalScrollDecorator() const
+QMozScrollDecorator *QMozOpenGLWebPage::verticalScrollDecorator() const
 {
     return &d->mVerticalScrollDecorator;
 }
 
-QMozScrollDecorator *QOpenGLWebPage::horizontalScrollDecorator() const
+QMozScrollDecorator *QMozOpenGLWebPage::horizontalScrollDecorator() const
 {
     return &d->mHorizontalScrollDecorator;
 }
 
-bool QOpenGLWebPage::chromeGestureEnabled() const
+bool QMozOpenGLWebPage::chromeGestureEnabled() const
 {
     return d->mChromeGestureEnabled;
 }
 
-void QOpenGLWebPage::setChromeGestureEnabled(bool value)
+void QMozOpenGLWebPage::setChromeGestureEnabled(bool value)
 {
     d->setChromeGestureEnabled(value);
 }
 
-qreal QOpenGLWebPage::chromeGestureThreshold() const
+qreal QMozOpenGLWebPage::chromeGestureThreshold() const
 {
     return d->mChromeGestureThreshold;
 }
 
-void QOpenGLWebPage::setChromeGestureThreshold(qreal value)
+void QMozOpenGLWebPage::setChromeGestureThreshold(qreal value)
 {
     d->setChromeGestureThreshold(value);
 }
 
-bool QOpenGLWebPage::chrome() const
+bool QMozOpenGLWebPage::chrome() const
 {
     return d->mChrome;
 }
 
-void QOpenGLWebPage::setChrome(bool value)
+void QMozOpenGLWebPage::setChrome(bool value)
 {
     d->setChrome(value);
 }
 
-qreal QOpenGLWebPage::contentWidth() const
+qreal QMozOpenGLWebPage::contentWidth() const
 {
     return d->mScrollableSize.width();
 }
 
-qreal QOpenGLWebPage::contentHeight() const
+qreal QMozOpenGLWebPage::contentHeight() const
 {
     return d->mScrollableSize.height();
 }
 
-int QOpenGLWebPage::dynamicToolbarHeight() const
+int QMozOpenGLWebPage::dynamicToolbarHeight() const
 {
     return d->mDynamicToolbarHeight;
 }
 
-void QOpenGLWebPage::setDynamicToolbarHeight(int height)
+void QMozOpenGLWebPage::setDynamicToolbarHeight(int height)
 {
     d->setDynamicToolbarHeight(height);
 }
 
-QMargins QOpenGLWebPage::margins() const
+QMargins QMozOpenGLWebPage::margins() const
 {
     return d->mMargins;
 }
 
-void QOpenGLWebPage::setMargins(QMargins margins)
+void QMozOpenGLWebPage::setMargins(QMargins margins)
 {
     d->setMargins(margins, true);
 }
 
-void QOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
+void QMozOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 {
     Q_UNUSED(baseUrl);
 
     loadText(html, QStringLiteral("text/html"));
 }
 
-void QOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
+void QMozOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
 {
     d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,")
              + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
 
-void QOpenGLWebPage::goBack()
+void QMozOpenGLWebPage::goBack()
 {
     d->goBack();
 }
 
-void QOpenGLWebPage::goForward()
+void QMozOpenGLWebPage::goForward()
 {
     d->goForward();
 }
 
-void QOpenGLWebPage::stop()
+void QMozOpenGLWebPage::stop()
 {
     d->stop();
 }
 
-void QOpenGLWebPage::reload()
+void QMozOpenGLWebPage::reload()
 {
     d->reload();
 }
 
-void QOpenGLWebPage::load(const QString &url, const bool &fromExternal)
+void QMozOpenGLWebPage::load(const QString &url, const bool &fromExternal)
 {
     d->load(url, fromExternal);
 }
 
-void QOpenGLWebPage::scrollTo(int x, int y)
+void QMozOpenGLWebPage::scrollTo(int x, int y)
 {
     d->scrollTo(x, y);
 }
 
-void QOpenGLWebPage::scrollBy(int x, int y)
+void QMozOpenGLWebPage::scrollBy(int x, int y)
 {
     d->scrollBy(x, y);
 }
 
-void QOpenGLWebPage::runJavaScript(const QString &script,
+void QMozOpenGLWebPage::runJavaScript(const QString &script,
                                    const QJSValue &callback,
                                    const QJSValue &errorCallback)
 {
@@ -562,69 +562,69 @@ void QOpenGLWebPage::runJavaScript(const QString &script,
 
 // This should be a const method returning a pointer to a const object
 // but unfortunately this conflicts with it being exposed as a Q_PROPERTY
-QMozSecurity *QOpenGLWebPage::security()
+QMozSecurity *QMozOpenGLWebPage::security()
 {
     return &d->mSecurity;
 }
 
-void QOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value)
+void QMozOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value)
 {
     d->sendAsyncMessage(name, value);
 }
 
-void QOpenGLWebPage::addMessageListener(const QString &name)
+void QMozOpenGLWebPage::addMessageListener(const QString &name)
 {
     d->addMessageListener(name.toStdString());
 }
 
-void QOpenGLWebPage::addMessageListeners(const std::vector<std::string> &messageNamesList)
+void QMozOpenGLWebPage::addMessageListeners(const std::vector<std::string> &messageNamesList)
 {
     d->addMessageListeners(messageNamesList);
 }
 
-void QOpenGLWebPage::loadFrameScript(const QString &name)
+void QMozOpenGLWebPage::loadFrameScript(const QString &name)
 {
     d->loadFrameScript(name);
 }
 
-void QOpenGLWebPage::newWindow(const QString &url)
+void QMozOpenGLWebPage::newWindow(const QString &url)
 {
 #ifdef DEVELOPMENT_BUILD
     qCDebug(lcEmbedLiteExt) << "New Window:" << url.toUtf8().data();
 #endif
 }
 
-quint32 QOpenGLWebPage::uniqueId() const
+quint32 QMozOpenGLWebPage::uniqueId() const
 {
     return d->mView ? d->mView->GetUniqueID() : 0;
 }
 
-void QOpenGLWebPage::setParentId(unsigned parentId)
+void QMozOpenGLWebPage::setParentId(unsigned parentId)
 {
     d->setParentId(parentId);
 }
 
-void QOpenGLWebPage::setParentBrowsingContext(uintptr_t parentBrowsingContext)
+void QMozOpenGLWebPage::setParentBrowsingContext(uintptr_t parentBrowsingContext)
 {
     d->setParentBrowsingContext(parentBrowsingContext);
 }
 
-void QOpenGLWebPage::synthTouchBegin(const QVariant &touches)
+void QMozOpenGLWebPage::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);
 }
 
-void QOpenGLWebPage::synthTouchMove(const QVariant &touches)
+void QMozOpenGLWebPage::synthTouchMove(const QVariant &touches)
 {
     d->synthTouchMove(touches);
 }
 
-void QOpenGLWebPage::synthTouchEnd(const QVariant &touches)
+void QMozOpenGLWebPage::synthTouchEnd(const QVariant &touches)
 {
     d->synthTouchEnd(touches);
 }
 
-void QOpenGLWebPage::suspendView()
+void QMozOpenGLWebPage::suspendView()
 {
     if (!d || !d->mViewInitialized) {
         return;
@@ -633,7 +633,7 @@ void QOpenGLWebPage::suspendView()
     d->mView->SuspendTimeouts();
 }
 
-void QOpenGLWebPage::resumeView()
+void QMozOpenGLWebPage::resumeView()
 {
     if (!d || !d->mViewInitialized) {
         return;
@@ -651,33 +651,33 @@ void QOpenGLWebPage::resumeView()
 }
 
 /*!
-    \fn void QOpenGLWebPage::touchEvent(QTouchEvent *event)
+    \fn void QMozOpenGLWebPage::touchEvent(QTouchEvent *event)
 
     Touch events need to be in correctly mapped coordination
     system.
 */
-void QOpenGLWebPage::touchEvent(QTouchEvent *event)
+void QMozOpenGLWebPage::touchEvent(QTouchEvent *event)
 {
     d->touchEvent(event);
     event->accept();
 }
 
-void QOpenGLWebPage::timerEvent(QTimerEvent *event)
+void QMozOpenGLWebPage::timerEvent(QTimerEvent *event)
 {
     d->timerEvent(event);
 }
 
-QString QOpenGLWebPage::httpUserAgent() const
+QString QMozOpenGLWebPage::httpUserAgent() const
 {
     return d->httpUserAgent();
 }
 
-void QOpenGLWebPage::setHttpUserAgent(const QString &httpUserAgent)
+void QMozOpenGLWebPage::setHttpUserAgent(const QString &httpUserAgent)
 {
     d->setHttpUserAgent(httpUserAgent);
 }
 
-bool QOpenGLWebPage::domContentLoaded() const
+bool QMozOpenGLWebPage::domContentLoaded() const
 {
     return d->domContentLoaded();
 }
