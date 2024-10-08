@@ -17,7 +17,8 @@
 
 class QMozEngineSettingsPrivate;
 
-class QMozEngineSettings : public QObject {
+class QMozEngineSettings : public QObject
+{
     Q_OBJECT
     Q_PROPERTY(bool initialized READ isInitialized NOTIFY initialized)
     Q_PROPERTY(bool autoLoadImages READ autoLoadImages WRITE setAutoLoadImages NOTIFY autoLoadImagesChanged FINAL)

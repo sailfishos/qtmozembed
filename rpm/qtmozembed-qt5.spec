@@ -64,26 +64,24 @@ CONFIGURE_VARIABLE=""
   CONFIGURE_VARIABLE="with-system-nspr"
 %endif
 
-%qtc_qmake5 -r VERSION=%{version} CONFIG+=${CONFIGURE_VARIABLE}
-%qtc_make %{?_smp_mflags}
+%qmake5 -r VERSION=%{version} CONFIG+=${CONFIGURE_VARIABLE}
+%make_build
 
 %install
 %qmake5_install
+
 %post -p /sbin/ldconfig
 %postun -p /sbin/ldconfig
 
 %files
-%defattr(-,root,root,-)
 %license LICENSE.txt
 %{_libdir}/*.so.*
 %{_libdir}/qt5/qml/Qt5Mozilla/*
 
 %files devel
-%defattr(-,root,root,-)
 %{_libdir}/*.so
 %{_libdir}/pkgconfig
 %{_includedir}/*
 
 %files tests
-%defattr(-,root,root,-)
 /opt/tests/qtmozembed/*

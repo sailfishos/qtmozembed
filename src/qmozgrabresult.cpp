@@ -8,7 +8,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "qmozembedlog.h"
-#include "qopenglwebpage.h"
+#include "qmozopenglwebpage.h"
 #include "qmozgrabresult.h"
 #include "qmozwindow.h"
 
@@ -55,10 +55,10 @@ public:
     {
     }
 
-    static QMozGrabResult *create(QOpenGLWebPage *webPage, const QSize &targetSize);
+    static QMozGrabResult *create(QMozOpenGLWebPage *webPage, const QSize &targetSize);
 
     QMozGrabResult *q_ptr;
-    QPointer<QOpenGLWebPage> webPage;
+    QPointer<QMozOpenGLWebPage> webPage;
     QSize textureSize;
     QImage image;
     Qt::ScreenOrientation orientation;
@@ -67,10 +67,8 @@ public:
 
 QMozGrabResult::~QMozGrabResult()
 {
-    if (d_ptr) {
-        delete d_ptr;
-        d_ptr = 0;
-    }
+    delete d_ptr;
+    d_ptr = 0;
 }
 
 /*!
@@ -158,7 +156,7 @@ QMozGrabResult::QMozGrabResult(QObject *parent)
 {
 }
 
-QMozGrabResult *QMozGrabResultPrivate::create(QOpenGLWebPage *webPage, const QSize &targetSize)
+QMozGrabResult *QMozGrabResultPrivate::create(QMozOpenGLWebPage *webPage, const QSize &targetSize)
 {
     Q_ASSERT(webPage);
 
@@ -208,7 +206,7 @@ QMozGrabResult *QMozGrabResultPrivate::create(QOpenGLWebPage *webPage, const QSi
  * \note This function copies surface from the GPU's memory into CPU's memory, which can
  * be quite costly operation. Smaller the \a targetSize better the performance.
  */
-QSharedPointer<QMozGrabResult> QOpenGLWebPage::grabToImage(const QSize &targetSize)
+QSharedPointer<QMozGrabResult> QMozOpenGLWebPage::grabToImage(const QSize &targetSize)
 {
     QSharedPointer<QMozGrabResult> result(QMozGrabResultPrivate::create(this, targetSize));
     if (result) {

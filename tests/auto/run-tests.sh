@@ -7,7 +7,6 @@ if [ "$QTMOZEMBEDOBJDIR" != "" ]; then
   export QML2_IMPORT_PATH=$QTMOZEMBEDOBJDIR/qmlplugin5
 else
   QMLMOZTESTRUNNER=/opt/tests/qtmozembed/qmlmoztestrunner
-  export QML_IMPORT_PATH=/opt/tests/qtmozembed/imports
 fi
 
 export QTTESTSROOT=${QTTESTSROOT:-"/opt/tests/qtmozembed"}

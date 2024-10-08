@@ -10,7 +10,7 @@
 #include <QtCore/QSize>
 #include <QtGui/QImage>
 
-class QOpenGLWebPage;
+class QMozOpenGLWebPage;
 class QMozGrabResultPrivate;
 
 class QMozGrabResult : public QObject
@@ -34,7 +34,7 @@ Q_SIGNALS:
     void ready();
 
 private:
-    friend class QOpenGLWebPage;
+    friend class QMozOpenGLWebPage;
 
     QMozGrabResult(QObject *parent = 0);
     void captureImage(const QRect &rect);

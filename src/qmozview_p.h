@@ -155,7 +155,7 @@ public Q_SLOTS:
     void createView();
 
 protected:
-    friend class QOpenGLWebPage;
+    friend class QMozOpenGLWebPage;
     friend class QuickMozView;
 
     void synthTouchBegin(const QVariant &touches);

@@ -13,7 +13,7 @@
 
 
 struct nsKeyConverter {
-    int vkCode; // Platform independent key code
+    uint32_t vkCode; // Platform independent key code
     int keysym; // Qt key code
 };
 
@@ -376,7 +376,7 @@ MozKey::QtKeyCodeToDOMKeyCode(int aKeysym, int aModifier)
 }
 
 int
-MozKey::DOMKeyCodeToQtKeyCode(int aKeysym)
+MozKey::DOMKeyCodeToQtKeyCode(uint32_t aKeysym)
 {
     unsigned int i;
 
