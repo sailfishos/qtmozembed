@@ -28,7 +28,7 @@ SOURCES += qmozcontext.cpp \
            qmozsecurity.cpp \
            qmozview_p.cpp \
            geckoworker.cpp \
-           qopenglwebpage.cpp \
+           qmozopenglwebpage.cpp \
            qmozwindow.cpp \
            qmozwindow_p.cpp
 
@@ -46,7 +46,7 @@ HEADERS += qmozcontext.h \
            geckoworker.h \
            qmozview_defined_wrapper.h \
            qmozview_templated_wrapper.h \
-           qopenglwebpage.h \
+           qmozopenglwebpage.h \
            qmozwindow.h \
            qmozwindow_p.h
 

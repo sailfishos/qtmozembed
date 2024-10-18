@@ -37,7 +37,6 @@ private:
     QRectF m_normalizedTextureSubRect;
     QSize m_textureSize;
     uint m_textureId = 0;
-
 };
 
 #endif

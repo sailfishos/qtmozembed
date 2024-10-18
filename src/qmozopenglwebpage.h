@@ -7,8 +7,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef QOPENGLWEBPAGE_H
-#define QOPENGLWEBPAGE_H
+#ifndef QMOZOPENGLWEBPAGE_H
+#define QMOZOPENGLWEBPAGE_H
 
 #include <qqml.h>
 #include <QSizeF>
@@ -29,7 +29,7 @@ class QMozGrabResult;
 class QMozWindow;
 class QMozSecurity;
 
-class QOpenGLWebPage : public QObject
+class QMozOpenGLWebPage : public QObject
 {
     Q_OBJECT
     Q_PROPERTY(bool privateMode READ privateMode WRITE setPrivateMode NOTIFY privateModeChanged FINAL)
@@ -43,8 +43,8 @@ class QOpenGLWebPage : public QObject
     Q_MOZ_VIEW_PROPERTIES
 
 public:
-    explicit QOpenGLWebPage(QObject *parent = nullptr);
-    virtual ~QOpenGLWebPage();
+    explicit QMozOpenGLWebPage(QObject *parent = nullptr);
+    virtual ~QMozOpenGLWebPage();
 
     Q_MOZ_VIEW_PUBLIC_METHODS
 
@@ -118,9 +118,9 @@ private:
     bool mThrottlePainting;
     int m_virtualKeyboardHeight;
 
-    Q_DISABLE_COPY(QOpenGLWebPage)
+    Q_DISABLE_COPY(QMozOpenGLWebPage)
 };
 
-QML_DECLARE_TYPE(QOpenGLWebPage)
+QML_DECLARE_TYPE(QMozOpenGLWebPage)
 
-#endif // QOPENGLWEBPAGE_H
+#endif // QMOZOPENGLWEBPAGE_H
