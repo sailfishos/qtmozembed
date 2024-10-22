@@ -109,8 +109,7 @@ QuickMozView::~QuickMozView()
     d = nullptr;
 }
 
-void
-QuickMozView::SetIsActive(bool aIsActive)
+void QuickMozView::SetIsActive(bool aIsActive)
 {
     if (QThread::currentThread() == thread() && d->mView) {
         d->mView->SetIsActive(aIsActive);
@@ -165,8 +164,7 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
 
-QSGNode *
-QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
+QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
     // If the dimensions are entirely invalid return no node.
     if (width() <= 0 || height() <= 0) {
@@ -693,7 +691,8 @@ void QuickMozView::loadHtml(const QString &html, const QUrl &baseUrl)
 
 void QuickMozView::loadText(const QString &text, const QString &mimeType)
 {
-    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,") + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
+    d->load((QLatin1String("data:") + mimeType + QLatin1String(";charset=utf-8,")
+             + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
 void QuickMozView::goBack()

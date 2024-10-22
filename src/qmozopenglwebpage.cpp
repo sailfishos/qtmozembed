@@ -517,7 +517,6 @@ void QMozOpenGLWebPage::loadText(const QString &text, const QString &mimeType)
              + QString::fromUtf8(QUrl::toPercentEncoding(text))), false);
 }
 
-
 void QMozOpenGLWebPage::goBack()
 {
     d->goBack();
