@@ -474,7 +474,7 @@ void QMozViewPrivate::reload()
     }
 }
 
-void QMozViewPrivate::load(const QString &url, const bool& fromExternal)
+void QMozViewPrivate::load(const QString &url, bool fromExternal)
 {
     if (url.isEmpty())
         return;

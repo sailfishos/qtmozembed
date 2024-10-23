@@ -715,7 +715,7 @@ void QuickMozView::reload()
     d->reload();
 }
 
-void QuickMozView::load(const QString &url, const bool &fromExternal)
+void QuickMozView::load(const QString &url, bool fromExternal)
 {
     d->load(url, fromExternal);
 }

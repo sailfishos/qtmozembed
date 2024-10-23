@@ -537,7 +537,7 @@ void QMozOpenGLWebPage::reload()
     d->reload();
 }
 
-void QMozOpenGLWebPage::load(const QString &url, const bool &fromExternal)
+void QMozOpenGLWebPage::load(const QString &url, bool fromExternal)
 {
     d->load(url, fromExternal);
 }
