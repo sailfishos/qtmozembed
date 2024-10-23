@@ -53,7 +53,7 @@ TestWindow {
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]});
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a>";
+            webViewport.url = "data:text/html,<head><meta charset='utf-8' name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a></body>"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
