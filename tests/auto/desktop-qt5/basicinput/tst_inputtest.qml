@@ -82,7 +82,7 @@ TestWindow {
             MyScript.dumpTs("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input id=myelem value=''>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input id=myelem value=''>"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
@@ -108,7 +108,7 @@ TestWindow {
             verify(MyScript.waitMozView())
             appWindow.inputContent = ""
             appWindow.inputType = ""
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input type=number id=myelem value=''>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input type=number id=myelem value=''>"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))

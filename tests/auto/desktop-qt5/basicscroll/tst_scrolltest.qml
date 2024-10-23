@@ -49,7 +49,7 @@ TestWindow {
             MyScript.dumpTs("test_TestScrollPaintOperations start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:12000px;'>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:12000px;'>"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
