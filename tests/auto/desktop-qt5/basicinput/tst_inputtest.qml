@@ -17,7 +17,8 @@ TestWindow {
 
     function isState(state, focus, cause)
     {
-        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus && appWindow.cause === cause
+        return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus
+                && appWindow.cause === cause
     }
 
     name: testcaseid.name
@@ -31,6 +32,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         clip: false
         visible: true
         focus: true
@@ -56,7 +58,8 @@ TestWindow {
             }
         }
         onImeNotification: {
-            print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:" + focusChange + ", type:" + type)
+            print("onImeNotification: state:" + state + ", open:" + open + ", cause:" + cause + ", focChange:"
+                  + focusChange + ", type:" + type)
             appWindow.changed = true
             appWindow.inputState = state
             appWindow.cause = cause
@@ -82,24 +85,24 @@ TestWindow {
             MyScript.dumpTs("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input id=myelem value=''>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input id=myelem value=''>"
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             mouseClick(webViewport, 10, 10)
-            verify(MyScript.wrtWait(function() { return (!appWindow.isState(1, 0, 4)); }))
-            appWindow.inputState = false;
-            keyClick(Qt.Key_K);
-            keyClick(Qt.Key_O);
-            keyClick(Qt.Key_R);
-            keyClick(Qt.Key_P);
+            verify(MyScript.wrtWait(function() { return !appWindow.isState(1, 0, 4) }))
+            appWindow.inputState = false
+            keyClick(Qt.Key_K)
+            keyClick(Qt.Key_O)
+            keyClick(Qt.Key_R)
+            keyClick(Qt.Key_P)
             webViewport.sendAsyncMessage("embedtest:getelementprop", {
                                                 name: "myelem",
                                                 property: "value"
                                                })
-            verify(MyScript.wrtWait(function() { return (appWindow.inputContent == ""); }))
-            compare(appWindow.inputContent, "korp");
-            MyScript.dumpTs("test_Test1LoadInputPage end");
+            verify(MyScript.wrtWait(function() { return appWindow.inputContent == "" }))
+            compare(appWindow.inputContent, "korp")
+            MyScript.dumpTs("test_Test1LoadInputPage end")
         }
 
         function test_Test1LoadInputURLPage() {
@@ -108,30 +111,30 @@ TestWindow {
             verify(MyScript.waitMozView())
             appWindow.inputContent = ""
             appWindow.inputType = ""
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><input type=number id=myelem value=''>";
+            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input type=number id=myelem value=''>"
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             mouseClick(webViewport, 10, 10)
-            verify(MyScript.wrtWait(function() { return (!appWindow.isState(1, 0, 4)); }))
-            appWindow.inputState = false;
-            keyClick(Qt.Key_1);
-            keyClick(Qt.Key_2);
-            keyClick(Qt.Key_3);
-            keyClick(Qt.Key_4);
+            verify(MyScript.wrtWait(function() { return !appWindow.isState(1, 0, 4) }))
+            appWindow.inputState = false
+            keyClick(Qt.Key_1)
+            keyClick(Qt.Key_2)
+            keyClick(Qt.Key_3)
+            keyClick(Qt.Key_4)
             webViewport.sendAsyncMessage("embedtest:getelementprop", {
                                                 name: "myelem",
                                                 property: "value"
                                                })
-            verify(MyScript.wrtWait(function() { return (appWindow.inputContent == ""); }))
-            verify(MyScript.wrtWait(function() { return (appWindow.inputType == ""); }))
-            compare(appWindow.inputContent, "1234");
-            MyScript.dumpTs("test_Test1LoadInputURLPage end");
+            verify(MyScript.wrtWait(function() { return appWindow.inputContent == "" }))
+            verify(MyScript.wrtWait(function() { return appWindow.inputType == "" }))
+            compare(appWindow.inputContent, "1234")
+            MyScript.dumpTs("test_Test1LoadInputURLPage end")
         }
     }
 
     Component.onCompleted: {
-        QMozEngineSettings.setPreference("embedlite.azpc.handle.singletap", false);
-        QMozEngineSettings.setPreference("embedlite.azpc.json.singletap", true);
+        QMozEngineSettings.setPreference("embedlite.azpc.handle.singletap", false)
+        QMozEngineSettings.setPreference("embedlite.azpc.json.singletap", true)
     }
 }
