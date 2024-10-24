@@ -47,8 +47,9 @@ TestWindow {
             if (message == "embed:downloadpicker") {
                 QmlMozContext.notifyObservers("embedui:downloadpicker", {
                                                  downloadDirectory: "/tmp/",
-                                                 defaultFileName: data.defaultFileName,                                             })
+                                                 defaultFileName: data.defaultFileName,
                                                  suggestedFileExtension: data.suggestedFileExtension
+                                              })
             }
         }
         Component.onCompleted: {
