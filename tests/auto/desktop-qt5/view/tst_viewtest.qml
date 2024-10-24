@@ -11,6 +11,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         visible: true
         focus: true
         active: true
@@ -20,6 +21,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_viewtest"
         when: windowShown
 
@@ -28,21 +30,20 @@ TestWindow {
             wait(1000)
         }
 
-        function test_Test1LoadSimpleBlank()
-        {
+        function test_Test1LoadSimpleBlank() {
             MyScript.dumpTs("test_Test1LoadSimpleBlank start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "about:blank";
+            webViewport.url = "about:blank"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100)
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             MyScript.dumpTs("test_Test1LoadSimpleBlank end")
         }
-        function test_Test2LoadAboutMozillaCheckTitle()
-        {
+
+        function test_Test2LoadAboutMozillaCheckTitle() {
             MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle start")
-            webViewport.url = "about:mozilla";
+            webViewport.url = "about:mozilla"
             verify(MyScript.waitLoadFinished(webViewport))
             // Something like The "Book of Mozilla, 6:27", might vary between versions
             verify(webViewport.title.indexOf("The Book of Mozilla") == 0)

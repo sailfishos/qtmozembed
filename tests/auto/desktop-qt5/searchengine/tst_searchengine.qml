@@ -57,6 +57,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         visible: true
         focus: true
         active: true
@@ -76,18 +77,20 @@ TestWindow {
 
     SignalSpy {
         id: initializedSpy
+
         target: QmlMozContext
         signalName: "initialized"
     }
 
     TestCase {
         id: testcaseid
+
         name: "tst_searchengine"
         when: windowShown
 
         function initTestCase() {
-            QmlMozContext.addObserver("embed:search");
-            QMozEngineSettings.setPreference("keyword.enabled", true);
+            QmlMozContext.addObserver("embed:search")
+            QMozEngineSettings.setPreference("keyword.enabled", true)
 
             if (!QmlMozContext.isInitialized()) {
                 initializedSpy.wait()
@@ -101,33 +104,36 @@ TestWindow {
 
         function test_001_addSearchEngine() {
             var engineExistsPredicate = function() {
-                var found = false;
+                var found = false
 
                 appWindow.testEngines.forEach(function(e) {
                     MyScript.dumpTs("Engine:", e)
                     if (e === "QMOZTest") {
-                        found = true;
+                        found = true
                     }
-                });
+                })
 
-                return !found;
-            };
+                return !found
+            }
             MyScript.dumpTs("AddSearchEngine start")
             verify(MyScript.waitMozContext())
 
             verify(MyScript.waitMozView())
             QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
-            verify(MyScript.wrtWait(function() { return (!engineExistsPredicate()); }))
-            QmlMozContext.notifyObservers("embedui:search", {msg:"loadxml", uri: "file://" + TestHelper.getenv("QTTESTSROOT") + "/auto/shared/searchengine/test.xml", confirm: false})
-            verify(MyScript.wrtWait(function() { return (appWindow.testResult !== "loaded"); }))
-            verify(MyScript.wrtWait(engineExistsPredicate));
-            MyScript.dumpTs("AddSearchEngine end");
+            verify(MyScript.wrtWait(function() { return !engineExistsPredicate() }))
+            QmlMozContext.notifyObservers("embedui:search",
+                                          {msg:"loadxml",
+                                              uri: "file://" + TestHelper.getenv("QTTESTSROOT")
+                                                   + "/auto/shared/searchengine/test.xml", confirm: false})
+            verify(MyScript.wrtWait(function() { return appWindow.testResult !== "loaded" }))
+            verify(MyScript.wrtWait(engineExistsPredicate))
+            MyScript.dumpTs("AddSearchEngine end")
         }
 
         function test_002_setDefaultSearchEngine() {
             MyScript.dumpTs("setDefaultSearchEngine start")
             QmlMozContext.notifyObservers("embedui:search", { msg: "setdefault", name: "QMOZTest"})
-            verify(MyScript.wrtWait(function() { return (appWindow.testDefault !== "QMOZTest"); }))
+            verify(MyScript.wrtWait(function() { return (appWindow.testDefault !== "QMOZTest") }))
             MyScript.dumpTs("setDefaultSearchEngine end")
         }
 
@@ -140,8 +146,8 @@ TestWindow {
 
             webViewport.load("mozsearch", false)
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
 
             compare(webViewport.url.toString(), "https://qmoztest/?search=mozsearch")
 
