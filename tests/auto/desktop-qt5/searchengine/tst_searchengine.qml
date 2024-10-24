@@ -138,12 +138,12 @@ TestWindow {
                 skip("searching with a search engine requires network access.")
             }
 
-            webViewport.load("QMOZTest", false);
+            webViewport.load("mozsearch", false)
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100);
             verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
 
-            compare(webViewport.url.toString(), "https://qmoztest/?search=qmoztest")
+            compare(webViewport.url.toString(), "https://qmoztest/?search=mozsearch")
 
             MyScript.dumpTs("searchFromWeb end")
         }
