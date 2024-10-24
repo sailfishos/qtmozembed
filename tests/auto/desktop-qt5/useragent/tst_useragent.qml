@@ -23,6 +23,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         visible: true
         focus: true
         active: true
@@ -31,6 +32,7 @@ TestWindow {
 
     SignalSpy {
         id: webViewportSpy
+
         target: webViewport
         signalName: "viewInitialized"
     }
@@ -45,16 +47,17 @@ TestWindow {
 
         // Load the new page
         webViewportSpy.clear()
-        webViewport.url = url;
+        webViewport.url = url
         while ((webViewportSpy.count == 0) || webViewport.loading) {
             webViewportSpy.wait()
         }
         testcaseid.compare(webViewport.loading, false)
-        testcaseid.compare(webViewport.loadProgress, 100);
+        testcaseid.compare(webViewport.loadProgress, 100)
     }
 
     TestCase {
         id: testcaseid
+
         name: "tst_useragent"
         when: windowShown
 
@@ -71,7 +74,7 @@ TestWindow {
             webViewport.httpUserAgent = ""
             verify(webViewport.httpUserAgent === "")
             loadPage(test_page)
-            verify(MyScript.wrtWait(function() { return (webViewport.httpUserAgent === ""); }))
+            verify(MyScript.wrtWait(function() { return (webViewport.httpUserAgent === "") }))
             verify(webViewport.httpUserAgent === override_default)
         }
 
@@ -105,7 +108,7 @@ TestWindow {
             // Load the page
             webViewportSpy.signalName = "httpUserAgentChanged"
             webViewportSpy.clear()
-            webViewport.url = test_page;
+            webViewport.url = test_page
 
             // Check the httpUserAgentChanged signal is sent
             webViewportSpy.wait()

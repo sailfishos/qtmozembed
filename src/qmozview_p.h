@@ -119,7 +119,7 @@ public:
     void goForward();
     void stop();
     void reload();
-    void load(const QString &url, const bool& fromExternal);
+    void load(const QString &url, bool fromExternal);
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);
     void addMessageListeners(const std::vector<std::string> &messageNamesList);

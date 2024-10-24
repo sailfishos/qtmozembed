@@ -103,7 +103,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     , mViewCreator(nullptr)
     , mMozWindow(nullptr)
 {
-    qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");;
+    qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this << ", parent:" << (void *)parent << getenv("GRE_HOME");
 
     platform_egl_workaround_open();
 
