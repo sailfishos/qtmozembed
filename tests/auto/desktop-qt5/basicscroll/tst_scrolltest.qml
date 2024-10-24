@@ -51,14 +51,14 @@ TestWindow {
             verify(MyScript.waitMozView())
             webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body bgcolor=red leftmargin=0 topmargin=0 marginwidth=0 marginheight=0><input style='position:absolute; left:0px; top:12000px;'>"
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             while (appWindow.scrollY === 0) {
-                MyScript.scrollBy(100, 301, 0, -200, 100, false);
-                wait(100);
+                MyScript.scrollBy(100, 301, 0, -200, 100, false)
+                wait(100)
             }
             verify(appWindow.scrollX === 0)
-            MyScript.dumpTs("test_TestScrollPaintOperations end");
+            MyScript.dumpTs("test_TestScrollPaintOperations end")
         }
     }
 }
