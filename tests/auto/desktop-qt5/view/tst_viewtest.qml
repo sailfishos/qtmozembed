@@ -44,8 +44,9 @@ TestWindow {
             MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle start")
             webViewport.url = "about:mozilla";
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.title, "The Book of Mozilla, 11:14")
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            // Something like The "Book of Mozilla, 6:27", might vary between versions
+            verify(webViewport.title.indexOf("The Book of Mozilla") == 0)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle end")
         }
     }
