@@ -17,6 +17,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         visible: true
         focus: true
         active: true
@@ -29,6 +30,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_activatelinks"
         when: windowShown
 
@@ -51,17 +53,17 @@ TestWindow {
                 { name: "browser.ui.touch.top", value: 48},
                 { name: "browser.ui.touch.bottom", value: 16},
                 { name: "browser.ui.touch.weight.visited", value: 120}
-            ]});
+            ]})
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a>";
+            webViewport.url = "data:text/html,<head><meta charset='utf-8' name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a></body>"
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             mouseClick(webViewport, 10, 20)
-            verify(MyScript.wrtWait(function() { return webViewport.url != "about:blank"; }))
+            verify(MyScript.wrtWait(function() { return webViewport.url != "about:blank" }))
             verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            compare(webViewport.loadProgress, 100)
+            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
             QmlMozContext.notifyObservers("embedui:setprefs", { prefs :
             [
                 { name: "embedlite.azpc.handle.singletap", value: true},
@@ -74,7 +76,7 @@ TestWindow {
                 { name: "browser.ui.touch.top", value: 48},
                 { name: "browser.ui.touch.bottom", value: 16},
                 { name: "browser.ui.touch.weight.visited", value: 120}
-            ]});
+            ]})
             MyScript.dumpTs("test_ActiveHyperLink end")
         }
     }

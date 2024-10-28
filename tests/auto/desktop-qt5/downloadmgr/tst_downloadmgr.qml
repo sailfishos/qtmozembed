@@ -14,9 +14,10 @@ TestWindow {
 
     Component.onCompleted: {
         QMozEngineSettings.setPreference("browser.download.folderList", 2); // 0 - Desktop, 1 - Downloads, 2 - Custom
-        QMozEngineSettings.setPreference("browser.download.useDownloadDir", false); // Invoke filepicker instead of immediate download to ~/Downloads
-        QMozEngineSettings.setPreference("browser.download.manager.retention", 2);
-        QMozEngineSettings.setPreference("browser.helperApps.deleteTempFileOnExit", false);
+        // Invoke filepicker instead of immediate download to ~/Downloads
+        QMozEngineSettings.setPreference("browser.download.useDownloadDir", false)
+        QMozEngineSettings.setPreference("browser.download.manager.retention", 2)
+        QMozEngineSettings.setPreference("browser.helperApps.deleteTempFileOnExit", false)
     }
 
     Connections {
@@ -36,6 +37,7 @@ TestWindow {
 
     QmlMozView {
         id: webViewport
+
         visible: true
         focus: true
         active: true
@@ -47,8 +49,9 @@ TestWindow {
             if (message == "embed:downloadpicker") {
                 QmlMozContext.notifyObservers("embedui:downloadpicker", {
                                                  downloadDirectory: "/tmp/",
-                                                 defaultFileName: data.defaultFileName,                                             })
+                                                 defaultFileName: data.defaultFileName,
                                                  suggestedFileExtension: data.suggestedFileExtension
+                                              })
             }
         }
         Component.onCompleted: {
@@ -58,6 +61,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_downloadmgr"
         when: windowShown
 
@@ -68,18 +72,18 @@ TestWindow {
         function test_TestDownloadMgrPage() {
             MyScript.dumpTs("test_TestDownloadMgrPage start")
             testcaseid.verify(MyScript.waitMozContext())
-            QmlMozContext.addObserver("embed:download");
+            QmlMozContext.addObserver("embed:download")
             testcaseid.verify(MyScript.waitMozView())
             appWindow.promptReceived = false
-            webViewport.url = "about:mozilla";
+            webViewport.url = "about:mozilla"
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-            testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
-            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin";
+            testcaseid.compare(webViewport.loadProgress, 100)
+            testcaseid.verify(MyScript.wrtWait(function() { return !webViewport.painted }))
+            webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/downloadmgr/tt.bin"
             testcaseid.verify(MyScript.waitLoadFinished(webViewport))
-            testcaseid.compare(webViewport.loadProgress, 100);
-            testcaseid.verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
-            MyScript.dumpTs("test_TestDownloadMgrPage end");
+            testcaseid.compare(webViewport.loadProgress, 100)
+            testcaseid.verify(MyScript.wrtWait(function() { return !appWindow.promptReceived }))
+            MyScript.dumpTs("test_TestDownloadMgrPage end")
         }
     }
 }
