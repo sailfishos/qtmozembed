@@ -18,7 +18,7 @@ class TestHelper : public QObject
 public:
     explicit TestHelper(QObject *parent = nullptr);
 
-    Q_INVOKABLE QString getenv(const QString envVarName) const;
+    Q_INVOKABLE QString getenv(const QString &envVarName) const;
 };
 
 #endif

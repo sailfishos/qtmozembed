@@ -12,10 +12,9 @@
 TestHelper::TestHelper(QObject *parent)
     : QObject(parent)
 {
-
 }
 
-QString TestHelper::getenv(const QString envVarName) const
+QString TestHelper::getenv(const QString &envVarName) const
 {
     return QString(::getenv(envVarName.toUtf8().constData()));
 }
