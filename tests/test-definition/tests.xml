@@ -14,7 +14,7 @@
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/context &amp;&amp; ../../run-tests.sh</step>
            </case>
            <case manual="false" name="unittests-basicview">
-               <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicview &amp;&amp; ../../run-tests.sh</step>
+               <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicview &amp;&amp; FULL_SHUTDOWN=1 ../../run-tests.sh</step>
            </case>
            <case manual="false" name="unittests-view">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/view &amp;&amp; ../../run-tests.sh</step>

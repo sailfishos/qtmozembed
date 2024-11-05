@@ -36,11 +36,14 @@
 #include "qmozenginesettings.h"
 #include "testviewcreator.h"
 #include "testhelper.h"
+
+#include <stdio.h>
+#include <unistd.h>
+
 #include <QGuiApplication>
 #include <QtCore/qstring.h>
 #include <QTimer>
 #include <QtQml>
-#include <stdio.h>
 #include <QQuickView>
 #include <QtQuickTest/quicktest.h>
 
@@ -87,6 +90,12 @@ int main(int argc, char **argv)
     });
 
     app.exec();
+
+    // in case there are problems in shutdown (tricky business!), avoid making all the
+    // tests failing and rather have a separate test for that
+    if (qgetenv("FULL_SHUTDOWN").length() == 0) {
+        _exit(ret);
+    }
 
     while (!contextDestroyed) {
         QEventLoop::ProcessEventsFlags flags = QEventLoop::AllEvents | QEventLoop::WaitForMoreEvents;
