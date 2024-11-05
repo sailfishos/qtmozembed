@@ -80,6 +80,5 @@ quint32 TestViewCreator::createView(const quint32 &parentId, const uintptr_t &pa
         emit newViewCreated(nullptr);
     }
 
-
     return uniqueId;
 };

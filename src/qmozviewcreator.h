@@ -17,8 +17,8 @@ class QMozViewCreator : public QObject
     Q_OBJECT
 
 public:
-    explicit QMozViewCreator(QObject *parent = 0) : QObject(parent) {};
-    virtual ~QMozViewCreator() {};
+    explicit QMozViewCreator(QObject *parent = 0) : QObject(parent) {}
+    virtual ~QMozViewCreator() {}
 
     /*
      * @returns ID of created web view
