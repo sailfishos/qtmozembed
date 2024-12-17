@@ -62,6 +62,7 @@ public:
     QSize textureSize;
     QImage image;
     Qt::ScreenOrientation orientation;
+    Qt::ScreenOrientation primaryOrientation;
     bool ready;
 };
 
@@ -112,7 +113,8 @@ void QMozGrabResult::captureImage(const QRect &rect)
     int w = d->textureSize.width();
     int h = d->textureSize.height();
 
-    if (d->orientation == Qt::LandscapeOrientation || d->orientation == Qt::InvertedLandscapeOrientation) {
+    if (d->primaryOrientation == Qt::PortraitOrientation
+            && (d->orientation == Qt::LandscapeOrientation || d->orientation == Qt::InvertedLandscapeOrientation)) {
         qSwap<int>(w, h);
     }
 
@@ -129,17 +131,34 @@ void QMozGrabResult::captureImage(const QRect &rect)
 
     QRect targetRect(x, y, w, h);
     QImage image = gl_read_framebuffer(targetRect);
-    if (d->orientation != Qt::PortraitOrientation && d->orientation != Qt::PrimaryOrientation) {
+    if (d->primaryOrientation == Qt::PortraitOrientation) {
+        if (d->orientation != Qt::PortraitOrientation && d->orientation != Qt::PrimaryOrientation) {
+            QMatrix rotationMatrix;
+            switch (d->orientation) {
+            case Qt::LandscapeOrientation:
+                rotationMatrix.rotate(270);
+                break;
+            case Qt::InvertedLandscapeOrientation:
+                rotationMatrix.rotate(90);
+                break;
+            case Qt::InvertedPortraitOrientation:
+                rotationMatrix.rotate(180);
+            default:
+                break;
+            }
+            image = image.transformed(rotationMatrix);
+        }
+    } else if (d->orientation != Qt::LandscapeOrientation && d->orientation != Qt::PrimaryOrientation) {
         QMatrix rotationMatrix;
         switch (d->orientation) {
-        case Qt::LandscapeOrientation:
-            rotationMatrix.rotate(270);
-            break;
-        case Qt::InvertedLandscapeOrientation:
+        case Qt::PortraitOrientation:
             rotationMatrix.rotate(90);
             break;
-        case Qt::InvertedPortraitOrientation:
+        case Qt::InvertedLandscapeOrientation:
             rotationMatrix.rotate(180);
+            break;
+        case Qt::InvertedPortraitOrientation:
+            rotationMatrix.rotate(270);
         default:
             break;
         }
@@ -190,6 +209,7 @@ QMozGrabResult *QMozGrabResultPrivate::create(QMozOpenGLWebPage *webPage, const 
     d->textureSize = size;
     d->webPage = webPage;
     d->orientation = webPage->mozWindow()->contentOrientation();
+    d->primaryOrientation = webPage->mozWindow()->primaryOrientation();
 
     return result;
 }

@@ -82,6 +82,11 @@ Qt::ScreenOrientation QMozWindow::pendingOrientation() const
     return d->mPendingOrientation;
 }
 
+Qt::ScreenOrientation QMozWindow::primaryOrientation() const
+{
+    return d->mPrimaryOrientation;
+}
+
 void QMozWindow::getPlatformImage(const std::function<void(void *image, int width, int height)> &callback)
 {
     d->mWindow->GetPlatformImage(callback);
