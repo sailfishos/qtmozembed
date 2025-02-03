@@ -21,6 +21,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_basicmozcontext"
         when: windowShown
 
