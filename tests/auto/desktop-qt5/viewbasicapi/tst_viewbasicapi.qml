@@ -12,6 +12,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_viewbasicapi"
         when: windowShown
 

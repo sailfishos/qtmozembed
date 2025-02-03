@@ -225,7 +225,8 @@ void QMozEngineSettingsPrivate::enableLowPrecisionBuffers(bool enabled)
     setPreference(QStringLiteral("layers.low-precision-buffer"), QVariant::fromValue<bool>(enabled));
 }
 
-void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value, QMozEngineSettings::PreferenceType preferenceType)
+void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant &value,
+                                              QMozEngineSettings::PreferenceType preferenceType)
 {
     qCDebug(lcEmbedLiteExt) << "name:" << key.toUtf8().data() << ", type:" << value.type() << ", user type:" << value.userType();
 
@@ -265,7 +266,8 @@ void QMozEngineSettingsPrivate::setPreference(const QString &key, const QVariant
             app->SetBoolPref(key.toUtf8().data(), value.toBool());
             break;
         default:
-            qCWarning(lcEmbedLiteExt) << "Unknown pref" << key << "value" << value << "type:" << value.type() << "userType:" << value.userType();
+            qCWarning(lcEmbedLiteExt) << "Unknown pref" << key << "value" << value << "type:" << value.type()
+                                      << "userType:" << value.userType();
         }
         break;
     }

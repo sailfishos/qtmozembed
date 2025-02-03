@@ -80,6 +80,7 @@ public:
     void focusInEvent(QFocusEvent *);
     void focusOutEvent(QFocusEvent *);
     void touchEvent(QTouchEvent *);
+    void wheelEvent(QWheelEvent *);
     void timerEvent(QTimerEvent *);
 
     QSharedPointer<QMozGrabResult> grabToImage(const QSize &targetSize = QSize());

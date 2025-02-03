@@ -15,8 +15,7 @@ TestWindow {
     property int cause: -1
     property string inputType
 
-    function isState(state, focus, cause)
-    {
+    function isState(state, focus, cause) {
         return appWindow.changed === true && appWindow.inputState === state && appWindow.focusChange === focus
                 && appWindow.cause === cause
     }
@@ -74,6 +73,7 @@ TestWindow {
 
     TestCase {
         id: testcaseid
+
         name: "tst_inputtest"
         when: windowShown
 
