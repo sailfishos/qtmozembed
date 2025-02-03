@@ -131,6 +131,7 @@ public:
     void keyPressEvent(QKeyEvent *event);
     void keyReleaseEvent(QKeyEvent *event);
     void touchEvent(QTouchEvent *event);
+    void wheelEvent(QWheelEvent *event);
 
     void sendAsyncMessage(const QString &message, const QVariant &value);
     void setMozWindow(QMozWindow *);

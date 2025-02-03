@@ -1460,6 +1460,15 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
     }
 }
 
+void QMozViewPrivate::wheelEvent(QWheelEvent *event)
+{
+    if (!event->pixelDelta().isNull()) {
+        scrollBy(-event->pixelDelta().x(), -event->pixelDelta().y());
+    } else if (!event->angleDelta().isNull()) {
+        scrollBy(-event->angleDelta().x() / 2, -event->angleDelta().y() / 2);
+    }
+}
+
 void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
 {
     if (mViewInitialized) {

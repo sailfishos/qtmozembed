@@ -661,6 +661,12 @@ void QMozOpenGLWebPage::touchEvent(QTouchEvent *event)
     event->accept();
 }
 
+void QMozOpenGLWebPage::wheelEvent(QWheelEvent *event)
+{
+    d->wheelEvent(event);
+    event->accept();
+}
+
 void QMozOpenGLWebPage::timerEvent(QTimerEvent *event)
 {
     d->timerEvent(event);
