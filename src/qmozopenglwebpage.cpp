@@ -49,9 +49,7 @@ QMozOpenGLWebPage::QMozOpenGLWebPage(QObject *parent)
     : QObject(parent)
     , d(new QMozViewPrivate(new IMozQView<QMozOpenGLWebPage>(*this), this))
     , mCompleted(false)
-    , mSizeUpdateScheduled(false)
     , mThrottlePainting(false)
-    , m_virtualKeyboardHeight(0)
 {
     d->mContext = QMozContext::instance();
 
@@ -202,19 +200,6 @@ void QMozOpenGLWebPage::setThrottlePainting(bool throttle)
         mThrottlePainting = throttle;
         d->setThrottlePainting(throttle);
         Q_EMIT throttlePaintingChanged();
-    }
-}
-
-int QMozOpenGLWebPage::virtualKeyboardHeight() const
-{
-    return m_virtualKeyboardHeight;
-}
-
-void QMozOpenGLWebPage::setVirtualKeyboardHeight(int height)
-{
-    if (height != m_virtualKeyboardHeight) {
-        m_virtualKeyboardHeight = height;
-        Q_EMIT virtualKeyboardHeightChanged();
     }
 }
 
