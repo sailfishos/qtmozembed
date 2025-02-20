@@ -24,10 +24,11 @@
 #include <string>
 #include <codecvt>
 
+#include <sys/time.h>
+
 #include <mozilla/embedlite/EmbedInputData.h>
 #include <mozilla/embedlite/EmbedLiteApp.h>
 #include <mozilla/gfx/Tools.h>
-#include <sys/time.h>
 #include <mozilla/TimeStamp.h>
 
 #include <nsPoint.h>
@@ -197,8 +198,8 @@ void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight
         heightChanged = true;
     }
 
-    if (!gfx::FuzzyEqual(mScrollableOffset.x(), aPosX, SCROLL_EPSILON) ||
-            !gfx::FuzzyEqual(mScrollableOffset.y(), aPosY, SCROLL_EPSILON)) {
+    if (!gfx::FuzzyEqual(mScrollableOffset.x(), aPosX, SCROLL_EPSILON)
+            || !gfx::FuzzyEqual(mScrollableOffset.y(), aPosY, SCROLL_EPSILON)) {
 
         mScrollableOffset.setX(aPosX);
         mScrollableOffset.setY(aPosY);
@@ -335,9 +336,9 @@ void QMozViewPrivate::testFlickingMode(QTouchEvent *event)
                 hasMoved = !((tp.pos() - mSecondLastPos).isNull());
             }
 
-            mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                    (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD) &&
-                    hasMoved;
+            mCanFlick = (qint64(current_timestamp(event) - mLastTimestamp) < MOZVIEW_FLICK_THRESHOLD)
+                    && (qint64(current_timestamp(event) - mLastStationaryTimestamp) < MOZVIEW_FLICK_THRESHOLD)
+                    && hasMoved;
             mLastStationaryPos = QPointF();
         }
     }
@@ -673,7 +674,8 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
                           : 0;
         bool ok;
         int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
-        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
+        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
+                   || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
             int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
             mView->SendKeyPress(domKeyCode, 0, charCode);
             mView->SendKeyRelease(domKeyCode, 0, charCode);

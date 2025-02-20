@@ -38,7 +38,6 @@ class QMozOpenGLWebPage : public QObject
     Q_PROPERTY(bool active READ active WRITE setActive NOTIFY activeChanged FINAL)
     Q_PROPERTY(bool loaded READ loaded NOTIFY loadedChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
-    Q_PROPERTY(int virtualKeyboardHeight WRITE setVirtualKeyboardHeight READ virtualKeyboardHeight NOTIFY virtualKeyboardHeightChanged FINAL)
 
     Q_MOZ_VIEW_PROPERTIES
 
@@ -66,9 +65,6 @@ public:
 
     bool throttlePainting() const;
     void setThrottlePainting(bool);
-
-    int virtualKeyboardHeight() const;
-    void setVirtualKeyboardHeight(int);
 
     void initialize();
 
@@ -101,7 +97,6 @@ Q_SIGNALS:
     void heightChanged();
     void loadedChanged();
     void throttlePaintingChanged();
-    void virtualKeyboardHeightChanged();
     void afterRendering();
 
 private Q_SLOTS:
@@ -115,9 +110,7 @@ private:
     bool mCompleted;
     QList<QWeakPointer<QMozGrabResult> > mGrabResultList;
     QMutex mGrabResultListLock;
-    bool mSizeUpdateScheduled;
     bool mThrottlePainting;
-    int m_virtualKeyboardHeight;
 
     Q_DISABLE_COPY(QMozOpenGLWebPage)
 };
