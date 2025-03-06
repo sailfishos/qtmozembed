@@ -1130,11 +1130,10 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
 {
     // Normally these come from HandleScrollEvent but for some documents no such event is generated.
+    const float contentResolution = contentWindowSize(mMozWindow).width() / aWidth;
 
-    const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
-
-    if (!qFuzzyIsNull(contentResoution) && contentResoution != mContentResolution) {
-        mContentResolution = contentResoution;
+    if (!qFuzzyIsNull(contentResolution) && contentResolution != mContentResolution) {
+        mContentResolution = contentResolution;
         mViewIface->resolutionChanged();
     }
 
@@ -1244,17 +1243,18 @@ void QMozViewPrivate::OnDynamicToolbarHeightChanged()
 
 bool QMozViewPrivate::HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
-    if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
-            mContentRect.width() != aContentRect.width ||
-            mContentRect.height() != aContentRect.height) {
+    if (mContentRect.x() != aContentRect.x
+            || mContentRect.y() != aContentRect.y
+            || mContentRect.width() != aContentRect.width
+            || mContentRect.height() != aContentRect.height) {
         mContentRect.setRect(aContentRect.x, aContentRect.y, aContentRect.width, aContentRect.height);
         mViewIface->viewAreaChanged();
     }
 
-    float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
-    if (!qFuzzyIsNull(contentResoution)) {
-        if (mContentResolution != contentResoution) {
-            mContentResolution = contentResoution;
+    float contentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
+    if (!qFuzzyIsNull(contentResolution)) {
+        if (mContentResolution != contentResolution) {
+            mContentResolution = contentResolution;
             mViewIface->resolutionChanged();
         }
         updateScrollArea(
