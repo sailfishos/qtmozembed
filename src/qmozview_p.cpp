@@ -102,6 +102,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mParentID(0)
     , mParentBrowsingContext(0)
     , mPrivateMode(false)
+    , mHidden(false)
     , mDesktopMode(false)
     , mActive(false)
     , mLoaded(false)
@@ -162,6 +163,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mAutoCompleteActive(false)
     , mAutoCompleteList()
     , mDirtyState(0)
+    , mPendingFromExternal(false)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
