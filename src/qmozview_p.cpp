@@ -68,7 +68,7 @@ using namespace mozilla::embedlite;
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
-qint64 current_timestamp(QTouchEvent *aEvent)
+static qint64 current_timestamp(QTouchEvent *aEvent)
 {
     if (aEvent) {
         return aEvent->timestamp();
@@ -81,7 +81,8 @@ qint64 current_timestamp(QTouchEvent *aEvent)
 }
 
 // Map window size to orientation.
-QSize contentWindowSize(const QMozWindow *window) {
+static QSize contentWindowSize(const QMozWindow *window)
+{
     Q_ASSERT(window);
 
     Qt::ScreenOrientation orientation = window->pendingOrientation();
