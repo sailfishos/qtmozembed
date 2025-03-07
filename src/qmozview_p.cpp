@@ -86,11 +86,13 @@ static QSize contentWindowSize(const QMozWindow *window)
     Q_ASSERT(window);
 
     Qt::ScreenOrientation orientation = window->pendingOrientation();
-    QSize s = window->size();
-    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-        s.transpose();
+    QSize size = window->size();
+    if ((qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation)
+            == (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation)) {
+        size.transpose();
     }
-    return s;
+
+    return size;
 }
 
 QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
