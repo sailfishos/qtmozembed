@@ -68,7 +68,7 @@ using namespace mozilla::embedlite;
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
-qint64 current_timestamp(QTouchEvent *aEvent)
+static qint64 current_timestamp(QTouchEvent *aEvent)
 {
     if (aEvent) {
         return aEvent->timestamp();
@@ -81,15 +81,18 @@ qint64 current_timestamp(QTouchEvent *aEvent)
 }
 
 // Map window size to orientation.
-QSize contentWindowSize(const QMozWindow *window) {
+static QSize contentWindowSize(const QMozWindow *window)
+{
     Q_ASSERT(window);
 
     Qt::ScreenOrientation orientation = window->pendingOrientation();
-    QSize s = window->size();
-    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-        s.transpose();
+    QSize size = window->size();
+    if ((qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation)
+            == (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation)) {
+        size.transpose();
     }
-    return s;
+
+    return size;
 }
 
 QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
@@ -102,6 +105,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mParentID(0)
     , mParentBrowsingContext(0)
     , mPrivateMode(false)
+    , mHidden(false)
     , mDesktopMode(false)
     , mActive(false)
     , mLoaded(false)
@@ -162,6 +166,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mAutoCompleteActive(false)
     , mAutoCompleteList()
     , mDirtyState(0)
+    , mPendingFromExternal(false)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
@@ -1130,11 +1135,10 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
 {
     // Normally these come from HandleScrollEvent but for some documents no such event is generated.
+    const float contentResolution = contentWindowSize(mMozWindow).width() / aWidth;
 
-    const float contentResoution = contentWindowSize(mMozWindow).width() / aWidth;
-
-    if (!qFuzzyIsNull(contentResoution) && contentResoution != mContentResolution) {
-        mContentResolution = contentResoution;
+    if (!qFuzzyIsNull(contentResolution) && contentResolution != mContentResolution) {
+        mContentResolution = contentResolution;
         mViewIface->resolutionChanged();
     }
 
@@ -1244,17 +1248,18 @@ void QMozViewPrivate::OnDynamicToolbarHeightChanged()
 
 bool QMozViewPrivate::HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
 {
-    if (mContentRect.x() != aContentRect.x || mContentRect.y() != aContentRect.y ||
-            mContentRect.width() != aContentRect.width ||
-            mContentRect.height() != aContentRect.height) {
+    if (mContentRect.x() != aContentRect.x
+            || mContentRect.y() != aContentRect.y
+            || mContentRect.width() != aContentRect.width
+            || mContentRect.height() != aContentRect.height) {
         mContentRect.setRect(aContentRect.x, aContentRect.y, aContentRect.width, aContentRect.height);
         mViewIface->viewAreaChanged();
     }
 
-    float contentResoution = contentWindowSize(mMozWindow).width() / aContentRect.width;
-    if (!qFuzzyIsNull(contentResoution)) {
-        if (mContentResolution != contentResoution) {
-            mContentResolution = contentResoution;
+    float contentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
+    if (!qFuzzyIsNull(contentResolution)) {
+        if (mContentResolution != contentResolution) {
+            mContentResolution = contentResolution;
             mViewIface->resolutionChanged();
         }
         updateScrollArea(

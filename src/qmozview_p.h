@@ -263,6 +263,4 @@ protected:
     QStringList mPendingFrameScripts;
 };
 
-qint64 current_timestamp(QTouchEvent *);
-
 #endif /* qmozview_p_h */
