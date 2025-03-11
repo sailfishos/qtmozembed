@@ -229,8 +229,7 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
     // If the status is empty, leave it as it was
     if (aStatus && *aStatus && context) {
         embedSecurity = context->GetApp()->CreateSecurity(aStatus, aState);
-    }
-    else {
+    } else {
         if (!aStatus || !*aStatus) {
             qCDebug(lcEmbedLiteExt) << "Security state could not be imported: empty status";
         }
@@ -278,8 +277,7 @@ void QMozSecurity::importState(const char *aStatus, unsigned int aState)
             m_serverCertificate = serverCertificate;
             emissions << &QMozSecurity::serverCertificateChanged;
         }
-    }
-    else {
+    } else {
         // There was a deserialisation error
         resetStatus(&emissions);
         qCDebug(lcEmbedLiteExt) << "Security state change: deserialisation failed";
