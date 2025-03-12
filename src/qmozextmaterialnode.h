@@ -37,7 +37,7 @@ private:
     QRectF m_rect { 0, 0, 0, 0 };
     QRectF m_normalizedTextureSubRect { 0, 0, 1, 1 };
     QSGTexture *m_texture = nullptr;
-    Qt::ScreenOrientation m_orientation = Qt::PortraitOrientation;
+    Qt::ScreenOrientation m_orientation;
     bool m_geometryChanged = true;
     bool m_textureChanged = true;
 };
