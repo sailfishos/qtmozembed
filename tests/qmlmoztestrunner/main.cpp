@@ -93,7 +93,9 @@ int main(int argc, char **argv)
 
     // in case there are problems in shutdown (tricky business!), avoid making all the
     // tests failing and rather have a separate test for that
-    if (qgetenv("FULL_SHUTDOWN").length() == 0) {
+    QByteArray fullShutdown = qgetenv("FULL_SHUTDOWN");
+    if (fullShutdown == "0" || fullShutdown == "false") {
+        qWarning() << "FULL_SHUTDOWN disabled, doing early exit";
         _exit(ret);
     }
 
