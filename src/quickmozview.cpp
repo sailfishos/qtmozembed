@@ -16,6 +16,7 @@
 #include "mozilla/embedlite/EmbedLiteApp.h"
 #include "mozilla/TimeStamp.h"
 
+#include <QGuiApplication>
 #include <QThread>
 #include <QMutexLocker>
 #include <QtQuick/qquickwindow.h>
@@ -36,7 +37,6 @@
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
-
 namespace {
 
 class ObjectCleanup : public QRunnable
@@ -56,23 +56,24 @@ private:
     QObject * const m_object;
 };
 
-}
-
 QSizeF webContentWindowSize(Qt::ScreenOrientation orientation, const QSizeF &size)
 {
-    // Set size for EmbedLiteWindow in "portrait"
-    QSizeF s = size;
-    if (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation) {
-        s.transpose();
+    // Set size for EmbedLiteWindow in screen native orientation
+    QSizeF result = size;
+    if ((qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation)
+            == (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation)) {
+        result.transpose();
     }
-    return s;
+    return result;
+}
+
 }
 
 QuickMozView::QuickMozView(QQuickItem *parent)
     : QQuickItem(parent)
     , d(new QMozViewPrivate(new IMozQView<QuickMozView>(*this), this))
     , mTexture(nullptr)
-    , mOrientation(Qt::PrimaryOrientation)
+    , mOrientation(qApp->primaryScreen()->primaryOrientation())
     , mExplicitViewportWidth(false)
     , mExplicitViewportHeight(false)
     , mExplicitOrientation(false)

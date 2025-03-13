@@ -18,20 +18,21 @@
 
 using namespace mozilla::embedlite;
 
-namespace {
 // Cached QEvent user type, registered for our event system
-static int sPokeEvent;
-}  // namespace
+static int sPokeEvent = -1;
 
 MessagePumpQt::MessagePumpQt(EmbedLiteApp *aApp)
     : mApp(aApp)
     , mTimer(new QTimer(this))
-    , mState(0)
+    , mState(nullptr)
     , mLastDelayedWorkTime(-1)
 {
     mEventLoopPrivate = mApp->CreateEmbedLiteMessagePump(this);
+
     // Register our custom event type, to use in qApp event loop
-    sPokeEvent = QEvent::registerEventType();
+    if (sPokeEvent == -1) {
+        sPokeEvent = QEvent::registerEventType();
+    }
     connect(mTimer, &QTimer::timeout, this, &MessagePumpQt::dispatchDelayed);
     mTimer->setSingleShot(true);
 }
@@ -44,17 +45,16 @@ MessagePumpQt::~MessagePumpQt()
     delete mEventLoopPrivate;
 }
 
-bool
-MessagePumpQt::event(QEvent *e)
+bool MessagePumpQt::event(QEvent *e)
 {
     if (e->type() == sPokeEvent) {
-        HandleDispatch();
+        handleDispatch();
         return true;
     }
     return QObject::event(e);
 }
 
-void MessagePumpQt::HandleDispatch()
+void MessagePumpQt::handleDispatch()
 {
     if (mState->should_quit) {
         return;
@@ -63,7 +63,7 @@ void MessagePumpQt::HandleDispatch()
     if (mEventLoopPrivate->DoWork(mState->delegate)) {
         // there might be more, see more_work_is_plausible
         // variable above, that's why we ScheduleWork() to keep going.
-        ScheduleWorkLocal();
+        scheduleWorkLocal();
     }
 
     if (mState->should_quit) {
@@ -75,19 +75,17 @@ void MessagePumpQt::HandleDispatch()
 
     if (doIdleWork) {
         if (mEventLoopPrivate->DoIdleWork(mState->delegate)) {
-            ScheduleWorkLocal();
+            scheduleWorkLocal();
         }
     }
 }
 
-void MessagePumpQt::ScheduleWorkLocal()
+void MessagePumpQt::scheduleWorkLocal()
 {
-    QCoreApplication::postEvent(this,
-                                new QEvent((QEvent::Type)sPokeEvent));
+    QCoreApplication::postEvent(this, new QEvent((QEvent::Type)sPokeEvent));
 }
 
-void
-MessagePumpQt::scheduleDelayedIfNeeded()
+void MessagePumpQt::scheduleDelayedIfNeeded()
 {
     if (mLastDelayedWorkTime == -1) {
         return;
@@ -100,10 +98,9 @@ MessagePumpQt::scheduleDelayedIfNeeded()
     mTimer->start(mLastDelayedWorkTime >= 0 ? mLastDelayedWorkTime : 0);
 }
 
-void
-MessagePumpQt::dispatchDelayed()
+void MessagePumpQt::dispatchDelayed()
 {
-    HandleDispatch();
+    handleDispatch();
 }
 
 void MessagePumpQt::Run(void *delegate)
@@ -113,7 +110,7 @@ void MessagePumpQt::Run(void *delegate)
     state->should_quit = false;
     state->run_depth = mState ? mState->run_depth + 1 : 1;
     mState = state;
-    HandleDispatch();
+    handleDispatch();
 }
 
 void MessagePumpQt::Quit()
@@ -126,7 +123,7 @@ void MessagePumpQt::Quit()
 
 void MessagePumpQt::ScheduleWork()
 {
-    ScheduleWorkLocal();
+    scheduleWorkLocal();
 }
 
 void MessagePumpQt::ScheduleDelayedWork(const int aDelay)

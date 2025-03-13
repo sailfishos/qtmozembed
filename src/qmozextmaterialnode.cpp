@@ -4,6 +4,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "qmozextmaterialnode.h"
+
+#include <QGuiApplication>
+#include <QScreen>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
 
@@ -25,6 +28,7 @@ static void updateRectGeometry(QSGGeometry *g, const QRectF &rect,
 }
 
 MozMaterialNode::MozMaterialNode()
+    : m_orientation(qApp->primaryScreen()->primaryOrientation())
 {
     setFlag(UsePreprocess);
 
@@ -106,12 +110,14 @@ void MozMaterialNode::preprocess()
         QRectF textureRect = m_normalizedTextureSubRect;
 
         const bool landscape = m_orientation & (Qt::LandscapeOrientation | Qt::InvertedLandscapeOrientation);
-        const qreal width = landscape ? m_rect.height() : m_rect.width();
-        const qreal height = landscape ? m_rect.width() : m_rect.height();
+        const bool transpose = (landscape
+                                == (qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation));
+        const qreal width = transpose ? m_rect.height() : m_rect.width();
+        const qreal height = transpose ? m_rect.width() : m_rect.height();
         const QSizeF textureSize = m_texture ? QSizeF(m_texture->textureSize()) : QSizeF(width, height);
 
         if (width > textureSize.width()) {
-            if (landscape) {
+            if (transpose) {
                 geometryRect.setHeight(textureSize.width());
             } else {
                 geometryRect.setWidth(textureSize.width());
@@ -121,7 +127,7 @@ void MozMaterialNode::preprocess()
         }
 
         if (height > textureSize.height()) {
-            if (landscape) {
+            if (transpose) {
                 geometryRect.setWidth(textureSize.height());
             } else {
                 geometryRect.setHeight(textureSize.height());
@@ -131,8 +137,9 @@ void MozMaterialNode::preprocess()
         }
 
         // and then texture coordinates
-        switch (m_orientation) {
-        case Qt::LandscapeOrientation:
+        int rotation = qApp->primaryScreen()->angleBetween(m_orientation, qApp->primaryScreen()->primaryOrientation());
+        switch (rotation) {
+        case 90:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
@@ -141,7 +148,7 @@ void MozMaterialNode::preprocess()
                         textureRect.bottomRight(),
                         textureRect.bottomLeft());
             break;
-        case Qt::InvertedPortraitOrientation:
+        case 180:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
@@ -150,7 +157,7 @@ void MozMaterialNode::preprocess()
                         textureRect.bottomLeft(),
                         textureRect.topLeft());
             break;
-        case Qt::InvertedLandscapeOrientation:
+        case 270:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
@@ -160,7 +167,6 @@ void MozMaterialNode::preprocess()
                         textureRect.topRight());
             break;
         default:
-            // Portrait / PrimaryOrientation
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,

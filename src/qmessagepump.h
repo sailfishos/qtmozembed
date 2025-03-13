@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QVariant>
 #include <QStringList>
+
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
 
 namespace mozilla {
@@ -26,15 +27,12 @@ public:
     MessagePumpQt(mozilla::embedlite::EmbedLiteApp *aApp);
     ~MessagePumpQt();
 
-    virtual bool event(QEvent *e);
-    void scheduleDelayedIfNeeded();
-    void HandleDispatch();
-    void ScheduleWork();
+    bool event(QEvent *e) override;
 
-    virtual void Run(void *aDelegate);
-    virtual void Quit();
-    virtual void ScheduleWorkLocal();
-    virtual void ScheduleDelayedWork(const int aDelay);
+    void Run(void *aDelegate) override;
+    void Quit() override;
+    void ScheduleWork() override;
+    void ScheduleDelayedWork(const int aDelay) override;
 
     mozilla::embedlite::EmbedLiteMessagePump *EmbedLoop()
     {
@@ -45,6 +43,10 @@ public Q_SLOTS:
     void dispatchDelayed();
 
 private:
+    void scheduleWorkLocal();
+    void scheduleDelayedIfNeeded();
+    void handleDispatch();
+
     // We may make recursive calls to Run, so we save state that needs to be
     // separate between them in this structure type.
     struct RunState {
