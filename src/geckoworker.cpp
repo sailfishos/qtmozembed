@@ -25,10 +25,7 @@ void GeckoWorker::doWork()
 void GeckoWorker::quit()
 {
     printf("Call EmbedLiteApp::StopChildThread()\n");
-    // TODO : Check the order of destruction of EmbedLiteApp & QtMozEmbed.
-    // Causes segfault upon exit and might be that EmbedLiteApp has already
-    // stopped child thread.
-    // mApp->StopChildThread();
+    mApp->StopChildThread();
     deleteLater();
     sender()->deleteLater();
     mApp = nullptr;
