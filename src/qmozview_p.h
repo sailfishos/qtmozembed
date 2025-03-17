@@ -205,7 +205,8 @@ protected:
     QPointF mLastPos;
     QPointF mSecondLastPos;
     QPointF mLastStationaryPos;
-    QMap<int, QPointF> mActiveTouchPoints;
+    // <id, <pos, timestamp>>
+    QMap<int, QPair<QPointF, ulong>> mActiveTouchPoints;
     bool mCanFlick;
     bool mPendingTouchEvent;
     QString mUrl;
