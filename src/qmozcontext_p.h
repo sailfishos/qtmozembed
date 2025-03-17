@@ -43,17 +43,17 @@ public:
     explicit QMozContextPrivate(QObject *parent = 0);
     ~QMozContextPrivate();
 
-    virtual bool ExecuteChildThread() override;
-    virtual bool StopChildThread() override;
-    virtual void Initialized() override;
-    virtual void Destroyed() override;
-    virtual void OnObserve(const char *aTopic, const char16_t *aData) override;
-    virtual void LastViewDestroyed() override;
-    virtual void LastWindowDestroyed() override;
-    virtual uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
-                                              const bool &hidden,
-                                              EmbedLiteView *aParentView,
-                                              const uintptr_t &parentBrowsingContext) override;
+    bool ExecuteChildThread() override;
+    bool StopChildThread() override;
+    void Initialized() override;
+    void Destroyed() override;
+    void OnObserve(const char *aTopic, const char16_t *aData) override;
+    void LastViewDestroyed() override;
+    void LastWindowDestroyed() override;
+    uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
+                                      const bool &hidden,
+                                      EmbedLiteView *aParentView,
+                                      const uintptr_t &parentBrowsingContext) override;
 
     bool IsInitialized();
     EmbedLiteMessagePump *EmbedLoop();
