@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QPointer>
+#include <QPoint>
 #include <QRect>
 #include <QScopedPointer>
 #include <QSize>
@@ -27,6 +28,7 @@ public:
     void reserve();
     void release();
     bool isReserved() const;
+    void setScreenPosition(const QPoint &position);
     void setSize(const QSize &size);
     QSize size() const;
     void setContentOrientation(Qt::ScreenOrientation);

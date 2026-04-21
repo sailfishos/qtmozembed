@@ -7,6 +7,7 @@ test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/basicview/tst_basicview.qml \
     auto/desktop-qt5/context/tst_basicmozcontext.qml \
     auto/desktop-qt5/downloadmgr/tst_downloadmgr.qml \
+    auto/desktop-qt5/displaycutout/tst_displaycutout.qml \
     auto/desktop-qt5/favicons/tst_favicon.qml \
     auto/desktop-qt5/linksactivation/tst_activatelinks.qml \
     auto/desktop-qt5/multitouch/tst_multitouch.qml \

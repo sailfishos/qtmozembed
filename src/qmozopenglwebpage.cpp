@@ -671,3 +671,56 @@ bool QMozOpenGLWebPage::domContentLoaded() const
 {
     return d->domContentLoaded();
 }
+
+int QMozOpenGLWebPage::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+QString QMozOpenGLWebPage::viewportFit() const
+{
+    return d->viewportFit();
+}

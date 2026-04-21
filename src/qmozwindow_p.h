@@ -8,6 +8,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QPoint>
 #include <QSize>
 
 #include "mozilla/embedlite/EmbedLiteWindow.h"
@@ -20,6 +21,7 @@ public:
     QMozWindowPrivate(QMozWindow &, const QSize &size);
     virtual ~QMozWindowPrivate();
 
+    void setScreenPosition(const QPoint &position);
     void setSize(const QSize &size);
     void setContentOrientation(Qt::ScreenOrientation);
     void setPrimaryOrientation(Qt::ScreenOrientation);
@@ -52,6 +54,7 @@ private:
     QMutex mReadyToPaintMutex;
     bool mReadyToPaint;
     QSize mSize;
+    QPoint mScreenPosition;
     Qt::ScreenOrientation mOrientation;
     Qt::ScreenOrientation mPrimaryOrientation;
     Qt::ScreenOrientation mPendingOrientation;
@@ -62,4 +65,3 @@ private:
 };
 
 #endif // QMOZWINDOW_PRIVATE_H
-

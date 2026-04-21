@@ -144,6 +144,8 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
     if (change == ItemSceneChange) {
         if (data.window) {
             connect(data.window, &QQuickWindow::contentOrientationChanged, this, &QuickMozView::updateOrientation);
+            connect(data.window, &QQuickWindow::xChanged, this, &QuickMozView::updateScreenPosition);
+            connect(data.window, &QQuickWindow::yChanged, this, &QuickMozView::updateScreenPosition);
 
             // Update the orientation, but without emitting an orientationChanged signal
             // Emitting the signal at this point will cause a SIGSEGV because
@@ -151,6 +153,7 @@ void QuickMozView::itemChange(ItemChange change, const ItemChangeData &data)
             blockSignals(true);
             updateOrientation(data.window->contentOrientation());
             blockSignals(false);
+            updateScreenPosition();
         }
     }
     QQuickItem::itemChange(change, data);
@@ -161,6 +164,7 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
     updateContentSize(QSizeF(
                 mExplicitViewportWidth ? d->mSize.width() : newGeometry.width(),
                 mExplicitViewportHeight ? d->mSize.height() : newGeometry.height()));
+    updateScreenPosition();
 
     QQuickItem::geometryChanged(newGeometry, oldGeometry);
 }
@@ -346,6 +350,7 @@ void QuickMozView::prepareMozWindow()
     }
 
     d->setMozWindow(mozWindow);
+    updateScreenPosition();
 }
 
 void QuickMozView::updateMargins()
@@ -367,6 +372,18 @@ void QuickMozView::updateMargins()
 
         d->setMargins(m, false);
     }
+}
+
+void QuickMozView::updateScreenPosition()
+{
+    if (!d->mMozWindow || !window()) {
+        return;
+    }
+
+    const QPointF scenePosition = mapToScene(QPointF(0.0, 0.0));
+    const QPoint globalPosition = window()->mapToGlobal(QPoint(qRound(scenePosition.x()),
+                                                               qRound(scenePosition.y())));
+    d->mMozWindow->setScreenPosition(globalPosition);
 }
 
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
@@ -894,6 +911,7 @@ void QuickMozView::updatePolish()
         d->mMozWindow->setContentOrientation(mOrientation);
         d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
+    updateScreenPosition();
 }
 
 QString QuickMozView::httpUserAgent() const
@@ -909,4 +927,57 @@ void QuickMozView::setHttpUserAgent(const QString &httpUserAgent)
 bool QuickMozView::domContentLoaded() const
 {
     return d->domContentLoaded();
+}
+
+int QuickMozView::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QuickMozView::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QuickMozView::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QuickMozView::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QuickMozView::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+QString QuickMozView::viewportFit() const
+{
+    return d->viewportFit();
 }

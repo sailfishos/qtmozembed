@@ -62,6 +62,8 @@ public:
     virtual void chromeGestureEnabledChanged() = 0;
     virtual void chromeGestureThresholdChanged() = 0;
     virtual void chromeChanged() = 0;
+    virtual void safeAreaInsetsChanged() = 0;
+    virtual void viewportFitChanged() = 0;
 
     virtual void parentIdChanged() = 0;
     virtual void uniqueIdChanged() = 0;
@@ -267,6 +269,16 @@ public:
     void domContentLoadedChanged()
     {
         Q_EMIT view.domContentLoadedChanged();
+    }
+
+    void safeAreaInsetsChanged() override
+    {
+        Q_EMIT view.safeAreaInsetsChanged();
+    }
+
+    void viewportFitChanged() override
+    {
+        Q_EMIT view.viewportFitChanged();
     }
 
     void scrollableSizeChanged()

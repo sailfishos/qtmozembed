@@ -53,6 +53,7 @@ public:
         DirtyDynamicToolbarHeight = 0x0004,
         DirtyScreenProperties = 0x0008,
         DirtyActive = 0x0010,
+        DirtySafeArea = 0x0020,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -89,6 +90,7 @@ public:
     // Starting from here these are QMozViewPrivate methods.
     void setDynamicToolbarHeight(const int height);
     void setMargins(const QMargins &margins, bool updateTopBottom);
+    void setSafeAreaInsets(const QMargins &insets);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
     void setThrottlePainting(bool aThrottle);
@@ -101,6 +103,7 @@ public:
     void receiveInputEvent(const mozilla::embedlite::EmbedTouchInput &event);
     void setHttpUserAgent(const QString &httpUserAgent);
     QString httpUserAgent() const;
+    QString viewportFit() const;
 
     void scrollTo(int x, int y);
     void scrollBy(int x, int y);
@@ -169,6 +172,7 @@ protected:
     void doSendAsyncMessage(const QString &message, const QVariant &value);
     bool handleAsyncMessage(const QString &message, const QVariant &data);
     void clearDirtyDynamicToolbarHeight();
+    void setViewportFit(const QString &viewportFit);
 
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
@@ -189,6 +193,7 @@ protected:
     qreal mBottomMargin;
     int mDynamicToolbarHeight;
     QMargins mMargins;
+    QMargins mSafeAreaInsets;
     QImage mTempBufferImage;
     QSGTexture *mTempTexture;
     bool mEnabled;
@@ -252,6 +257,7 @@ protected:
     QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
     uint mNextJSCallId;
     QString mHttpUserAgent;
+    QString mViewportFit;
     bool mAutoCompleteActive;
     QStringList mAutoCompleteList;
 

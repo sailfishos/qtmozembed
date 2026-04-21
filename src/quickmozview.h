@@ -91,6 +91,7 @@ private Q_SLOTS:
     void resumeRendering();
     void compositingFinished();
     void updateMargins();
+    void updateScreenPosition();
 
 // INTERNAL
 protected:

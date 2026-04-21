@@ -35,6 +35,7 @@ void QMozWindow::reserve()
 {
     if (!d->mWindow) {
         d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(d->mSize.width(), d->mSize.height(), d.data());
+        d->mWindow->SetScreenPosition(d->mScreenPosition.x(), d->mScreenPosition.y());
         d->mReserved = true;
     }
 }
@@ -50,6 +51,11 @@ void QMozWindow::release()
 bool QMozWindow::isReserved() const
 {
     return d->mReserved;
+}
+
+void QMozWindow::setScreenPosition(const QPoint &position)
+{
+    d->setScreenPosition(position);
 }
 
 void QMozWindow::setSize(const QSize &size)

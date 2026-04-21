@@ -65,6 +65,7 @@ using namespace mozilla::embedlite;
 #define INPUTMETHOD_RESET_INPUT_CONTEXT "InputMethodHandler:ResetInputContext"
 #define INPUTMETHOD_SET_INPUT_ATTRIBUTES "InputMethodHandler:SetInputAttributes"
 #define INPUTMETHOD_RESET_INPUT_ATTRIBUTES "InputMethodHandler:ResetInputAttributes"
+#define VIEWPORT_FIT_MESSAGE "embed:viewportFit"
 #define DOCURI_KEY "docuri"
 #define ABOUT_URL_PREFIX "about:"
 
@@ -95,6 +96,21 @@ static QSize contentWindowSize(const QMozWindow *window)
     return size;
 }
 
+static QSize primaryScreenSize(const QScreen *screen)
+{
+    Q_ASSERT(screen);
+
+    QSize size = screen->size();
+    const bool primaryPortrait = screen->primaryOrientation() == Qt::PortraitOrientation
+            || screen->primaryOrientation() == Qt::InvertedPortraitOrientation;
+    if ((primaryPortrait && size.width() > size.height())
+            || (!primaryPortrait && size.width() < size.height())) {
+        size.transpose();
+    }
+
+    return size;
+}
+
 QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     : mViewIface(aViewIface)
     , q(publicPtr)
@@ -115,6 +131,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mBottomMargin(0.0)
     , mDynamicToolbarHeight(0)
     , mMargins(0, 0, 0, 0)
+    , mSafeAreaInsets(0, 0, 0, 0)
     , mTempTexture(nullptr)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
@@ -163,6 +180,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mDepth(0)
     , mDpi(0.0)
     , mNextJSCallId(0)
+    , mViewportFit(QStringLiteral("auto"))
     , mAutoCompleteActive(false)
     , mAutoCompleteList()
     , mDirtyState(0)
@@ -176,6 +194,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
     addMessageListener(INPUTMETHOD_SET_INPUT_ATTRIBUTES);
     addMessageListener(INPUTMETHOD_RESET_INPUT_ATTRIBUTES);
+    addMessageListener(VIEWPORT_FIT_MESSAGE);
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -425,11 +444,17 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
     Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
     mDepth = depth;
     mDpi = dpi;
+    const QSize screenSize = primaryScreenSize(QGuiApplication::primaryScreen());
     if (!mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        mView->SetScreenProperties(mDepth, mDpi, mDpi, screenSize.width(), screenSize.height());
     }
+}
+
+QString QMozViewPrivate::viewportFit() const
+{
+    return mViewportFit;
 }
 
 QUrl QMozViewPrivate::url() const
@@ -832,7 +857,8 @@ void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
     if (mDirtyState & DirtyScreenProperties) {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        const QSize screenSize = primaryScreenSize(QGuiApplication::primaryScreen());
+        mView->SetScreenProperties(mDepth, mDpi, mDpi, screenSize.width(), screenSize.height());
         mDirtyState &= ~DirtyScreenProperties;
     }
 }
@@ -916,6 +942,14 @@ void QMozViewPrivate::ViewInitialized()
         mDirtyState &= ~DirtyMargin;
     }
 
+    if (mDirtyState & DirtySafeArea) {
+        mView->SetSafeAreaInsets(mSafeAreaInsets.top(),
+                                 mSafeAreaInsets.right(),
+                                 mSafeAreaInsets.bottom(),
+                                 mSafeAreaInsets.left());
+        mDirtyState &= ~DirtySafeArea;
+    }
+
     if (!mHttpUserAgent.isEmpty()) {
         mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
     }
@@ -963,6 +997,21 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
     }
 }
 
+void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
+{
+    if (insets != mSafeAreaInsets) {
+        mSafeAreaInsets = insets;
+
+        if (mViewInitialized) {
+            mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
+        } else {
+            mDirtyState |= DirtySafeArea;
+        }
+
+        mViewIface->safeAreaInsetsChanged();
+    }
+}
+
 void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward)
 {
     if (QLatin1String(aLocation) == QLatin1String("about:blank") && !aCanGoBack && !aCanGoForward) {
@@ -1000,6 +1049,7 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
+    setViewportFit(QStringLiteral("auto"));
     reset();
 
     if (!mIsLoading) {
@@ -1685,6 +1735,9 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         mInputMethodAttributes = 0;
         qGuiApp->inputMethod()->update(Qt::ImHints);
         return true;
+    } else if (message == QLatin1String(VIEWPORT_FIT_MESSAGE)) {
+        setViewportFit(data.toMap().value(QStringLiteral("viewportFit"), QStringLiteral("auto")).toString());
+        return true;
     }
 
     return false;
@@ -1713,6 +1766,15 @@ void QMozViewPrivate::applyAutoCorrect()
         extensions.remove(QStringLiteral("autoFillCanRemove"));
         q->setProperty("__inputMethodExtensions", extensions);
         inputContext->update(Qt::ImQueryAll);
+    }
+}
+
+void QMozViewPrivate::setViewportFit(const QString &viewportFit)
+{
+    const QString fit = viewportFit.isEmpty() ? QStringLiteral("auto") : viewportFit;
+    if (mViewportFit != fit) {
+        mViewportFit = fit;
+        mViewIface->viewportFitChanged();
     }
 }
 

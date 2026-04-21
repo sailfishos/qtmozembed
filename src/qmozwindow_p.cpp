@@ -67,6 +67,7 @@ QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
     , mCompositorCreated(false)
     , mReadyToPaint(true)
     , mSize(size)
+    , mScreenPosition(0, 0)
     , mOrientation(Qt::PrimaryOrientation)
     , mPrimaryOrientation(qApp->primaryScreen()->primaryOrientation())
     , mPendingOrientation(Qt::PrimaryOrientation)
@@ -77,6 +78,16 @@ QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
 
 QMozWindowPrivate::~QMozWindowPrivate()
 {
+}
+
+void QMozWindowPrivate::setScreenPosition(const QPoint &position)
+{
+    if (position != mScreenPosition) {
+        mScreenPosition = position;
+        if (mWindow) {
+            mWindow->SetScreenPosition(position.x(), position.y());
+        }
+    }
 }
 
 void QMozWindowPrivate::setSize(const QSize &size)

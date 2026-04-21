@@ -101,6 +101,11 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
     Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
     Q_PROPERTY(bool domContentLoaded READ domContentLoaded NOTIFY domContentLoadedChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetTop READ safeAreaInsetTop WRITE setSafeAreaInsetTop NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetRight READ safeAreaInsetRight WRITE setSafeAreaInsetRight NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetBottom READ safeAreaInsetBottom WRITE setSafeAreaInsetBottom NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetLeft READ safeAreaInsetLeft WRITE setSafeAreaInsetLeft NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(QString viewportFit READ viewportFit NOTIFY viewportFitChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -149,6 +154,15 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     QString httpUserAgent() const; \
     void setHttpUserAgent(const QString &httpUserAgent); \
     bool domContentLoaded() const; \
+    int safeAreaInsetTop() const; \
+    void setSafeAreaInsetTop(int inset); \
+    int safeAreaInsetRight() const; \
+    void setSafeAreaInsetRight(int inset); \
+    int safeAreaInsetBottom() const; \
+    void setSafeAreaInsetBottom(int inset); \
+    int safeAreaInsetLeft() const; \
+    void setSafeAreaInsetLeft(int inset); \
+    QString viewportFit() const; \
     Q_INVOKABLE void runJavaScript(const QString &script, \
                                const QJSValue &callback = QJSValue::UndefinedValue, \
                                const QJSValue &errorCallback = QJSValue::UndefinedValue); \
@@ -219,5 +233,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void httpUserAgentChanged(); \
     void domContentLoadedChanged(); \
     void scrollableSizeChanged(); \
+    void safeAreaInsetsChanged(); \
+    void viewportFitChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */
