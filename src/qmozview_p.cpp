@@ -778,7 +778,7 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
     if (mMozWindow) {
         mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
-                this, &QMozViewPrivate::onCompositorCreated);
+                this, &QMozViewPrivate::onCompositorCreated, Qt::UniqueConnection);
     }
 }
 
@@ -943,10 +943,7 @@ void QMozViewPrivate::ViewInitialized()
     }
 
     if (mDirtyState & DirtySafeArea) {
-        mView->SetSafeAreaInsets(mSafeAreaInsets.top(),
-                                 mSafeAreaInsets.right(),
-                                 mSafeAreaInsets.bottom(),
-                                 mSafeAreaInsets.left());
+        applySafeAreaInsets();
         mDirtyState &= ~DirtySafeArea;
     }
 
@@ -1001,12 +998,7 @@ void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
 {
     if (insets != mSafeAreaInsets) {
         mSafeAreaInsets = insets;
-
-        if (mViewInitialized) {
-            mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
-        } else {
-            mDirtyState |= DirtySafeArea;
-        }
+        applySafeAreaInsets();
 
         mViewIface->safeAreaInsetsChanged();
     }
@@ -1736,7 +1728,8 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
         qGuiApp->inputMethod()->update(Qt::ImHints);
         return true;
     } else if (message == QLatin1String(VIEWPORT_FIT_MESSAGE)) {
-        setViewportFit(data.toMap().value(QStringLiteral("viewportFit"), QStringLiteral("auto")).toString());
+        const QString fit = data.toMap().value(QStringLiteral("viewportFit"), QStringLiteral("auto")).toString();
+        setViewportFit(fit);
         return true;
     }
 
@@ -1748,6 +1741,18 @@ void QMozViewPrivate::clearDirtyDynamicToolbarHeight()
     if ((mDirtyState & DirtyDynamicToolbarHeight) && mViewInitialized && mDOMContentLoaded) {
         mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
         mDirtyState &= ~DirtyDynamicToolbarHeight;
+    }
+}
+
+void QMozViewPrivate::applySafeAreaInsets()
+{
+    if (mViewInitialized && mView) {
+        mView->SetSafeAreaInsets(mSafeAreaInsets.top(),
+                                 mSafeAreaInsets.right(),
+                                 mSafeAreaInsets.bottom(),
+                                 mSafeAreaInsets.left());
+    } else {
+        mDirtyState |= DirtySafeArea;
     }
 }
 

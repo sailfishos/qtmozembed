@@ -172,6 +172,7 @@ protected:
     void doSendAsyncMessage(const QString &message, const QVariant &value);
     bool handleAsyncMessage(const QString &message, const QVariant &data);
     void clearDirtyDynamicToolbarHeight();
+    void applySafeAreaInsets();
     void setViewportFit(const QString &viewportFit);
 
     IMozQViewIface *mViewIface;

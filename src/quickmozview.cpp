@@ -977,6 +977,11 @@ void QuickMozView::setSafeAreaInsetLeft(int inset)
     d->setSafeAreaInsets(insets);
 }
 
+void QuickMozView::reapplySafeAreaInsets()
+{
+    d->applySafeAreaInsets();
+}
+
 QString QuickMozView::viewportFit() const
 {
     return d->viewportFit();

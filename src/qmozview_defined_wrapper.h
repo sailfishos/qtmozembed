@@ -162,6 +162,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setSafeAreaInsetBottom(int inset); \
     int safeAreaInsetLeft() const; \
     void setSafeAreaInsetLeft(int inset); \
+    Q_INVOKABLE void reapplySafeAreaInsets(); \
     QString viewportFit() const; \
     Q_INVOKABLE void runJavaScript(const QString &script, \
                                const QJSValue &callback = QJSValue::UndefinedValue, \

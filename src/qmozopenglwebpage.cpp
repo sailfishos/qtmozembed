@@ -720,6 +720,11 @@ void QMozOpenGLWebPage::setSafeAreaInsetLeft(int inset)
     d->setSafeAreaInsets(insets);
 }
 
+void QMozOpenGLWebPage::reapplySafeAreaInsets()
+{
+    d->applySafeAreaInsets();
+}
+
 QString QMozOpenGLWebPage::viewportFit() const
 {
     return d->viewportFit();
