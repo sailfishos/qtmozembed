@@ -29,17 +29,18 @@ public:
     typedef void (*TaskCallback)(void *data);
     typedef void *TaskHandle;
 
+    static QMozContext *instance();
+
     explicit QMozContext(QObject *parent = 0);
     virtual ~QMozContext();
 
     mozilla::embedlite::EmbedLiteApp *GetApp();
+
     Q_INVOKABLE bool isInitialized() const;
     Q_INVOKABLE bool isAccelerated() const;
 
     void registerWindow(QMozWindow *window);
     QMozWindow *registeredWindow() const;
-
-    static QMozContext *instance();
 
     TaskHandle PostUITask(TaskCallback, void *data, int timeout = 0);
     TaskHandle PostCompositorTask(TaskCallback, void *data, int timeout = 0);
@@ -75,7 +76,8 @@ public Q_SLOTS:
     void setProfile(const QString &);
 
     void setViewCreator(QMozViewCreator *viewCreator);
-    quint32 createView(const quint32 &parentId = 0, const uintptr_t &parentBrowsingContext = 0, const bool hidden = false);
+    quint32 createView(const quint32 &parentId = 0, const uintptr_t &parentBrowsingContext = 0,
+                       const bool hidden = false);
 
 private:
     QMozContextPrivate *d;

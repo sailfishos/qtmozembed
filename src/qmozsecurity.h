@@ -30,7 +30,6 @@ class QMozContext;
 class QMozSecurity : public QObject
 {
     Q_OBJECT
-
     Q_PROPERTY(bool allGood READ allGood NOTIFY allGoodChanged)
     Q_PROPERTY(QSslCertificate serverCertificate READ serverCertificate NOTIFY serverCertificateChanged)
     Q_PROPERTY(bool domainMismatch READ domainMismatch NOTIFY domainMismatchChanged)
@@ -65,7 +64,7 @@ class QMozSecurity : public QObject
 
 public:
     explicit QMozSecurity(QObject *parent = nullptr);
-    explicit QMozSecurity(const char *aStatus, unsigned int aState, QObject *parent = nullptr);
+    QMozSecurity(const char *aStatus, unsigned int aState, QObject *parent = nullptr);
 
     enum TLS_VERSION {
         SSL_VERSION_INVALID = -1,
