@@ -177,7 +177,7 @@ void QMozContextPrivate::Initialized()
 
     std::vector<std::string> observersList;
     observersList.reserve(mObservers.size());
-    for (const std::pair<std::string, int> &observer : mObservers) {
+    for (const std::pair<const std::string, uint> &observer : mObservers) {
         if (observer.second > 0) {
             observersList.push_back(observer.first);
         }
@@ -349,7 +349,7 @@ void QMozContext::addObservers(const std::vector<std::string> &aObserversList)
     std::vector<std::string> observersList;
 
     // Don't add observers that were already added
-    for (const std::string topic : aObserversList) {
+    for (const std::string &topic : aObserversList) {
         uint &count = d->mObservers[topic];
         ++count;
         if (count == 1) {
@@ -367,7 +367,7 @@ void QMozContext::removeObservers(const std::vector<std::string> &aObserversList
     std::vector<std::string> observersList;
 
     // Only remove observers that have no interested listeners
-    for (const std::string topic : aObserversList) {
+    for (const std::string &topic : aObserversList) {
         uint &count = d->mObservers[topic];
         if (count > 0) {
             --count;
