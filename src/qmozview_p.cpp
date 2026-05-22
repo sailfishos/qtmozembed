@@ -115,6 +115,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mBottomMargin(0.0)
     , mDynamicToolbarHeight(0)
     , mMargins(0, 0, 0, 0)
+    , mSafeAreaInsets(0, 0, 0, 0)
     , mTempTexture(nullptr)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
@@ -962,6 +963,12 @@ void QMozViewPrivate::ViewInitialized()
         mDirtyState &= ~DirtyMargin;
     }
 
+    if (mDirtyState & DirtySafeAreaInsets) {
+        mView->SetSafeAreaInsets(mSafeAreaInsets.top(), mSafeAreaInsets.right(), mSafeAreaInsets.bottom(), mSafeAreaInsets.left());
+        mViewIface->safeAreaInsetsChanged();
+        mDirtyState &= ~DirtySafeAreaInsets;
+    }
+
     if (!mHttpUserAgent.isEmpty()) {
         mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
     }
@@ -1005,6 +1012,20 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             mViewIface->marginsChanged();
         } else {
             mDirtyState |= DirtyMargin;
+        }
+    }
+}
+
+void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
+{
+    if (insets != mSafeAreaInsets) {
+        mSafeAreaInsets = insets;
+
+        if (mViewInitialized) {
+            mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
+            mViewIface->safeAreaInsetsChanged();
+        } else {
+            mDirtyState |= DirtySafeAreaInsets;
         }
     }
 }

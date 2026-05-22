@@ -605,6 +605,16 @@ QMargins QuickMozView::margins() const
     return d->mMargins;
 }
 
+QMargins QuickMozView::safeAreaInsets() const
+{
+    return d->mSafeAreaInsets;
+}
+
+void QuickMozView::setSafeAreaInsets(QMargins insets)
+{
+    d->setSafeAreaInsets(insets);
+}
+
 Qt::ScreenOrientation QuickMozView::orientation() const
 {
     return mOrientation;

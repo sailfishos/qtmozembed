@@ -497,6 +497,16 @@ void QMozOpenGLWebPage::setMargins(QMargins margins)
     d->setMargins(margins, true);
 }
 
+QMargins QMozOpenGLWebPage::safeAreaInsets() const
+{
+    return d->mSafeAreaInsets;
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsets(QMargins insets)
+{
+    d->setSafeAreaInsets(insets);
+}
+
 void QMozOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)
 {
     Q_UNUSED(baseUrl);

@@ -59,6 +59,7 @@ public:
         DirtyDynamicToolbarHeight = 0x0004,
         DirtyScreenProperties = 0x0008,
         DirtyActive = 0x0010,
+        DirtySafeAreaInsets = 0x0020,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -95,6 +96,7 @@ public:
     // Starting from here these are QMozViewPrivate methods.
     void setDynamicToolbarHeight(const int height);
     void setMargins(const QMargins &margins, bool updateTopBottom);
+    void setSafeAreaInsets(const QMargins &insets);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
     void setThrottlePainting(bool aThrottle);
@@ -197,6 +199,7 @@ protected:
     qreal mBottomMargin;
     int mDynamicToolbarHeight;
     QMargins mMargins;
+    QMargins mSafeAreaInsets;
     QImage mTempBufferImage;
     QSGTexture *mTempTexture;
     bool mEnabled;
