@@ -20,13 +20,18 @@
 #include <QVariant>
 
 #include "qmozwindow.h"
+
+#ifndef Q_MOC_RUN
 #include "mozilla/embedlite/EmbedLiteApp.h"
+#endif
 
 class QMozViewCreator;
 class MessagePumpQt;
 
 namespace mozilla {
 namespace embedlite {
+class EmbedLiteApp;
+class EmbedLiteAppListener;
 class EmbedLiteView;
 class EmbedLiteMessagePump;
 }
@@ -34,7 +39,10 @@ class EmbedLiteMessagePump;
 
 using namespace mozilla::embedlite;
 
-class QMozContextPrivate : public QObject, public EmbedLiteAppListener
+class QMozContextPrivate : public QObject
+#ifndef Q_MOC_RUN
+    , public EmbedLiteAppListener
+#endif
 {
     Q_OBJECT
 public:

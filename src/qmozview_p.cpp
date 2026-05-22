@@ -176,6 +176,17 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
     addMessageListener(INPUTMETHOD_SET_INPUT_ATTRIBUTES);
     addMessageListener(INPUTMETHOD_RESET_INPUT_ATTRIBUTES);
+    connect(QMozEngineSettings::instance(), &QMozEngineSettings::pixelRatioChanged,
+            this, [this]() {
+        if (!mView || mDepth <= 0 || mDpi <= 0.0) {
+            return;
+        }
+        if (!mHasCompositor) {
+            mDirtyState |= DirtyScreenProperties;
+            return;
+        }
+        sendScreenProperties();
+    });
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -420,6 +431,27 @@ void QMozViewPrivate::setSize(const QSizeF &size)
     }
 }
 
+qreal QMozViewPrivate::screenDensity() const
+{
+    qreal density = QMozEngineSettings::instance()->pixelRatio();
+    if (density > 0.0) {
+        return density;
+    }
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (screen && screen->devicePixelRatio() > 0.0) {
+        return screen->devicePixelRatio();
+    }
+
+    return 1.0;
+}
+
+void QMozViewPrivate::sendScreenProperties()
+{
+    Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
+    mView->SetScreenProperties(mDepth, screenDensity(), mDpi);
+}
+
 void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
 {
     Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
@@ -428,7 +460,7 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
     if (!mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        sendScreenProperties();
     }
 }
 
@@ -751,6 +783,12 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
+        if (mSize.isEmpty() && !mMozWindow->size().isEmpty()) {
+            mSize = mMozWindow->size();
+            if (!mViewInitialized) {
+                mDirtyState |= DirtySize;
+            }
+        }
         mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
@@ -832,7 +870,7 @@ void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
     if (mDirtyState & DirtyScreenProperties) {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        sendScreenProperties();
         mDirtyState &= ~DirtyScreenProperties;
     }
 }
@@ -870,7 +908,8 @@ void QMozViewPrivate::createView()
         Q_ASSERT(mMozWindow);
 
         EmbedLiteWindow *win = mMozWindow->d->mWindow;
-        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext, mPrivateMode, mDesktopMode);
+        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext,
+                                               mPrivateMode, mDesktopMode, mHidden);
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
                             QGuiApplication::primaryScreen()->physicalDotsPerInch());
@@ -901,7 +940,14 @@ void QMozViewPrivate::ViewInitialized()
         load(mPendingUrl, mPendingFromExternal);
     }
 
+    if ((mDirtyState & DirtySize) && mSize.isEmpty() && mMozWindow && !mMozWindow->size().isEmpty()) {
+        mSize = mMozWindow->size();
+    }
+
     if (mDirtyState & DirtySize) {
+        if (mMozWindow && !mSize.isEmpty()) {
+            mMozWindow->setSize(mSize.toSize());
+        }
         setSize(mSize);
         mDirtyState &= ~DirtySize;
     } else if (mMozWindow) {
@@ -1025,6 +1071,13 @@ void QMozViewPrivate::OnLoadFinished(void)
         mIsLoading = false;
         mViewIface->loadingChanged();
     }
+
+    if (mMozWindow) {
+        if (mViewInitialized && mView) {
+            mView->ScheduleUpdate();
+        }
+        mMozWindow->scheduleUpdate();
+    }
 }
 
 void QMozViewPrivate::OnWindowCloseRequested()
@@ -1130,6 +1183,12 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 #endif
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
+    if (mMozWindow) {
+        if (mViewInitialized && mView) {
+            mView->ScheduleUpdate();
+        }
+        mMozWindow->scheduleUpdate();
+    }
 }
 
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)

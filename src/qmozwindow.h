@@ -46,6 +46,8 @@ public:
 Q_SIGNALS:
     void pendingOrientationChanged(Qt::ScreenOrientation orientation);
     void orientationChangeFiltered(Qt::ScreenOrientation orientation);
+    // Retained for ABI compatibility. Gecko no longer requests an embedder GL
+    // context through this signal.
     void requestGLContext();
     void initialized();
     void released();

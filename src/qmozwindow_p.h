@@ -28,7 +28,6 @@ public:
 
 protected:
     // EmbedLiteWindowListener:
-    bool RequestGLContext(void *&context, void *&surface, void *&display);
     void WindowInitialized() override;
     void WindowDestroyed() override;
     void DrawOverlay(const nsIntRect &aRect) override;
@@ -40,10 +39,6 @@ private:
     friend class QMozWindow;
     friend class QMozViewPrivate;
 
-    void getEGLContext(void *&context, void *&surface, void *&display);
-#if defined(ENABLE_GLX)
-    void getGLXContext(void *&context, void *&surface);
-#endif
     bool setReadyToPaint(bool ready);
 
     QMozWindow &q;
@@ -62,4 +57,3 @@ private:
 };
 
 #endif // QMOZWINDOW_PRIVATE_H
-

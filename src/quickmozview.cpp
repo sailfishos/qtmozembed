@@ -177,8 +177,7 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         return nullptr;
     }
 
-    const bool invalidTexture = !mComposited
-            || !d->mIsPainted
+    const bool invalidTexture = (!mComposited && !d->mIsPainted)
             || !d->mViewInitialized
             || !d->mHasCompositor
             || !d->mContext->registeredWindow()

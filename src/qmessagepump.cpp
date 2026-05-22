@@ -56,11 +56,16 @@ bool MessagePumpQt::event(QEvent *e)
 
 void MessagePumpQt::handleDispatch()
 {
+    if (!mState) {
+        return;
+    }
+
     if (mState->should_quit) {
         return;
     }
 
-    if (mEventLoopPrivate->DoWork(mState->delegate)) {
+    bool didWork = mEventLoopPrivate->DoWork(mState->delegate);
+    if (didWork) {
         // there might be more, see more_work_is_plausible
         // variable above, that's why we ScheduleWork() to keep going.
         scheduleWorkLocal();
@@ -70,11 +75,13 @@ void MessagePumpQt::handleDispatch()
         return;
     }
 
-    bool doIdleWork = !mEventLoopPrivate->DoDelayedWork(mState->delegate);
+    bool didDelayedWork = mEventLoopPrivate->DoDelayedWork(mState->delegate);
+    bool doIdleWork = !didDelayedWork;
     scheduleDelayedIfNeeded();
 
     if (doIdleWork) {
-        if (mEventLoopPrivate->DoIdleWork(mState->delegate)) {
+        bool didIdleWork = mEventLoopPrivate->DoIdleWork(mState->delegate);
+        if (didIdleWork) {
             scheduleWorkLocal();
         }
     }

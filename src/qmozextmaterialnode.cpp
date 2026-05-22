@@ -136,6 +136,15 @@ void MozMaterialNode::preprocess()
             textureRect.setHeight(textureRect.height() * height / textureSize.height());
         }
 
+        // WebRender renders into a GL framebuffer, whose EGLImage has a
+        // bottom-left texture origin. Qt's scene graph coordinates are
+        // top-left based, so define the logical corners with Y flipped before
+        // applying the existing content-orientation rotation.
+        const QPointF topLeft = textureRect.bottomLeft();
+        const QPointF bottomLeft = textureRect.topLeft();
+        const QPointF topRight = textureRect.bottomRight();
+        const QPointF bottomRight = textureRect.topRight();
+
         // and then texture coordinates
         int rotation = qApp->primaryScreen()->angleBetween(m_orientation, qApp->primaryScreen()->primaryOrientation());
         switch (rotation) {
@@ -143,37 +152,37 @@ void MozMaterialNode::preprocess()
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        textureRect.topRight(),
-                        textureRect.topLeft(),
-                        textureRect.bottomRight(),
-                        textureRect.bottomLeft());
+                        topRight,
+                        topLeft,
+                        bottomRight,
+                        bottomLeft);
             break;
         case 180:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        textureRect.bottomRight(),
-                        textureRect.topRight(),
-                        textureRect.bottomLeft(),
-                        textureRect.topLeft());
+                        bottomRight,
+                        topRight,
+                        bottomLeft,
+                        topLeft);
             break;
         case 270:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        textureRect.bottomLeft(),
-                        textureRect.bottomRight(),
-                        textureRect.topLeft(),
-                        textureRect.topRight());
+                        bottomLeft,
+                        bottomRight,
+                        topLeft,
+                        topRight);
             break;
         default:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        textureRect.topLeft(),
-                        textureRect.bottomLeft(),
-                        textureRect.topRight(),
-                        textureRect.bottomRight());
+                        topLeft,
+                        bottomLeft,
+                        topRight,
+                        bottomRight);
             break;
         }
     }
