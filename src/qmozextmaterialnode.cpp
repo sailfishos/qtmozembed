@@ -133,7 +133,9 @@ void MozMaterialNode::preprocess()
                 geometryRect.setHeight(textureSize.height());
             }
         } else if (height < textureSize.height()) {
-            textureRect.setHeight(textureRect.height() * height / textureSize.height());
+            const qreal croppedHeight = textureRect.height() * height / textureSize.height();
+            textureRect.setY(textureRect.y() + textureRect.height() - croppedHeight);
+            textureRect.setHeight(croppedHeight);
         }
 
         // WebRender renders into a GL framebuffer, whose EGLImage has a

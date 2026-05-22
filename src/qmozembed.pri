@@ -16,6 +16,11 @@ isEmpty(OBJ_PATH) {
   message($$BIN_DIR - binary dir)
 }
 
+!isEmpty(RUNTIME_GRE_HOME) {
+  BIN_DIR=$$RUNTIME_GRE_HOME
+  message(Runtime GRE home defined $$BIN_DIR)
+}
+
 CONFIG += \
     egl
 

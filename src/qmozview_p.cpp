@@ -407,6 +407,40 @@ void QMozViewPrivate::updateMoving(bool moving)
 
 void QMozViewPrivate::reset()
 {
+    if (mMozWindow) {
+        mMozWindow->clearPlatformImage();
+    }
+
+    const bool viewAreaChanged = !mContentRect.isNull();
+    const bool contentWidthChanged = !qFuzzyIsNull(mScrollableSize.width());
+    const bool contentHeightChanged = !qFuzzyIsNull(mScrollableSize.height());
+    const bool scrollableOffsetChanged = !mScrollableOffset.isNull();
+    const bool atXBeginningChanged = mAtXBeginning;
+    const bool atXEndChanged = mAtXEnd;
+    const bool atYBeginningChanged = mAtYBeginning;
+    const bool atYEndChanged = mAtYEnd;
+    const bool resolutionChanged = !qFuzzyIsNull(mContentResolution);
+
+    mContentRect = QRectF();
+    mScrollableSize = QSizeF();
+    mScrollableOffset = QPointF();
+    mAtXBeginning = false;
+    mAtXEnd = false;
+    mAtYBeginning = false;
+    mAtYEnd = false;
+    mContentResolution = 0.0f;
+
+    if (viewAreaChanged) mViewIface->viewAreaChanged();
+    if (contentWidthChanged) mViewIface->contentWidthChanged();
+    if (contentHeightChanged) mViewIface->contentHeightChanged();
+    if (contentWidthChanged || contentHeightChanged) mViewIface->scrollableSizeChanged();
+    if (scrollableOffsetChanged) mViewIface->scrollableOffsetChanged();
+    if (atXBeginningChanged) mViewIface->atXBeginningChanged();
+    if (atXEndChanged) mViewIface->atXEndChanged();
+    if (atYBeginningChanged) mViewIface->atYBeginningChanged();
+    if (atYEndChanged) mViewIface->atYEndChanged();
+    if (resolutionChanged) mViewIface->resolutionChanged();
+
     if (mIsPainted) {
         mIsPainted = false;
         mViewIface->firstPaint(-1, -1);
