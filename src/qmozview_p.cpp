@@ -14,6 +14,7 @@
 #include <QJSEngine>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QTimer>
 #include <QTouchEvent>
 #include <QQuickWindow>
 #include <QScreen>
@@ -754,12 +755,17 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
             qGuiApp->inputMethod()->reset();
 
         } else {
-            if (mPreedit || event->commitString().isEmpty() || event->commitString().size() > 1) {
+            if (mPreedit || !event->commitString().isEmpty()
+                    || !event->preeditString().isEmpty()
+                    || event->replacementLength() > 0) {
                 mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(),
                                      event->replacementStart(), event->replacementLength());
-            } else {
-                mView->SendKeyPress(0, 0, charCode);
-                mView->SendKeyRelease(0, 0, charCode);
+                if (event->commitString().isEmpty() && !event->preeditString().isEmpty()) {
+                    QInputMethod *inputContext = qGuiApp->inputMethod();
+                    if (inputContext) {
+                        QTimer::singleShot(0, inputContext, &QInputMethod::commit);
+                    }
+                }
             }
         }
     }
