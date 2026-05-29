@@ -15,22 +15,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 
-#include <dlfcn.h>
-#include <EGL/egl.h>
-#if defined(ENABLE_GLX)
-#include <GL/glx.h>
-#endif
-
 #include <mozilla/embedlite/EmbedLiteWindow.h>
-
-EGLContext (EGLAPIENTRY *_eglGetCurrentContext)(void) = nullptr;
-EGLSurface (EGLAPIENTRY *_eglGetCurrentSurface)(EGLint readdraw) = nullptr;
-EGLDisplay (EGLAPIENTRY *_eglGetCurrentDisplay)(void) = nullptr;
-
-#if defined(ENABLE_GLX)
-GLXContext (*_glxGetCurrentContext)(void) = nullptr;
-GLXDrawable (*_glxGetCurrentDrawable)(void) = nullptr;
-#endif
 
 #ifndef MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT
 #define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 500
@@ -127,69 +112,6 @@ void QMozWindowPrivate::timerEvent(QTimerEvent *event)
         event->accept();
     }
 }
-
-bool QMozWindowPrivate::RequestGLContext(void *&context, void *&surface, void *&display)
-{
-    q.requestGLContext();
-
-    QString platform = qApp->platformName().toLower();
-
-    if (platform == "wayland" || platform == "wayland-egl" || platform == "eglfs") {
-        getEGLContext(context, surface, display);
-        return true;
-    }
-#if defined(ENABLE_GLX)
-    if (platform == "xcb") {
-        getGLXContext(context, surface);
-        return true;
-    }
-#endif
-
-    qCritical() << "Unsupported QPA platform type:" << platform;
-    return false;
-}
-
-void QMozWindowPrivate::getEGLContext(void *&context, void *&surface, void *&display)
-{
-    if (!_eglGetCurrentContext || !_eglGetCurrentSurface) {
-        void *handle = dlopen("libEGL.so.1", RTLD_LAZY);
-        if (!handle)
-            return;
-
-        *(void **)(&_eglGetCurrentContext) = dlsym(handle, "eglGetCurrentContext");
-        *(void **)(&_eglGetCurrentSurface) = dlsym(handle, "eglGetCurrentSurface");
-        *(void **)(&_eglGetCurrentDisplay) = dlsym(handle, "eglGetCurrentDisplay");
-
-        Q_ASSERT(_eglGetCurrentContext && _eglGetCurrentSurface && _eglGetCurrentDisplay);
-
-        dlclose(handle);
-    }
-
-    surface = _eglGetCurrentSurface(EGL_DRAW);
-    context = _eglGetCurrentContext();
-    display = _eglGetCurrentDisplay();
-}
-
-#if defined(ENABLE_GLX)
-void QMozWindowPrivate::getGLXContext(void *&context, void *&surface)
-{
-    if (!_glxGetCurrentContext || !_glxGetCurrentDrawable) {
-        void *handle = dlopen("libGL.so.1", RTLD_LAZY);
-        if (!handle)
-            return;
-
-        *(void **)(&_glxGetCurrentContext) = dlsym(handle, "glXGetCurrentContext");
-        *(void **)(&_glxGetCurrentDrawable) = dlsym(handle, "glXGetCurrentDrawable");
-
-        Q_ASSERT(_glxGetCurrentContext && _glxGetCurrentDrawable);
-
-        dlclose(handle);
-    }
-
-    surface = reinterpret_cast<void *>(_glxGetCurrentDrawable());
-    context = _glxGetCurrentContext();
-}
-#endif
 
 bool QMozWindowPrivate::setReadyToPaint(bool ready)
 {

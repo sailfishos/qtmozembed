@@ -177,8 +177,7 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         return nullptr;
     }
 
-    const bool invalidTexture = !mComposited
-            || !d->mIsPainted
+    const bool invalidTexture = (!mComposited && !d->mIsPainted)
             || !d->mViewInitialized
             || !d->mHasCompositor
             || !d->mContext->registeredWindow()
@@ -604,6 +603,16 @@ qreal QuickMozView::contentHeight() const
 QMargins QuickMozView::margins() const
 {
     return d->mMargins;
+}
+
+QMargins QuickMozView::safeAreaInsets() const
+{
+    return d->mSafeAreaInsets;
+}
+
+void QuickMozView::setSafeAreaInsets(QMargins insets)
+{
+    d->setSafeAreaInsets(insets);
 }
 
 Qt::ScreenOrientation QuickMozView::orientation() const

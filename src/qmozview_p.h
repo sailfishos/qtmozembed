@@ -23,7 +23,9 @@
 #include <QKeyEvent>
 #include <QJSValue>
 
+#ifndef Q_MOC_RUN
 #include <mozilla/embedlite/EmbedLiteView.h>
+#endif
 
 #include "qmozwindow.h"
 #include "qmozscrolldecorator.h"
@@ -37,13 +39,17 @@ class QMozWindow;
 
 namespace mozilla {
 namespace embedlite {
+class EmbedLiteView;
+class EmbedLiteViewListener;
 class EmbedTouchInput;
 class TouchPointF;
 }
 }
 
-class QMozViewPrivate : public QObject,
-    public mozilla::embedlite::EmbedLiteViewListener
+class QMozViewPrivate : public QObject
+#ifndef Q_MOC_RUN
+    , public mozilla::embedlite::EmbedLiteViewListener
+#endif
 {
     Q_OBJECT
 public:
@@ -53,6 +59,7 @@ public:
         DirtyDynamicToolbarHeight = 0x0004,
         DirtyScreenProperties = 0x0008,
         DirtyActive = 0x0010,
+        DirtySafeAreaInsets = 0x0020,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -84,11 +91,12 @@ public:
     bool HandleSingleTap(const nsIntPoint &aPoint) override;
     bool HandleDoubleTap(const nsIntPoint &aPoint) override;
     bool HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
-    void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent);
+    void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent) override;
 
     // Starting from here these are QMozViewPrivate methods.
     void setDynamicToolbarHeight(const int height);
     void setMargins(const QMargins &margins, bool updateTopBottom);
+    void setSafeAreaInsets(const QMargins &insets);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
     void setThrottlePainting(bool aThrottle);
@@ -169,6 +177,8 @@ protected:
     void doSendAsyncMessage(const QString &message, const QVariant &value);
     bool handleAsyncMessage(const QString &message, const QVariant &data);
     void clearDirtyDynamicToolbarHeight();
+    qreal screenDensity() const;
+    void sendScreenProperties();
 
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
@@ -189,6 +199,7 @@ protected:
     qreal mBottomMargin;
     int mDynamicToolbarHeight;
     QMargins mMargins;
+    QMargins mSafeAreaInsets;
     QImage mTempBufferImage;
     QSGTexture *mTempTexture;
     bool mEnabled;

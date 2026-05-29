@@ -139,6 +139,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setDynamicToolbarHeight(int height); \
     QMargins margins() const; \
     void setMargins(QMargins); \
+    QMargins safeAreaInsets() const; \
+    void setSafeAreaInsets(QMargins); \
     Q_INVOKABLE void scrollTo(int x, int y); \
     Q_INVOKABLE void scrollBy(int x, int y); \
     QMozSecurity *security(); \
@@ -213,6 +215,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void chromeGestureThresholdChanged(); \
     void dynamicToolbarHeightChanged(); \
     void marginsChanged(); \
+    void safeAreaInsetsChanged(); \
     void desktopModeChanged(); \
     void parentIdChanged(); \
     void uniqueIdChanged(); \

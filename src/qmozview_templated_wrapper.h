@@ -54,6 +54,7 @@ public:
     virtual void pinchingChanged() = 0;
     virtual void dynamicToolbarHeightChanged() = 0;
     virtual void marginsChanged() = 0;
+    virtual void safeAreaInsetsChanged() = 0;
     virtual void scrollableSizeChanged() = 0;
 
     virtual void desktopModeChanged() = 0;
@@ -242,6 +243,11 @@ public:
     void marginsChanged()
     {
         Q_EMIT view.marginsChanged();
+    }
+
+    void safeAreaInsetsChanged() override
+    {
+        Q_EMIT view.safeAreaInsetsChanged();
     }
 
     void contentWidthChanged()

@@ -24,6 +24,11 @@
 
 #define LOG_COMPONENT "QMozOpenGLWebPage"
 
+static QMozViewPrivate *createViewPrivate(QMozOpenGLWebPage *webPage)
+{
+    return new QMozViewPrivate(new IMozQView<QMozOpenGLWebPage>(*webPage), webPage);
+}
+
 /*!
     \fn void QMozOpenGLWebPage::afterRendering()
 
@@ -43,11 +48,11 @@
 /*!
     \fn void QMozOpenGLWebPage::QMozOpenGLWebPage(QObject *parent)
 
-    In order to use this, embedlite.compositor.external_gl_context preference needs to be set.
+    This legacy API is separate from the WebRender browser texture path.
 */
 QMozOpenGLWebPage::QMozOpenGLWebPage(QObject *parent)
     : QObject(parent)
-    , d(new QMozViewPrivate(new IMozQView<QMozOpenGLWebPage>(*this), this))
+    , d(createViewPrivate(this))
     , mCompleted(false)
     , mThrottlePainting(false)
 {
@@ -172,6 +177,9 @@ void QMozOpenGLWebPage::setMozWindow(QMozWindow *window)
     d->setMozWindow(window);
 
     if (window) {
+        if (d->mSize.isEmpty() && !window->size().isEmpty()) {
+            d->setSize(window->size());
+        }
         window->setSize(d->mSize.toSize());
     }
 
@@ -487,6 +495,16 @@ QMargins QMozOpenGLWebPage::margins() const
 void QMozOpenGLWebPage::setMargins(QMargins margins)
 {
     d->setMargins(margins, true);
+}
+
+QMargins QMozOpenGLWebPage::safeAreaInsets() const
+{
+    return d->mSafeAreaInsets;
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsets(QMargins insets)
+{
+    d->setSafeAreaInsets(insets);
 }
 
 void QMozOpenGLWebPage::loadHtml(const QString &html, const QUrl &baseUrl)

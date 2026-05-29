@@ -11,15 +11,22 @@
 #include <QVariant>
 #include <QStringList>
 
+#ifndef Q_MOC_RUN
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
+#endif
 
 namespace mozilla {
 namespace embedlite {
 class EmbedLiteApp;
+class EmbedLiteMessagePump;
+class EmbedLiteMessagePumpListener;
 }
 }
 
-class MessagePumpQt : public QObject, public mozilla::embedlite::EmbedLiteMessagePumpListener
+class MessagePumpQt : public QObject
+#ifndef Q_MOC_RUN
+    , public mozilla::embedlite::EmbedLiteMessagePumpListener
+#endif
 {
     Q_OBJECT
 

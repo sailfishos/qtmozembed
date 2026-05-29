@@ -137,18 +137,6 @@ QMozContextPrivate::~QMozContextPrivate()
 
 bool QMozContextPrivate::ExecuteChildThread()
 {
-    if (!getenv("GECKO_THREAD")) {
-        qCDebug(lcEmbedLiteExt) << "Execute in child Native thread:" << (void *)mThread;
-        GeckoWorker *worker = new GeckoWorker(mApp);
-
-        connect(mThread, &QThread::started, worker, &GeckoWorker::doWork);
-        connect(mThread, &QThread::finished, worker, &GeckoWorker::quit);
-        worker->moveToThread(mThread);
-
-        mThread->setObjectName("GeckoWorkerThread");
-        mThread->start(QThread::NormalPriority);
-        return true;
-    }
     return false;
 }
 

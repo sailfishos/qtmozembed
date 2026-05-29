@@ -16,16 +16,17 @@ isEmpty(OBJ_PATH) {
   message($$BIN_DIR - binary dir)
 }
 
+!isEmpty(RUNTIME_GRE_HOME) {
+  BIN_DIR=$$RUNTIME_GRE_HOME
+  message(Runtime GRE home defined $$BIN_DIR)
+}
+
 CONFIG += \
     egl
 
 QMAKE_CXXFLAGS += -I $$GECKO_INCLUDE_DIR -include mozilla-config.h
 unix:QMAKE_CXXFLAGS += -fno-short-wchar -fPIC
 DEFINES += XPCOM_GLUE=1 XPCOM_GLUE_USE_NSPR=1 MOZ_GLUE_IN_PROGRAM=1
-
-!isEmpty(ENABLE_GLX) {
-    DEFINES += ENABLE_GLX
-}
 
 #INCLUDEPATH += $$GECKO_INCLUDE_DIR/nspr /usr/include/nspr4
 contains(CONFIG, with-system-nspr) {

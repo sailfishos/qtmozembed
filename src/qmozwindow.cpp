@@ -92,6 +92,11 @@ void QMozWindow::getPlatformImage(const std::function<void(void *image, int widt
     d->mWindow->GetPlatformImage(callback);
 }
 
+void QMozWindow::clearPlatformImage()
+{
+    d->mWindow->ClearPlatformImage();
+}
+
 void QMozWindow::suspendRendering()
 {
     d->mWindow->SuspendRendering();

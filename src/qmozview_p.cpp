@@ -14,6 +14,7 @@
 #include <QJSEngine>
 #include <QJsonDocument>
 #include <QJsonParseError>
+#include <QTimer>
 #include <QTouchEvent>
 #include <QQuickWindow>
 #include <QScreen>
@@ -115,6 +116,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mBottomMargin(0.0)
     , mDynamicToolbarHeight(0)
     , mMargins(0, 0, 0, 0)
+    , mSafeAreaInsets(0, 0, 0, 0)
     , mTempTexture(nullptr)
     , mEnabled(true)
     , mChromeGestureEnabled(true)
@@ -176,6 +178,17 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(INPUTMETHOD_RESET_INPUT_CONTEXT);
     addMessageListener(INPUTMETHOD_SET_INPUT_ATTRIBUTES);
     addMessageListener(INPUTMETHOD_RESET_INPUT_ATTRIBUTES);
+    connect(QMozEngineSettings::instance(), &QMozEngineSettings::pixelRatioChanged,
+            this, [this]() {
+        if (!mView || mDepth <= 0 || mDpi <= 0.0) {
+            return;
+        }
+        if (!mHasCompositor) {
+            mDirtyState |= DirtyScreenProperties;
+            return;
+        }
+        sendScreenProperties();
+    });
 }
 
 QMozViewPrivate::~QMozViewPrivate()
@@ -395,6 +408,40 @@ void QMozViewPrivate::updateMoving(bool moving)
 
 void QMozViewPrivate::reset()
 {
+    if (mMozWindow) {
+        mMozWindow->clearPlatformImage();
+    }
+
+    const bool viewAreaChanged = !mContentRect.isNull();
+    const bool contentWidthChanged = !qFuzzyIsNull(mScrollableSize.width());
+    const bool contentHeightChanged = !qFuzzyIsNull(mScrollableSize.height());
+    const bool scrollableOffsetChanged = !mScrollableOffset.isNull();
+    const bool atXBeginningChanged = mAtXBeginning;
+    const bool atXEndChanged = mAtXEnd;
+    const bool atYBeginningChanged = mAtYBeginning;
+    const bool atYEndChanged = mAtYEnd;
+    const bool resolutionChanged = !qFuzzyIsNull(mContentResolution);
+
+    mContentRect = QRectF();
+    mScrollableSize = QSizeF();
+    mScrollableOffset = QPointF();
+    mAtXBeginning = false;
+    mAtXEnd = false;
+    mAtYBeginning = false;
+    mAtYEnd = false;
+    mContentResolution = 0.0f;
+
+    if (viewAreaChanged) mViewIface->viewAreaChanged();
+    if (contentWidthChanged) mViewIface->contentWidthChanged();
+    if (contentHeightChanged) mViewIface->contentHeightChanged();
+    if (contentWidthChanged || contentHeightChanged) mViewIface->scrollableSizeChanged();
+    if (scrollableOffsetChanged) mViewIface->scrollableOffsetChanged();
+    if (atXBeginningChanged) mViewIface->atXBeginningChanged();
+    if (atXEndChanged) mViewIface->atXEndChanged();
+    if (atYBeginningChanged) mViewIface->atYBeginningChanged();
+    if (atYEndChanged) mViewIface->atYEndChanged();
+    if (resolutionChanged) mViewIface->resolutionChanged();
+
     if (mIsPainted) {
         mIsPainted = false;
         mViewIface->firstPaint(-1, -1);
@@ -420,6 +467,27 @@ void QMozViewPrivate::setSize(const QSizeF &size)
     }
 }
 
+qreal QMozViewPrivate::screenDensity() const
+{
+    qreal density = QMozEngineSettings::instance()->pixelRatio();
+    if (density > 0.0) {
+        return density;
+    }
+
+    QScreen *screen = QGuiApplication::primaryScreen();
+    if (screen && screen->devicePixelRatio() > 0.0) {
+        return screen->devicePixelRatio();
+    }
+
+    return 1.0;
+}
+
+void QMozViewPrivate::sendScreenProperties()
+{
+    Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
+    mView->SetScreenProperties(mDepth, screenDensity(), mDpi);
+}
+
 void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
 {
     Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
@@ -428,7 +496,7 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
     if (!mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        sendScreenProperties();
     }
 }
 
@@ -687,12 +755,17 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
             qGuiApp->inputMethod()->reset();
 
         } else {
-            if (mPreedit || event->commitString().isEmpty() || event->commitString().size() > 1) {
+            if (mPreedit || !event->commitString().isEmpty()
+                    || !event->preeditString().isEmpty()
+                    || event->replacementLength() > 0) {
                 mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(),
                                      event->replacementStart(), event->replacementLength());
-            } else {
-                mView->SendKeyPress(0, 0, charCode);
-                mView->SendKeyRelease(0, 0, charCode);
+                if (event->commitString().isEmpty() && !event->preeditString().isEmpty()) {
+                    QInputMethod *inputContext = qGuiApp->inputMethod();
+                    if (inputContext) {
+                        QTimer::singleShot(0, inputContext, &QInputMethod::commit);
+                    }
+                }
             }
         }
     }
@@ -751,6 +824,12 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
+        if (mSize.isEmpty() && !mMozWindow->size().isEmpty()) {
+            mSize = mMozWindow->size();
+            if (!mViewInitialized) {
+                mDirtyState |= DirtySize;
+            }
+        }
         mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
@@ -832,7 +911,7 @@ void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
     if (mDirtyState & DirtyScreenProperties) {
-        mView->SetScreenProperties(mDepth, mDpi, mDpi);
+        sendScreenProperties();
         mDirtyState &= ~DirtyScreenProperties;
     }
 }
@@ -870,7 +949,8 @@ void QMozViewPrivate::createView()
         Q_ASSERT(mMozWindow);
 
         EmbedLiteWindow *win = mMozWindow->d->mWindow;
-        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext, mPrivateMode, mDesktopMode);
+        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext,
+                                               mPrivateMode, mDesktopMode, mHidden);
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
                             QGuiApplication::primaryScreen()->physicalDotsPerInch());
@@ -901,7 +981,14 @@ void QMozViewPrivate::ViewInitialized()
         load(mPendingUrl, mPendingFromExternal);
     }
 
+    if ((mDirtyState & DirtySize) && mSize.isEmpty() && mMozWindow && !mMozWindow->size().isEmpty()) {
+        mSize = mMozWindow->size();
+    }
+
     if (mDirtyState & DirtySize) {
+        if (mMozWindow && !mSize.isEmpty()) {
+            mMozWindow->setSize(mSize.toSize());
+        }
         setSize(mSize);
         mDirtyState &= ~DirtySize;
     } else if (mMozWindow) {
@@ -914,6 +1001,12 @@ void QMozViewPrivate::ViewInitialized()
         mView->SetMargins(mMargins.top(), mMargins.right(), mMargins.bottom(), mMargins.left());
         mViewIface->marginsChanged();
         mDirtyState &= ~DirtyMargin;
+    }
+
+    if (mDirtyState & DirtySafeAreaInsets) {
+        mView->SetSafeAreaInsets(mSafeAreaInsets.top(), mSafeAreaInsets.right(), mSafeAreaInsets.bottom(), mSafeAreaInsets.left());
+        mViewIface->safeAreaInsetsChanged();
+        mDirtyState &= ~DirtySafeAreaInsets;
     }
 
     if (!mHttpUserAgent.isEmpty()) {
@@ -959,6 +1052,20 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             mViewIface->marginsChanged();
         } else {
             mDirtyState |= DirtyMargin;
+        }
+    }
+}
+
+void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
+{
+    if (insets != mSafeAreaInsets) {
+        mSafeAreaInsets = insets;
+
+        if (mViewInitialized) {
+            mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
+            mViewIface->safeAreaInsetsChanged();
+        } else {
+            mDirtyState |= DirtySafeAreaInsets;
         }
     }
 }
@@ -1024,6 +1131,13 @@ void QMozViewPrivate::OnLoadFinished(void)
         mProgress = 100;
         mIsLoading = false;
         mViewIface->loadingChanged();
+    }
+
+    if (mMozWindow) {
+        if (mViewInitialized && mView) {
+            mView->ScheduleUpdate();
+        }
+        mMozWindow->scheduleUpdate();
     }
 }
 
@@ -1130,6 +1244,12 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
 #endif
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
+    if (mMozWindow) {
+        if (mViewInitialized && mView) {
+            mView->ScheduleUpdate();
+        }
+        mMozWindow->scheduleUpdate();
+    }
 }
 
 void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight)
