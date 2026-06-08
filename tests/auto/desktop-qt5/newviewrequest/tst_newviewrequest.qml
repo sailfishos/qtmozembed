@@ -39,7 +39,6 @@ TestWindow {
 
         function cleanupTestCase() {
             MyScript.dumpTs("tst_newviewrequest cleanupTestCase")
-            oldMozView.destroy()
             oldMozView = null
             wait(1000)
         }
@@ -66,6 +65,7 @@ TestWindow {
             MyScript.dumpTs("test_viewTestNewWindowAPI start")
             verify(MyScript.wrtWait(function() { return (mozView === undefined); }, 100, 500))
             verify(mozView !== undefined)
+            QMozEngineSettings.setPreference("dom.disable_open_during_load", false)
             mozView.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/newviewrequest/newwin.html";
             verify(MyScript.waitLoadFinished(mozView))
             compare(mozView.title, "NewWinExample")

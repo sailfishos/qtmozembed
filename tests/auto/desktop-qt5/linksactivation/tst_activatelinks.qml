@@ -26,6 +26,9 @@ TestWindow {
             appWindow.mozViewInitialized = true
             MyScript.dumpTs("tst_activatelinks onViewInitialized")
         }
+        Component.onCompleted: {
+            webViewport.loadFrameScript("chrome://tests/content/testHelper.js")
+        }
     }
 
     TestCase {
@@ -55,12 +58,12 @@ TestWindow {
                 { name: "browser.ui.touch.weight.visited", value: 120}
             ]})
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta charset='utf-8' name='viewport' content='initial-scale=1'></head><body><a href=about:blank>ActiveLink</a></body>"
+            webViewport.url = "data:text/html,<head><meta charset='utf-8' name='viewport' content='initial-scale=1'></head><body><a id=mylink href=about:blank>ActiveLink</a></body>"
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100)
             verify(MyScript.wrtWait(function() { return !webViewport.painted }))
-            mouseClick(webViewport, 10, 20)
-            verify(MyScript.wrtWait(function() { return webViewport.url != "about:blank" }))
+            webViewport.sendAsyncMessage("embedtest:clickelement", { name: "mylink" })
+            verify(MyScript.wrtWait(function() { return webViewport.url == "about:blank" }))
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100)
             verify(MyScript.wrtWait(function() { return !webViewport.painted }))

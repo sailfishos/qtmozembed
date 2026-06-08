@@ -1653,39 +1653,25 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
 
 void QMozViewPrivate::recvMouseMove(int posX, int posY)
 {
-    if (!mPendingTouchEvent) {
-        EmbedTouchInput touchMove(EmbedTouchInput::MULTITOUCH_MOVE,
-                                  QDateTime::currentMSecsSinceEpoch());
-        touchMove.touches.push_back(TouchData(0,
-                                              createEmbedTouchPoint(posX, posY),
-                                              1.0f));
-        receiveInputEvent(touchMove);
+    if (mViewInitialized && mView && !mPendingTouchEvent) {
+        mView->MouseMove(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
 }
 
 void QMozViewPrivate::recvMousePress(int posX, int posY)
 {
     mViewIface->forceViewActiveFocus();
-    if (!mPendingTouchEvent) {
-        EmbedTouchInput touchBegin(EmbedTouchInput::MULTITOUCH_START,
-                                   QDateTime::currentMSecsSinceEpoch());
-        touchBegin.touches.push_back(TouchData(0,
-                                               createEmbedTouchPoint(posX, posY),
-                                               1.0f));
-        receiveInputEvent(touchBegin);
+    if (mViewInitialized && mView && !mPendingTouchEvent) {
+        mView->MousePress(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
 }
 
 void QMozViewPrivate::recvMouseRelease(int posX, int posY)
 {
-    if (!mPendingTouchEvent) {
-        EmbedTouchInput touchEnd(EmbedTouchInput::MULTITOUCH_END,
-                                 QDateTime::currentMSecsSinceEpoch());
-        touchEnd.touches.push_back(TouchData(0,
-                                             createEmbedTouchPoint(posX, posY),
-                                             1.0f));
-        receiveInputEvent(touchEnd);
+    if (mViewInitialized && mView && !mPendingTouchEvent) {
+        mView->MouseRelease(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
+
     if (mPendingTouchEvent) {
         mPendingTouchEvent = false;
     }
