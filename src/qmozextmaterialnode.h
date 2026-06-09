@@ -27,6 +27,9 @@ public:
     Qt::ScreenOrientation orientation() const;
     void setOrientation(Qt::ScreenOrientation orientation);
 
+    Qt::ScreenOrientation surfaceOrientation() const;
+    void setSurfaceOrientation(Qt::ScreenOrientation orientation);
+
     QSGTexture *texture() const;
     virtual void setTexture(QSGTexture *texture);
 
@@ -38,6 +41,7 @@ private:
     QRectF m_normalizedTextureSubRect { 0, 0, 1, 1 };
     QSGTexture *m_texture = nullptr;
     Qt::ScreenOrientation m_orientation;
+    Qt::ScreenOrientation m_surfaceOrientation;
     bool m_geometryChanged = true;
     bool m_textureChanged = true;
 };

@@ -58,7 +58,7 @@ private:
 
 QSizeF webContentWindowSize(Qt::ScreenOrientation orientation, const QSizeF &size)
 {
-    // Set size for EmbedLiteWindow in screen native orientation
+    // Set size for EmbedLiteWindow in screen native orientation.
     QSizeF result = size;
     if ((qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation)
             == (orientation == Qt::LandscapeOrientation || orientation == Qt::InvertedLandscapeOrientation)) {
@@ -230,6 +230,7 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 
     node->setRect(boundingRect);
     node->setOrientation(mOrientation);
+    node->setSurfaceOrientation(window() ? window()->contentOrientation() : Qt::PrimaryOrientation);
     node->markDirty(QSGNode::DirtyMaterial);
 
     return node;

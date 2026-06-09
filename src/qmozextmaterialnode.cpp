@@ -27,8 +27,17 @@ static void updateRectGeometry(QSGGeometry *g, const QRectF &rect,
     v[3].set(rect.right(), rect.bottom(), bottomRight.x(), bottomRight.y());
 }
 
+static Qt::ScreenOrientation resolvedOrientation(Qt::ScreenOrientation orientation)
+{
+    if (orientation == Qt::PrimaryOrientation) {
+        return qApp->primaryScreen()->primaryOrientation();
+    }
+    return orientation;
+}
+
 MozMaterialNode::MozMaterialNode()
     : m_orientation(qApp->primaryScreen()->primaryOrientation())
+    , m_surfaceOrientation(qApp->primaryScreen()->primaryOrientation())
 {
     setFlag(UsePreprocess);
 
@@ -61,6 +70,20 @@ void MozMaterialNode::setOrientation(Qt::ScreenOrientation orientation)
 {
     if (m_orientation != orientation) {
         m_orientation = orientation;
+        m_geometryChanged = true;
+    }
+}
+
+Qt::ScreenOrientation MozMaterialNode::surfaceOrientation() const
+{
+    return m_surfaceOrientation;
+}
+
+void MozMaterialNode::setSurfaceOrientation(Qt::ScreenOrientation orientation)
+{
+    orientation = resolvedOrientation(orientation);
+    if (m_surfaceOrientation != orientation) {
+        m_surfaceOrientation = orientation;
         m_geometryChanged = true;
     }
 }
@@ -104,39 +127,13 @@ void MozMaterialNode::preprocess()
 
         markDirty(QSGNode::DirtyGeometry);
 
-        // If the size of the texture doesn't match the size of the item then crop the size of the
-        // larger one to prevent the view being stretched.
         QRectF geometryRect = m_rect;
         QRectF textureRect = m_normalizedTextureSubRect;
-
-        const bool landscape = m_orientation & (Qt::LandscapeOrientation | Qt::InvertedLandscapeOrientation);
-        const bool transpose = (landscape
-                                == (qApp->primaryScreen()->primaryOrientation() == Qt::PortraitOrientation));
-        const qreal width = transpose ? m_rect.height() : m_rect.width();
-        const qreal height = transpose ? m_rect.width() : m_rect.height();
-        const QSizeF textureSize = m_texture ? QSizeF(m_texture->textureSize()) : QSizeF(width, height);
-
-        if (width > textureSize.width()) {
-            if (transpose) {
-                geometryRect.setHeight(textureSize.width());
-            } else {
-                geometryRect.setWidth(textureSize.width());
-            }
-        } else if (width < textureSize.width()) {
-            textureRect.setWidth(textureRect.width() * width / textureSize.width());
-        }
-
-        if (height > textureSize.height()) {
-            if (transpose) {
-                geometryRect.setWidth(textureSize.height());
-            } else {
-                geometryRect.setHeight(textureSize.height());
-            }
-        } else if (height < textureSize.height()) {
-            const qreal croppedHeight = textureRect.height() * height / textureSize.height();
-            textureRect.setY(textureRect.y() + textureRect.height() - croppedHeight);
-            textureRect.setHeight(croppedHeight);
-        }
+        // WebRender's external texture size may reflect the native framebuffer
+        // orientation rather than the item's presentation orientation.
+        // Browsers present the full target rect and rotate the full texture;
+        // trying to crop based on the raw texture dimensions squeezes a valid
+        // landscape frame into a portrait-shaped presentation.
 
         // WebRender renders into a GL framebuffer, whose EGLImage has a
         // bottom-left texture origin. Qt's scene graph coordinates are
@@ -147,17 +144,21 @@ void MozMaterialNode::preprocess()
         const QPointF topRight = textureRect.bottomRight();
         const QPointF bottomRight = textureRect.topRight();
 
-        // and then texture coordinates
-        int rotation = qApp->primaryScreen()->angleBetween(m_orientation, qApp->primaryScreen()->primaryOrientation());
+        // Rotate the texture into the item surface orientation. Sailfish app
+        // windows are already presented in their content orientation, unlike
+        // the browser's primary-orientation GL surface.
+        int rotation = qApp->primaryScreen()->angleBetween(
+                    resolvedOrientation(m_orientation),
+                    resolvedOrientation(m_surfaceOrientation));
         switch (rotation) {
         case 90:
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        topRight,
-                        topLeft,
+                        bottomLeft,
                         bottomRight,
-                        bottomLeft);
+                        topLeft,
+                        topRight);
             break;
         case 180:
             updateRectGeometry(
@@ -172,10 +173,10 @@ void MozMaterialNode::preprocess()
             updateRectGeometry(
                         &m_geometry,
                         geometryRect,
-                        bottomLeft,
-                        bottomRight,
+                        topRight,
                         topLeft,
-                        topRight);
+                        bottomRight,
+                        bottomLeft);
             break;
         default:
             updateRectGeometry(
