@@ -11,7 +11,7 @@ TestWindow {
     id: appWindow
 
     property string testResult
-    property var testEngines
+    property var testEngines: []
     property string testDefault
 
     name: testcaseid.name
@@ -36,8 +36,11 @@ TestWindow {
                         break
                     }
                     case "search-engine-added": {
-                        appWindow.testEngines.push(data.engine)
-
+                        print("Search engine add result:", data.engine, data.errorCode)
+                        appWindow.testResult = data.errorCode ? "error" : "loaded"
+                        if (data.engine && appWindow.testEngines.indexOf(data.engine) < 0) {
+                            appWindow.testEngines.push(data.engine)
+                        }
                         break
                     }
                     case "search-engine-default-changed": {
@@ -95,6 +98,8 @@ TestWindow {
             if (!QmlMozContext.isInitialized()) {
                 initializedSpy.wait()
             }
+
+            QmlMozContext.notifyObservers("embedui:search", { msg: "init" })
         }
 
         function cleanupTestCase() {
@@ -121,11 +126,12 @@ TestWindow {
             verify(MyScript.waitMozView())
             QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
             verify(MyScript.wrtWait(function() { return !engineExistsPredicate() }))
+            appWindow.testResult = ""
             QmlMozContext.notifyObservers("embedui:search",
                                           {msg:"loadxml",
                                               uri: "file://" + TestHelper.getenv("QTTESTSROOT")
                                                    + "/auto/shared/searchengine/test.xml", confirm: false})
-            verify(MyScript.wrtWait(function() { return appWindow.testResult !== "loaded" }))
+            verify(MyScript.wrtWait(function() { return appWindow.testResult === "" && engineExistsPredicate() }))
             verify(MyScript.wrtWait(engineExistsPredicate))
             MyScript.dumpTs("AddSearchEngine end")
         }
