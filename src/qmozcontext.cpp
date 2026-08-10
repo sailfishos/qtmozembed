@@ -30,6 +30,7 @@
 #include "qmozwindow.h"
 
 #include "nsDebug.h"
+#include "mozilla/embedlite/EmbedLiteAPI.h"
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedInitGlue.h"
