@@ -87,9 +87,42 @@ Qt::ScreenOrientation QMozWindow::primaryOrientation() const
     return d->mPrimaryOrientation;
 }
 
-void QMozWindow::getPlatformImage(const std::function<void(void *image, int width, int height)> &callback)
+bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
 {
-    d->mWindow->GetPlatformImage(callback);
+    if (!callback) {
+        return false;
+    }
+
+    bool accepted = false;
+    const bool delivered = d->mWindow->WithPlatformImage(
+                [&](const PlatformImageDescriptor &descriptor) {
+        if (descriptor.handleType != PlatformImageHandleType::EGLImage
+                || !descriptor.handle
+                || descriptor.width <= 0
+                || descriptor.height <= 0) {
+            return;
+        }
+
+        QMozTextureTarget textureTarget;
+        switch (descriptor.textureTarget) {
+        case PlatformImageTextureTarget::Texture2D:
+            textureTarget = QMozTextureTarget::Texture2D;
+            break;
+        case PlatformImageTextureTarget::ExternalOES:
+            textureTarget = QMozTextureTarget::ExternalOES;
+            break;
+        default:
+            return;
+        }
+
+        accepted = true;
+        callback({
+            static_cast<EGLImageKHR>(descriptor.handle),
+            QSize(descriptor.width, descriptor.height),
+            textureTarget
+        });
+    });
+    return delivered && accepted;
 }
 
 void QMozWindow::clearPlatformImage()

@@ -177,7 +177,9 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         return nullptr;
     }
 
-    const bool invalidTexture = (!mComposited && !d->mIsPainted)
+    // A reset clears the producer image and painted state while the previous
+    // composite flag may still be set. Do not retain that imported texture.
+    const bool invalidTexture = (!mComposited || !d->mIsPainted)
             || !d->mViewInitialized
             || !d->mHasCompositor
             || !d->mContext->registeredWindow()
@@ -216,12 +218,14 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
 
-        connect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage, Qt::DirectConnection);
+        connect(texture, &QMozExtTexture::withPlatformImage,
+                d->mMozWindow, &QMozWindow::withPlatformImage,
+                Qt::DirectConnection);
 
-        node = new MozExtMaterialNode;
+        node = new MozMaterialNode;
 #else
 #warning "Implement me for non ES2 platform"
-//        node = new MozRgbMaterialNode;
+//        node = new MozMaterialNode;
         return nullptr;
 #endif
 
@@ -240,7 +244,8 @@ void QuickMozView::releaseResources()
 {
 #if defined(QT_OPENGL_ES_2)
     if (QMozExtTexture * const texture = d->mMozWindow ? qobject_cast<QMozExtTexture *>(mTexture) : nullptr) {
-        disconnect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage);
+        disconnect(texture, &QMozExtTexture::withPlatformImage,
+                   d->mMozWindow, &QMozWindow::withPlatformImage);
     }
 #endif
 

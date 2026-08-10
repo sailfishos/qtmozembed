@@ -8,11 +8,26 @@
 
 #include "qmozexttexture.h"
 
-#include <QOpenGLContext>
 #include <QOpenGLFunctions>
 
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
+
+static uint glTextureTarget(QMozTextureTarget textureTarget)
+{
+    if (textureTarget == QMozTextureTarget::ExternalOES) {
+        return GL_TEXTURE_EXTERNAL_OES;
+    }
+    return GL_TEXTURE_2D;
+}
+
+static void updateExternalTextureParameters()
+{
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+}
 
 QMozExtTexture::QMozExtTexture()
 {
@@ -50,11 +65,20 @@ QRectF QMozExtTexture::normalizedTextureSubRect() const
     return QRectF(0, 0, 1, 1);
 }
 
+bool QMozExtTexture::usesExternalTexture() const
+{
+    return m_textureTarget == QMozTextureTarget::ExternalOES;
+}
+
 void QMozExtTexture::bind()
 {
     if (m_textureId != 0) {
-        glBindTexture(GL_TEXTURE_EXTERNAL_OES, m_textureId);
-        updateBindOptions();
+        glBindTexture(glTextureTarget(m_textureTarget), m_textureId);
+        if (usesExternalTexture()) {
+            updateExternalTextureParameters();
+        } else {
+            updateBindOptions();
+        }
     }
 }
 
@@ -73,18 +97,30 @@ bool QMozExtTexture::updateTexture()
     // the main thread ahead of the texture which would be deleted in the render thread so we
     // connect two through a direct signal connection which we can remove when the window is
     // destroyed.
-    Q_EMIT getPlatformImage([&](EGLImageKHR image, int width, int height) {
-        if (image) {
+    Q_EMIT withPlatformImage([&](const QMozEGLImage &image) {
+        if (image.image && !image.size.isEmpty()) {
             changed = true;
 
-            m_textureSize = QSize(width, height);
+            m_textureSize = image.size;
+
+            if (m_textureTarget != image.textureTarget && m_textureId != 0) {
+                glDeleteTextures(1, &m_textureId);
+                m_textureId = 0;
+            }
+            m_textureTarget = image.textureTarget;
 
             if (m_textureId == 0) {
                 glGenTextures(1, &m_textureId);
             }
 
-            glBindTexture(GL_TEXTURE_EXTERNAL_OES, m_textureId);
-            glEGLImageTargetTexture2DOES(GL_TEXTURE_EXTERNAL_OES, image);
+            const uint textureTarget = glTextureTarget(m_textureTarget);
+            glBindTexture(textureTarget, m_textureId);
+            glEGLImageTargetTexture2DOES(textureTarget, image.image);
+            if (usesExternalTexture()) {
+                updateExternalTextureParameters();
+            } else {
+                updateBindOptions(true);
+            }
         }
     });
 

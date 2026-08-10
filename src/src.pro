@@ -61,7 +61,7 @@ include($$RELATIVE_PATH/relative-objdir.pri)
 
 PREFIX = /usr
 
-QT += quick qml
+QT += quick qml gui-private
 
 #DEFINES += Q_DEBUG_LOG
 
