@@ -7,6 +7,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "runtime/qmozsurface_p.h"
+#include "runtime/qmozframestream_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
@@ -305,6 +306,54 @@ void testPlatformFrameForwarding()
     VERIFY(destructions == 1);
 }
 
+void testFrameStreamTracksLatestConsumerFrame()
+{
+    void *storage = nullptr;
+    QMozWindow * const window = fakeWindow(&storage);
+    int destructions = 0;
+    QSharedPointer<FakeSurface> surface(
+            new FakeSurface(window, &destructions));
+    int consumer = 0;
+    int updates = 0;
+
+    VERIFY(QtMoz::installWindowFrameStream(window, surface));
+    QtMoz::setWindowFrameConsumer(window, &consumer, [&]() {
+        ++updates;
+    });
+    VERIFY(QtMoz::startWindowFrameStream(window));
+
+    const QMozSurfaceFrameToken first = { 5, 7 };
+    surface->notifyFrameReady(first);
+    VERIFY(updates == 1);
+
+    const QSharedPointer<QtMoz::QMozFrameStream> stream =
+            QtMoz::windowFrameStream(window);
+    QMozSurfaceFrameToken token = { 0, 0 };
+    VERIFY(stream->takePendingFrame(&consumer, &token));
+    VERIFY(token.epoch == first.epoch);
+    VERIFY(token.sequence == first.sequence);
+
+    stream->restorePendingFrame(&consumer, token);
+    const QMozSurfaceFrameToken newer = { 5, 11 };
+    surface->notifyFrameReady(newer);
+    VERIFY(updates == 2);
+    VERIFY(stream->takePendingFrame(&consumer, &token));
+    VERIFY(token.epoch == newer.epoch);
+    VERIFY(token.sequence == newer.sequence);
+
+    QtMoz::clearWindowFrameConsumer(window, &consumer);
+    surface->notifyFrameReady({ 5, 13 });
+    VERIFY(updates == 2);
+    VERIFY(!stream->takePendingFrame(&consumer, &token));
+
+    const QSharedPointer<QtMoz::QMozFrameStream> removed =
+            QtMoz::takeWindowFrameStream(window);
+    VERIFY(removed == stream);
+    removed->backendDestroyed();
+    surface.clear();
+    VERIFY(destructions == 0);
+}
+
 void testQueuedFrameSuppressedAfterStop()
 {
     EmbedLiteApp app;
@@ -468,6 +517,7 @@ int main(int argc, char **argv)
     testRegistryLifetime();
     testReentrantRemoval();
     testPlatformFrameForwarding();
+    testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
     testDestroyWaitsForFrameReleaseAndStop();
     testFailedDisablePreservesQueuedFrame();
