@@ -24,7 +24,8 @@ enum class BackendApiError {
     NullDescriptor,
     TruncatedDescriptor,
     IncompatibleMajor,
-    MissingCapabilities
+    MissingCapabilities,
+    IncompleteCapabilities
 };
 
 struct BackendApiValidation {
@@ -42,11 +43,23 @@ QTMOZ_BACKEND_INTERNAL BackendApiValidation validateBackendApi(
         const QtMozBackendApiV1 *api,
         uint64_t requiredCapabilities = QTMOZ_BACKEND_CAP_NONE);
 
+QTMOZ_BACKEND_INTERNAL BackendApiValidation validateBackendHost(
+        const QtMozBackendHostV1 *host,
+        uint64_t requiredCapabilities = QTMOZ_BACKEND_HOST_CAP_NONE);
+
+QTMOZ_BACKEND_INTERNAL BackendApiValidation validateBackendRuntimeCallbacks(
+        const QtMozBackendRuntimeCallbacksV1 *callbacks);
+
 QTMOZ_BACKEND_INTERNAL const char *backendApiName(
+        const QtMozBackendApiV1 *api);
+
+QTMOZ_BACKEND_INTERNAL const QtMozBackendRuntimeOpsV1 *backendRuntimeOps(
         const QtMozBackendApiV1 *api);
 
 /* Internal descriptor for the built-in compatibility backend. */
 QTMOZ_BACKEND_INTERNAL const QtMozBackendApiV1 &embedLiteBackendApiV1();
+QTMOZ_BACKEND_INTERNAL QtMozBackendResult queryEmbedLiteBackendV1(
+        const QtMozBackendHostV1 *host, QtMozBackendApiV1 *api);
 
 } // namespace QtMoz
 
