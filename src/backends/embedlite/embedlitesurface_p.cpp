@@ -44,6 +44,35 @@ private:
     EmbedLiteWindow *mWindow;
 };
 
+class SurfaceEvent final : public QEvent
+{
+public:
+    enum Kind {
+        ContinueDestroy,
+        FrameReady,
+        FrameDeliveryStopped
+    };
+
+    SurfaceEvent(const QSharedPointer<EmbedLiteSurface> &surface, Kind kind,
+                 quint64 generation = 0,
+                 const QMozSurfaceFrameToken &token = { 0, 0 });
+
+    void dispatch();
+
+    static QEvent::Type eventType()
+    {
+        static const QEvent::Type type = static_cast<QEvent::Type>(
+                QEvent::registerEventType());
+        return type;
+    }
+
+private:
+    QSharedPointer<EmbedLiteSurface> mSurface;
+    Kind mKind;
+    quint64 mGeneration;
+    QMozSurfaceFrameToken mToken;
+};
+
 class CallbackDispatcher final : public QObject
 {
 protected:
@@ -51,6 +80,9 @@ protected:
     {
         if (event->type() == DestroyEvent::eventType()) {
             static_cast<DestroyEvent *>(event)->dispatch();
+            return true;
+        } else if (event->type() == SurfaceEvent::eventType()) {
+            static_cast<SurfaceEvent *>(event)->dispatch();
             return true;
         }
         return QObject::event(event);
@@ -86,6 +118,7 @@ private:
 
 class Q_DECL_HIDDEN EmbedLiteSurface final
     : public QMozSurface
+    , public EmbedLitePlatformFrameListener
     , public QEnableSharedFromThis<EmbedLiteSurface>
 {
 public:
@@ -99,6 +132,9 @@ public:
         , mDestroyRequested(false)
         , mDestroyIssued(false)
         , mDestroyed(false)
+        , mFrameDeliveryEnabled(false)
+        , mFrameDeliveryStopPending(false)
+        , mFrameEventGeneration(0)
     {
         Q_ASSERT(mApp);
         Q_ASSERT(mListener);
@@ -123,8 +159,12 @@ public:
 
         EmbedLiteWindow * const window = mApp->CreateWindow(
                 size.width(), size.height(), mListener);
+        if (window && !window->SetPlatformFrameListener(this)) {
+            mApp->DestroyWindow(window);
+            return nullptr;
+        }
 
-        bool destroyWindow = false;
+        bool continueDestroy = false;
         {
             MutexLocker lock(&mMutex);
             if (mDestroyed) {
@@ -132,37 +172,31 @@ public:
             }
             if (mDestroyRequested) {
                 mWindow = window;
-                if (!mDestroyIssued && window) {
-                    mDestroyIssued = true;
-                    destroyWindow = true;
-                }
+                continueDestroy = window != nullptr;
             } else {
                 mWindow = window;
             }
         }
 
-        if (destroyWindow) {
-            dispatchDestroy(window);
+        if (continueDestroy) {
+            scheduleDestroyContinuation();
         }
         return window;
     }
 
     void requestDestroy() override
     {
-        EmbedLiteWindow *window = nullptr;
         {
             MutexLocker lock(&mMutex);
             if (mDestroyRequested || mDestroyed) {
                 return;
             }
             mDestroyRequested = true;
-            if (mActiveCalls == 0 && mWindow) {
-                mDestroyIssued = true;
-                window = mWindow;
-            }
         }
-        if (window) {
-            dispatchDestroy(window);
+        if (QThread::currentThread() == mOwnerThread) {
+            continueDestroyOnOwnerThread();
+        } else {
+            scheduleDestroyContinuation();
         }
     }
 
@@ -173,6 +207,11 @@ public:
         mDestroyRequested = true;
         mDestroyIssued = true;
         mDestroyed = true;
+        mFrameDeliveryEnabled = false;
+        mFrameDeliveryStopPending = false;
+        mFrameReadyCallback = QMozSurfaceFrameReadyCallback();
+        mFrameDeliveryStoppedCallback =
+                QMozSurfaceFrameDeliveryStoppedCallback();
     }
 
     bool setSize(const QSize &size) override
@@ -256,6 +295,128 @@ public:
         return delivered && accepted;
     }
 
+    bool setPlatformFrameCallbacks(
+            const QMozSurfaceFrameReadyCallback &readyCallback,
+            const QMozSurfaceFrameDeliveryStoppedCallback &stoppedCallback)
+            override
+    {
+        MutexLocker lock(&mMutex);
+        if (mDestroyRequested || mDestroyed || mFrameDeliveryEnabled
+                || mFrameDeliveryStopPending) {
+            return false;
+        }
+        mFrameReadyCallback = readyCallback;
+        mFrameDeliveryStoppedCallback = stoppedCallback;
+        return true;
+    }
+
+    bool setPlatformFrameDeliveryEnabled(bool enabled) override
+    {
+        MutexLocker controlLock(&mFrameControlMutex);
+        quint64 generation = 0;
+        {
+            MutexLocker lock(&mMutex);
+            if (mDestroyRequested || mDestroyed || mDestroyIssued
+                    || mFrameDeliveryStopPending) {
+                return false;
+            }
+            if (mFrameDeliveryEnabled == enabled) {
+                return true;
+            }
+            if (enabled && !mFrameReadyCallback) {
+                return false;
+            }
+            mFrameDeliveryEnabled = enabled;
+            mFrameDeliveryStopPending = !enabled;
+            if (enabled) {
+                ++mFrameEventGeneration;
+                if (!mFrameEventGeneration) {
+                    ++mFrameEventGeneration;
+                }
+            }
+            generation = mFrameEventGeneration;
+        }
+
+        NativeCall call(this);
+        if (!call
+                || !call.window()->SetPlatformFrameDeliveryEnabled(enabled)) {
+            MutexLocker lock(&mMutex);
+            if (generation == mFrameEventGeneration) {
+                mFrameDeliveryEnabled = !enabled;
+                mFrameDeliveryStopPending = false;
+            }
+            return false;
+        }
+        return true;
+    }
+
+    bool acquirePlatformFrame(
+            const QMozSurfaceFrameToken &token,
+            const QMozSurfaceFrameCallback &callback) override
+    {
+        if (!token.isValid() || !callback) {
+            return false;
+        }
+
+        NativeCall call(this);
+        if (!call) {
+            return false;
+        }
+
+        bool accepted = false;
+        const PlatformFrameToken embedToken = { token.epoch, token.sequence };
+        const bool delivered = call.window()->AcquirePlatformFrame(
+                embedToken,
+                [&](const PlatformFrameDescriptor &descriptor) {
+            QMozSurfaceFrame frame;
+            if (!convertPlatformFrame(descriptor, &frame)
+                    || frame.token.epoch != token.epoch
+                    || frame.token.sequence != token.sequence) {
+                return false;
+            }
+            accepted = callback(frame);
+            return accepted;
+        });
+        return delivered && accepted;
+    }
+
+    bool releasePlatformFrame(
+            const QMozSurfaceFrameRelease &release) override
+    {
+        if (!release.token.isValid()) {
+            return false;
+        }
+
+        NativeCall call(this, NativeCall::AllowDuringDestroy);
+        if (!call) {
+            return false;
+        }
+
+        PlatformFrameFenceHandleType fenceType;
+        switch (release.fenceType) {
+        case QMozSurfaceFrameFenceType::NoHandle:
+            if (release.fence) {
+                return false;
+            }
+            fenceType = PlatformFrameFenceHandleType::NoHandle;
+            break;
+        case QMozSurfaceFrameFenceType::EGLSync:
+            if (!release.fence) {
+                return false;
+            }
+            fenceType = PlatformFrameFenceHandleType::EGLSync;
+            break;
+        default:
+            return false;
+        }
+
+        return call.window()->ReleasePlatformFrame({
+            { release.token.epoch, release.token.sequence },
+            fenceType,
+            release.fence
+        });
+    }
+
     bool clearPlatformImage() override
     {
         NativeCall call(this);
@@ -310,16 +471,99 @@ public:
         return true;
     }
 
+    void PlatformFrameReady(const PlatformFrameToken &token) override
+    {
+        MutexLocker controlLock(&mFrameControlMutex);
+        quint64 generation = 0;
+        {
+            MutexLocker lock(&mMutex);
+            if (mDestroyRequested || mDestroyed || !mFrameDeliveryEnabled
+                    || mFrameDeliveryStopPending) {
+                return;
+            }
+            generation = mFrameEventGeneration;
+        }
+        postSurfaceEvent(SurfaceEvent::FrameReady, generation,
+                         { token.epoch, token.sequence });
+    }
+
+    void PlatformFrameDeliveryStopped() override
+    {
+        MutexLocker controlLock(&mFrameControlMutex);
+        quint64 generation = 0;
+        {
+            MutexLocker lock(&mMutex);
+            if (mDestroyed || !mFrameDeliveryStopPending) {
+                return;
+            }
+            generation = mFrameEventGeneration;
+        }
+        postSurfaceEvent(SurfaceEvent::FrameDeliveryStopped, generation);
+    }
+
 private:
+    static bool convertPlatformFrame(
+            const PlatformFrameDescriptor &descriptor,
+            QMozSurfaceFrame *frame)
+    {
+        if (!frame || !descriptor.token.IsValid()
+                || descriptor.image.handleType !=
+                        PlatformImageHandleType::EGLImage
+                || !descriptor.image.handle
+                || descriptor.image.width <= 0
+                || descriptor.image.height <= 0) {
+            return false;
+        }
+
+        switch (descriptor.image.textureTarget) {
+        case PlatformImageTextureTarget::Texture2D:
+            frame->image.textureTarget =
+                    QMozSurfaceTextureTarget::Texture2D;
+            break;
+        case PlatformImageTextureTarget::ExternalOES:
+            frame->image.textureTarget =
+                    QMozSurfaceTextureTarget::ExternalOES;
+            break;
+        default:
+            return false;
+        }
+
+        switch (descriptor.releaseFenceHandleType) {
+        case PlatformFrameFenceHandleType::NoHandle:
+            frame->releaseFenceType =
+                    QMozSurfaceFrameFenceType::NoHandle;
+            break;
+        case PlatformFrameFenceHandleType::EGLSync:
+            frame->releaseFenceType =
+                    QMozSurfaceFrameFenceType::EGLSync;
+            break;
+        default:
+            return false;
+        }
+
+        frame->token = { descriptor.token.epoch,
+                         descriptor.token.sequence };
+        frame->image.handle = descriptor.image.handle;
+        frame->image.size = QSize(descriptor.image.width,
+                                  descriptor.image.height);
+        return true;
+    }
+
     // A native call pins the window without holding mMutex across Gecko or
-    // user code. Teardown blocks new calls and is posted to the owner thread
-    // after the final pin is released.
+    // user code. Teardown blocks new calls except frame release, and is
+    // continued on the owner thread after the final pin is released.
     class NativeCall final
     {
     public:
-        explicit NativeCall(EmbedLiteSurface *surface)
+        enum Policy {
+            RejectDuringDestroy,
+            AllowDuringDestroy
+        };
+
+        explicit NativeCall(EmbedLiteSurface *surface,
+                            Policy policy = RejectDuringDestroy)
             : mSurface(surface)
-            , mWindow(surface->beginCall())
+            , mWindow(surface->beginCall(policy))
         {
         }
 
@@ -347,10 +591,12 @@ private:
         Q_DISABLE_COPY(NativeCall)
     };
 
-    EmbedLiteWindow *beginCall()
+    EmbedLiteWindow *beginCall(NativeCall::Policy policy)
     {
         MutexLocker lock(&mMutex);
-        if (!mWindow || mDestroyRequested || mDestroyed) {
+        if (!mWindow || mDestroyIssued || mDestroyed
+                || (mDestroyRequested
+                    && policy == NativeCall::RejectDuringDestroy)) {
             return nullptr;
         }
         ++mActiveCalls;
@@ -359,20 +605,132 @@ private:
 
     void endCall()
     {
-        EmbedLiteWindow *window = nullptr;
+        bool continueDestroy = false;
         {
             MutexLocker lock(&mMutex);
             Q_ASSERT(mActiveCalls > 0);
             --mActiveCalls;
-            if (mActiveCalls == 0 && mDestroyRequested
-                    && !mDestroyIssued && mWindow) {
+            continueDestroy = mActiveCalls == 0 && mDestroyRequested
+                    && !mDestroyIssued && mWindow;
+        }
+        if (continueDestroy) {
+            scheduleDestroyContinuation();
+        }
+    }
+
+    void scheduleDestroyContinuation()
+    {
+        postSurfaceEvent(SurfaceEvent::ContinueDestroy, 0);
+    }
+
+    void continueDestroyOnOwnerThread()
+    {
+        Q_ASSERT(QThread::currentThread() == mOwnerThread);
+        MutexLocker controlLock(&mFrameControlMutex);
+
+        EmbedLiteWindow *window = nullptr;
+        bool disableDelivery = false;
+        {
+            MutexLocker lock(&mMutex);
+            if (!mDestroyRequested || mDestroyIssued || mDestroyed
+                    || !mWindow || mActiveCalls != 0
+                    || mFrameDeliveryStopPending) {
+                return;
+            }
+            window = mWindow;
+            if (mFrameDeliveryEnabled) {
+                ++mActiveCalls;
+                disableDelivery = true;
+                mFrameDeliveryEnabled = false;
+                mFrameDeliveryStopPending = true;
+            } else {
                 mDestroyIssued = true;
-                window = mWindow;
             }
         }
-        if (window) {
-            dispatchDestroy(window);
+
+        if (disableDelivery) {
+            const bool disabled =
+                    window->SetPlatformFrameDeliveryEnabled(false);
+            {
+                MutexLocker lock(&mMutex);
+                Q_ASSERT(mActiveCalls > 0);
+                --mActiveCalls;
+                if (!disabled) {
+                    mFrameDeliveryEnabled = true;
+                    mFrameDeliveryStopPending = false;
+                }
+            }
+            // Destruction deliberately remains pending on failure. Retrying
+            // or timing out cannot safely retire render-thread GL resources.
+            return;
         }
+
+        if (!window->SetPlatformFrameListener(nullptr)) {
+            // Fail closed rather than destroy a listener still owned by
+            // Gecko's frame-delivery path.
+            MutexLocker lock(&mMutex);
+            mDestroyIssued = false;
+            return;
+        }
+        dispatchDestroy(window);
+    }
+
+    void dispatchSurfaceEvent(SurfaceEvent::Kind kind, quint64 generation,
+                              const QMozSurfaceFrameToken &token)
+    {
+        Q_ASSERT(QThread::currentThread() == mOwnerThread);
+        if (kind == SurfaceEvent::ContinueDestroy) {
+            continueDestroyOnOwnerThread();
+            return;
+        }
+
+        QMozSurfaceFrameReadyCallback readyCallback;
+        QMozSurfaceFrameDeliveryStoppedCallback stoppedCallback;
+        bool continueDestroy = false;
+        {
+            MutexLocker controlLock(&mFrameControlMutex);
+            MutexLocker lock(&mMutex);
+            if (mDestroyed || generation != mFrameEventGeneration) {
+                return;
+            }
+            if (kind == SurfaceEvent::FrameReady) {
+                if (mDestroyRequested || !mFrameDeliveryEnabled
+                        || mFrameDeliveryStopPending) {
+                    return;
+                }
+                readyCallback = mFrameReadyCallback;
+            } else if (kind == SurfaceEvent::FrameDeliveryStopped) {
+                if (!mFrameDeliveryStopPending) {
+                    return;
+                }
+                mFrameDeliveryStopPending = false;
+                stoppedCallback = mFrameDeliveryStoppedCallback;
+                continueDestroy = mDestroyRequested;
+            }
+        }
+
+        if (readyCallback) {
+            readyCallback(token);
+        } else if (stoppedCallback) {
+            stoppedCallback();
+        }
+        if (continueDestroy) {
+            continueDestroyOnOwnerThread();
+        }
+    }
+
+    void postSurfaceEvent(
+            SurfaceEvent::Kind kind, quint64 generation,
+            const QMozSurfaceFrameToken &token = { 0, 0 })
+    {
+        const QSharedPointer<EmbedLiteSurface> self = sharedFromThis();
+        Q_ASSERT(!self.isNull());
+        if (self.isNull()) {
+            return;
+        }
+        QCoreApplication::postEvent(
+                mDispatcher,
+                new SurfaceEvent(self, kind, generation, token));
     }
 
     void dispatchDestroy(EmbedLiteWindow *window)
@@ -409,12 +767,20 @@ private:
     QThread *mOwnerThread;
     CallbackDispatcher *mDispatcher;
     QMutex mMutex;
+    QMutex mFrameControlMutex;
     int mActiveCalls;
     bool mDestroyRequested;
     bool mDestroyIssued;
     bool mDestroyed;
+    bool mFrameDeliveryEnabled;
+    bool mFrameDeliveryStopPending;
+    quint64 mFrameEventGeneration;
+    QMozSurfaceFrameReadyCallback mFrameReadyCallback;
+    QMozSurfaceFrameDeliveryStoppedCallback
+            mFrameDeliveryStoppedCallback;
 
     friend class DestroyEvent;
+    friend class SurfaceEvent;
 
     Q_DISABLE_COPY(EmbedLiteSurface)
 };
@@ -431,6 +797,22 @@ DestroyEvent::DestroyEvent(
 void DestroyEvent::dispatch()
 {
     mSurface->destroyOnOwnerThread(mWindow);
+}
+
+SurfaceEvent::SurfaceEvent(
+        const QSharedPointer<EmbedLiteSurface> &surface, Kind kind,
+        quint64 generation, const QMozSurfaceFrameToken &token)
+    : QEvent(eventType())
+    , mSurface(surface)
+    , mKind(kind)
+    , mGeneration(generation)
+    , mToken(token)
+{
+}
+
+void SurfaceEvent::dispatch()
+{
+    mSurface->dispatchSurfaceEvent(mKind, mGeneration, mToken);
 }
 
 EmbedLiteSurface *embedLiteSurface(
