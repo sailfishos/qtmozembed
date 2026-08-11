@@ -469,6 +469,11 @@ void QMozViewPrivate::updateChromeTabs(
         mCanGoForward = canGoForward;
         mViewIface->canGoForwardChanged();
     }
+    if (!mIsLoading && loading) {
+        // Keep the current document painted until Gecko accepts a navigation
+        // and reports that the replacement document has started loading.
+        reset();
+    }
     if (mProgress != progress) {
         mProgress = progress;
         mViewIface->loadProgressChanged();
@@ -854,7 +859,6 @@ void QMozViewPrivate::goBack()
     if (!mViewInitialized)
         return;
 
-    reset();
     if (QtMoz::isChromeHosted(mMozWindow.data())) {
         QtMoz::chromeSessionGoBack(this);
     } else {
@@ -867,7 +871,6 @@ void QMozViewPrivate::goForward()
     if (!mViewInitialized)
         return;
 
-    reset();
     if (QtMoz::isChromeHosted(mMozWindow.data())) {
         QtMoz::chromeSessionGoForward(this);
     } else {
@@ -894,7 +897,6 @@ void QMozViewPrivate::reload()
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl, mPendingFromExternal);
     } else {
-        reset();
         if (QtMoz::isChromeHosted(mMozWindow.data())) {
             QtMoz::chromeSessionReload(this, false);
         } else {
@@ -922,7 +924,6 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    reset();
     const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
     if (chromeHosted) {
         const QMozChromeTabSnapshot * const selected =
@@ -1569,6 +1570,8 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
+    // Keep the current document painted until a requested navigation starts.
+    // The request may still be cancelled by a beforeunload prompt.
     reset();
 
     if (!mIsLoading) {
