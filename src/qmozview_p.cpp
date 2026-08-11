@@ -477,6 +477,11 @@ void QMozViewPrivate::updateChromeTabs(
         mCanGoForward = canGoForward;
         mViewIface->canGoForwardChanged();
     }
+    if (!mIsLoading && loading) {
+        // Keep the current document painted until Gecko accepts a navigation
+        // and reports that the replacement document has started loading.
+        reset();
+    }
     if (mProgress != progress) {
         mProgress = progress;
         mViewIface->loadProgressChanged();
@@ -926,9 +931,11 @@ void QMozViewPrivate::cancelPendingNavigation()
     if (mPendingUrl.isEmpty() || mUrl.isEmpty())
         return;
 
-    mPendingUrl.clear();
-    mPendingFromExternal = false;
-    mViewIface->urlChanged();
+    const QUrl oldExposedUrl = url();
+    clearPendingUrl();
+    if (oldExposedUrl != url()) {
+        mViewIface->urlChanged();
+    }
 }
 
 void QMozViewPrivate::reload()
