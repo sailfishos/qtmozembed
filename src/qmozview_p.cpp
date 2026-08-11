@@ -515,7 +515,6 @@ void QMozViewPrivate::goBack()
     if (!mViewInitialized)
         return;
 
-    reset();
     mView->GoBack(false, true);
 }
 
@@ -524,7 +523,6 @@ void QMozViewPrivate::goForward()
     if (!mViewInitialized)
         return;
 
-    reset();
     mView->GoForward(false, true);
 }
 
@@ -543,7 +541,6 @@ void QMozViewPrivate::reload()
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl, mPendingFromExternal);
     } else {
-        reset();
         mView->Reload(false);
     }
 }
@@ -563,7 +560,6 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    reset();
     mView->LoadURL(url.toUtf8().data(), fromExternal);
 
     if (mPendingUrl != url) {
@@ -1107,6 +1103,8 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
+    // Keep the current document painted until a requested navigation starts.
+    // The request may still be cancelled by a beforeunload prompt.
     reset();
 
     if (!mIsLoading) {
