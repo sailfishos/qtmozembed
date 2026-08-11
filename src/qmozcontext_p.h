@@ -26,6 +26,7 @@
 #endif
 
 class QMozViewCreator;
+class QMozRuntime;
 class MessagePumpQt;
 
 namespace mozilla {
@@ -75,11 +76,12 @@ Q_SIGNALS:
     void recvObserve(const QString message, const QVariant data);
 
 private:
-    EmbedLiteApp *mApp;
+    QMozRuntime *mRuntime;
     std::map<std::string, uint> mObservers;
 
     bool mInitialized;
     QPointer<QThread> mThread;
+    // Retained to preserve the installed private class layout.
     bool mEmbedStarted;
     EmbedLiteMessagePump *mEventLoopPrivate;
     MessagePumpQt *mQtPump;

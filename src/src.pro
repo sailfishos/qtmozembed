@@ -34,6 +34,7 @@ SOURCES += qmozcontext.cpp \
            qmozwindow.cpp \
            qmozwindow_p.cpp \
            runtime/backendapi_p.cpp \
+           runtime/qmozruntime_p.cpp \
            backends/embedlite/embedlitebackendentry_p.cpp
 
 HEADERS += qmozcontext.h \
@@ -54,7 +55,8 @@ HEADERS += qmozcontext.h \
            qmozwindow.h \
            qmozwindow_p.h \
            runtime/backendabi.h \
-           runtime/backendapi_p.h
+           runtime/backendapi_p.h \
+           runtime/qmozruntime_p.h
 
 SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
 HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
