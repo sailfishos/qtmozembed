@@ -32,7 +32,8 @@ SOURCES += qmozcontext.cpp \
            geckoworker.cpp \
            qmozopenglwebpage.cpp \
            qmozwindow.cpp \
-           qmozwindow_p.cpp
+           qmozwindow_p.cpp \
+           runtime/qmozruntime_p.cpp
 
 HEADERS += qmozcontext.h \
            qmozcontext_p.h \
@@ -50,7 +51,8 @@ HEADERS += qmozcontext.h \
            qmozview_templated_wrapper.h \
            qmozopenglwebpage.h \
            qmozwindow.h \
-           qmozwindow_p.h
+           qmozwindow_p.h \
+           runtime/qmozruntime_p.h
 
 SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
 HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
