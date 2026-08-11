@@ -12,6 +12,7 @@
 #include "qmozcontext.h"
 #include "qmozwindow_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
@@ -44,8 +45,16 @@ void QMozWindow::reserve()
             return;
         }
 
+        // Install frame callbacks before CreateWindow can create its
+        // compositor. Delivery itself starts later on the Qt owner thread.
+        if (!QtMoz::installWindowFrameStream(this, surface)) {
+            QtMoz::takeWindowSurface(this);
+            return;
+        }
+
         d->mWindow = QtMoz::reserveEmbedLiteSurface(surface, d->mSize);
         if (!d->mWindow) {
+            QtMoz::takeWindowFrameStream(this);
             QtMoz::takeWindowSurface(this);
             return;
         }
@@ -138,6 +147,7 @@ bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
 
 void QMozWindow::clearPlatformImage()
 {
+    QtMoz::clearWindowPendingFrame(this);
     const QSharedPointer<QMozSurface> surface =
             QtMoz::windowSurface(this);
     if (surface) {

@@ -7,6 +7,7 @@ QT -= gui
 INCLUDEPATH += stubs ../../src
 
 SOURCES += tst_qmozsurface.cpp \
+           ../../src/runtime/qmozframestream_p.cpp \
            ../../src/runtime/qmozsurface_p.cpp \
            ../../src/backends/embedlite/embedlitesurface_p.cpp
 
