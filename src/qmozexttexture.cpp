@@ -7,6 +7,8 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "qmozexttexture.h"
+#include "qmozembedlog.h"
+#include "runtime/qmoztexturelease_p.h"
 
 #include <QOpenGLFunctions>
 
@@ -35,8 +37,12 @@ QMozExtTexture::QMozExtTexture()
 
 QMozExtTexture::~QMozExtTexture()
 {
-    if (m_textureId != 0) {
+    const bool released = QtMoz::releaseTexturePlatformFrames(this);
+    if (m_textureId != 0 && released) {
         glDeleteTextures(1, &m_textureId);
+    } else if (m_textureId != 0) {
+        qCCritical(lcEmbedLiteExt)
+                << "Leaking texture whose platform frame is still leased";
     }
 }
 
@@ -84,14 +90,74 @@ void QMozExtTexture::bind()
 
 bool QMozExtTexture::updateTexture()
 {
-    bool changed = false;
-
     static const PFNGLEGLIMAGETARGETTEXTURE2DOESPROC glEGLImageTargetTexture2DOES
             = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(eglGetProcAddress("glEGLImageTargetTexture2DOES"));
 
     if (!glEGLImageTargetTexture2DOES) {
         return false;
     }
+
+    if (QtMoz::textureUsesPlatformFrames(this)) {
+        uint newTextureId = 0;
+        QSize newTextureSize;
+        QMozTextureTarget newTextureTarget = QMozTextureTarget::Texture2D;
+        const bool acquired = QtMoz::acquireTexturePlatformFrame(
+                this, [&](const QMozSurfaceFrame &frame) {
+            switch (frame.image.textureTarget) {
+            case QMozSurfaceTextureTarget::Texture2D:
+                newTextureTarget = QMozTextureTarget::Texture2D;
+                break;
+            case QMozSurfaceTextureTarget::ExternalOES:
+                newTextureTarget = QMozTextureTarget::ExternalOES;
+                break;
+            default:
+                return false;
+            }
+
+            glGenTextures(1, &newTextureId);
+            if (newTextureId == 0) {
+                return false;
+            }
+
+            const uint textureTarget = glTextureTarget(newTextureTarget);
+            glBindTexture(textureTarget, newTextureId);
+            glEGLImageTargetTexture2DOES(
+                    textureTarget,
+                    static_cast<EGLImageKHR>(frame.image.handle));
+            if (glGetError() != GL_NO_ERROR) {
+                return false;
+            }
+
+            if (newTextureTarget == QMozTextureTarget::ExternalOES) {
+                updateExternalTextureParameters();
+            } else {
+                updateBindOptions(true);
+            }
+            newTextureSize = frame.image.size;
+            return true;
+        }, [&]() {
+            if (newTextureId != 0) {
+                glDeleteTextures(1, &newTextureId);
+                newTextureId = 0;
+            }
+        });
+        if (!acquired) {
+            if (newTextureId != 0) {
+                glDeleteTextures(1, &newTextureId);
+            }
+            return false;
+        }
+
+        if (m_textureId != 0) {
+            glDeleteTextures(1, &m_textureId);
+        }
+        m_textureId = newTextureId;
+        m_textureSize = newTextureSize;
+        m_textureTarget = newTextureTarget;
+        return true;
+    }
+
+    bool changed = false;
 
     // We don't want to keep a pointer to a QMozWindow in the texture as that could be deleted in
     // the main thread ahead of the texture which would be deleted in the render thread so we

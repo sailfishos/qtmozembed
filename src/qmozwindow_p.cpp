@@ -11,6 +11,7 @@
 #include "qmozwindow_p.h"
 
 #include "qmozwindow.h"
+#include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
 #include <QGuiApplication>
@@ -145,6 +146,11 @@ void QMozWindowPrivate::WindowDestroyed()
             QtMoz::takeWindowSurface(&q);
     if (surface) {
         surface->backendDestroyed();
+    }
+    const QSharedPointer<QtMoz::QMozFrameStream> frameStream =
+            QtMoz::takeWindowFrameStream(&q);
+    if (frameStream) {
+        frameStream->backendDestroyed();
     }
     mWindow = nullptr;
     mReserved = false;
