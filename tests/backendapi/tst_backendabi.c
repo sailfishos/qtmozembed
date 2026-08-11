@@ -10,9 +10,17 @@
 
 int qtmoz_backend_c_abi_test(void)
 {
+    QtMozBackendStringViewV1 message = { 0 };
     QtMozBackendHostV1 host = { 0 };
+    QtMozBackendRuntimeCallbacksV1 callbacks = { 0 };
+    QtMozBackendRuntimeOpsV1 runtime_ops = { 0 };
     QtMozBackendApiV1 api = { 0 };
     QtMozBackendQueryV1 query = 0;
+    QtMozBackendRuntimeHandle runtime = QTMOZ_BACKEND_RUNTIME_INVALID;
 
-    return (int)(sizeof(host) + sizeof(api) + (query != 0));
+    runtime = UINT64_MAX;
+
+    return (int)(sizeof(message) + sizeof(host) + sizeof(callbacks)
+                 + sizeof(runtime_ops) + sizeof(api) + (query != 0)
+                 + (runtime != QTMOZ_BACKEND_RUNTIME_INVALID));
 }
