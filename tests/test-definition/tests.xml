@@ -8,6 +8,12 @@
                <step>/opt/tests/qtmozembed/tst_backendapi</step>
            </case>
        </set>
+       <set name="surface-facade-tests" feature="QtMozEmbed">
+           <description>QtMozEmbed surface facade tests</description>
+           <case manual="false" name="surface-registry-lifetime">
+               <step>/opt/tests/qtmozembed/tst_qmozsurface</step>
+           </case>
+       </set>
        <set name="unit-tests" feature="QtMozEmbed">
            <description>QML component unit tests</description>
            <pre_steps>
