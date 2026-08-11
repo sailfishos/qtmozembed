@@ -40,6 +40,8 @@
 #include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
+#include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozsurface_p.h"
 
 #include "quickmozview.h"
 
@@ -956,9 +958,18 @@ void QMozViewPrivate::createView()
 
         Q_ASSERT(mMozWindow);
 
-        EmbedLiteWindow *win = mMozWindow->d->mWindow;
-        mView = mContext->GetApp()->CreateView(win, mParentID, mParentBrowsingContext,
-                                               mPrivateMode, mDesktopMode, mHidden);
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::windowSurface(mMozWindow.data());
+        const bool hasWindow = QtMoz::withEmbedLiteWindow(
+                surface, [&](EmbedLiteWindow *window) {
+            mView = mContext->GetApp()->CreateView(
+                    window, mParentID, mParentBrowsingContext,
+                    mPrivateMode, mDesktopMode, mHidden);
+        });
+        Q_ASSERT(hasWindow && mView);
+        if (!hasWindow || !mView) {
+            return;
+        }
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
                             QGuiApplication::primaryScreen()->physicalDotsPerInch());

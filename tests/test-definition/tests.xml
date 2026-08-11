@@ -2,6 +2,12 @@
 <testdefinition version="1.0">
    <suite name="qtmozembed-tests" domain="ui">
        <description>QtMozEmbed Application automatic tests</description>
+       <set name="surface-facade-tests" feature="QtMozEmbed">
+           <description>QtMozEmbed surface facade tests</description>
+           <case manual="false" name="surface-registry-lifetime">
+               <step>/opt/tests/qtmozembed/tst_qmozsurface</step>
+           </case>
+       </set>
        <set name="unit-tests" feature="QtMozEmbed">
            <description>QML component unit tests</description>
            <pre_steps>
