@@ -131,6 +131,7 @@ public:
     void goBack();
     void goForward();
     void stop();
+    void cancelPendingNavigation();
     void reload();
     void load(const QString &url, bool fromExternal);
     void clearPendingUrl();

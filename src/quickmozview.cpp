@@ -1006,6 +1006,11 @@ void QuickMozView::stop()
     d->stop();
 }
 
+void QuickMozView::cancelPendingNavigation()
+{
+    d->cancelPendingNavigation();
+}
+
 void QuickMozView::reload()
 {
     d->reload();

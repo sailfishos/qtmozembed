@@ -535,6 +535,11 @@ void QMozOpenGLWebPage::stop()
     d->stop();
 }
 
+void QMozOpenGLWebPage::cancelPendingNavigation()
+{
+    d->cancelPendingNavigation();
+}
+
 void QMozOpenGLWebPage::reload()
 {
     d->reload();

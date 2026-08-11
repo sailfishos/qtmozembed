@@ -889,6 +889,20 @@ void QMozViewPrivate::stop()
     }
 }
 
+void QMozViewPrivate::cancelPendingNavigation()
+{
+    // Gecko owns the navigation; discard the provisional URL after the
+    // embedding has rejected the request.
+    if (mPendingUrl.isEmpty() || mUrl.isEmpty())
+        return;
+
+    const QUrl oldExposedUrl = url();
+    clearPendingUrl();
+    if (oldExposedUrl != url()) {
+        mViewIface->urlChanged();
+    }
+}
+
 void QMozViewPrivate::reload()
 {
     if (!mViewInitialized)
@@ -1587,8 +1601,7 @@ void QMozViewPrivate::OnLoadFinished(void)
     // if loading has stopped before location change, restore back
     // previous none empty url. Normally OnLocationChange clears pending url.
     if (!mPendingUrl.isEmpty() && !mUrl.isEmpty() && (mUrl != mPendingUrl)) {
-        clearPendingUrl();
-        mViewIface->urlChanged();
+        cancelPendingNavigation();
     }
 
     if (mIsLoading) {
