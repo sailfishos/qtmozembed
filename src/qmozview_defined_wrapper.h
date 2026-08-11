@@ -161,6 +161,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void goBack(); \
     void goForward(); \
     void stop(); \
+    void cancelPendingNavigation(); \
     void reload(); \
     void load(const QString&, bool fromExternal); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
