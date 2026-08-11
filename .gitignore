@@ -19,6 +19,7 @@ libqt5embedwidget.so*
 /src/pkgconfig/
 /src/libqt5embedwidget.prl
 /tests/backendapi/tst_backendapi
+/tests/surface/tst_qmozsurface
 /tests/qmlmoztestrunner/qmlmoztestrunner
 debugfiles.list
 debuglinks.list

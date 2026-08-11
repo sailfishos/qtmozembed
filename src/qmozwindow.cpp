@@ -11,9 +11,10 @@
 
 #include "qmozcontext.h"
 #include "qmozwindow_p.h"
+#include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozsurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/embedlite/EmbedLiteWindow.h"
 
 using namespace mozilla::embedlite;
 
@@ -33,8 +34,21 @@ QMozWindow::~QMozWindow()
 
 void QMozWindow::reserve()
 {
-    if (!d->mWindow) {
-        d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(d->mSize.width(), d->mSize.height(), d.data());
+    if (!d->mWindow && !d->mReserved) {
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::createEmbedLiteSurface(
+                    QMozContext::instance()->GetApp(), d.data());
+        if (!QtMoz::installWindowSurface(this, surface)) {
+            Q_ASSERT_X(false, "QMozWindow::reserve",
+                       "A surface is already registered for this window");
+            return;
+        }
+
+        d->mWindow = QtMoz::reserveEmbedLiteSurface(surface, d->mSize);
+        if (!d->mWindow) {
+            QtMoz::takeWindowSurface(this);
+            return;
+        }
         d->mReserved = true;
     }
 }
@@ -42,8 +56,15 @@ void QMozWindow::reserve()
 void QMozWindow::release()
 {
     if (d->mWindow) {
-        QMozContext::instance()->GetApp()->DestroyWindow(d->mWindow);
+        EmbedLiteWindow * const window = d->mWindow;
         d->mWindow = nullptr;
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::windowSurface(this);
+        if (surface) {
+            surface->requestDestroy();
+        } else {
+            QMozContext::instance()->GetApp()->DestroyWindow(window);
+        }
     }
 }
 
@@ -93,56 +114,62 @@ bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
         return false;
     }
 
-    bool accepted = false;
-    const bool delivered = d->mWindow->WithPlatformImage(
-                [&](const PlatformImageDescriptor &descriptor) {
-        if (descriptor.handleType != PlatformImageHandleType::EGLImage
-                || !descriptor.handle
-                || descriptor.width <= 0
-                || descriptor.height <= 0) {
-            return;
-        }
-
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    return surface && surface->withPlatformImage(
+                [&](const QMozSurfaceImage &image) {
         QMozTextureTarget textureTarget;
-        switch (descriptor.textureTarget) {
-        case PlatformImageTextureTarget::Texture2D:
+        switch (image.textureTarget) {
+        case QMozSurfaceTextureTarget::Texture2D:
             textureTarget = QMozTextureTarget::Texture2D;
             break;
-        case PlatformImageTextureTarget::ExternalOES:
+        case QMozSurfaceTextureTarget::ExternalOES:
             textureTarget = QMozTextureTarget::ExternalOES;
             break;
-        default:
-            return;
         }
 
-        accepted = true;
         callback({
-            static_cast<EGLImageKHR>(descriptor.handle),
-            QSize(descriptor.width, descriptor.height),
+            static_cast<EGLImageKHR>(image.handle),
+            image.size,
             textureTarget
         });
     });
-    return delivered && accepted;
 }
 
 void QMozWindow::clearPlatformImage()
 {
-    d->mWindow->ClearPlatformImage();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->clearPlatformImage();
+    }
 }
 
 void QMozWindow::suspendRendering()
 {
-    d->mWindow->SuspendRendering();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->suspendRendering();
+    }
 }
 
 void QMozWindow::resumeRendering()
 {
-    d->mWindow->ResumeRendering();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->resumeRendering();
+    }
 }
 
 void QMozWindow::scheduleUpdate()
 {
-    d->mWindow->ScheduleUpdate();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->scheduleUpdate();
+    }
 }
 
 bool QMozWindow::setReadyToPaint(bool ready)
