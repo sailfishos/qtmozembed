@@ -1,6 +1,6 @@
 TEMPLATE = subdirs
 
-SUBDIRS = qmlmoztestrunner
+SUBDIRS = backendapi qmlmoztestrunner
 
 test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/basicscroll/tst_scrolltest.qml \
