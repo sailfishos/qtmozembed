@@ -41,6 +41,7 @@
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
 #include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
 #include "quickmozview.h"
@@ -835,6 +836,9 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
         mHasCompositor = mMozWindow->isCompositorCreated();
         connect(mMozWindow.data(), &QMozWindow::compositorCreated,
                 this, &QMozViewPrivate::onCompositorCreated);
+        if (mHasCompositor) {
+            QtMoz::startWindowFrameStream(mMozWindow.data());
+        }
     }
 }
 
@@ -912,6 +916,9 @@ QPointF QMozViewPrivate::renderingOffset() const
 void QMozViewPrivate::onCompositorCreated()
 {
     mHasCompositor = true;
+    if (mMozWindow) {
+        QtMoz::startWindowFrameStream(mMozWindow.data());
+    }
     if (mDirtyState & DirtyScreenProperties) {
         sendScreenProperties();
         mDirtyState &= ~DirtyScreenProperties;

@@ -17,6 +17,7 @@
 #include "mozilla/TimeStamp.h"
 
 #include <QGuiApplication>
+#include <QPointer>
 #include <QThread>
 #include <QMutexLocker>
 #include <QtQuick/qquickwindow.h>
@@ -33,6 +34,8 @@
 #include "qmozexttexture.h"
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
+#include "runtime/qmozframestream_p.h"
+#include "runtime/qmoztexturelease_p.h"
 
 using namespace mozilla;
 using namespace mozilla::embedlite;
@@ -99,6 +102,9 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 
 QuickMozView::~QuickMozView()
 {
+    if (d->mMozWindow) {
+        QtMoz::clearWindowFrameConsumer(d->mMozWindow.data(), this);
+    }
     releaseResources();
 
     if (d->mView) {
@@ -218,6 +224,16 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
 
+        const QPointer<QuickMozView> guardedView(this);
+        QtMoz::attachTextureFrameLease(
+                texture, d->mMozWindow.data(), this, window(),
+                [guardedView](QMozExtTexture *invalidatedTexture) {
+            if (guardedView
+                    && guardedView->mTexture == invalidatedTexture) {
+                guardedView->mTexture = nullptr;
+            }
+        });
+
         connect(texture, &QMozExtTexture::withPlatformImage,
                 d->mMozWindow, &QMozWindow::withPlatformImage,
                 Qt::DirectConnection);
@@ -249,8 +265,21 @@ void QuickMozView::releaseResources()
     }
 #endif
 
-    if (QQuickWindow * const window = mTexture ? QQuickItem::window() : nullptr) {
-        window->scheduleRenderJob(new ObjectCleanup(mTexture), QQuickWindow::AfterSynchronizingStage);
+    if (QMozExtTexture * const texture =
+            qobject_cast<QMozExtTexture *>(mTexture)) {
+        if (QtMoz::scheduleTextureFrameCleanup(texture)) {
+            mTexture = nullptr;
+            return;
+        }
+    }
+
+    if (QQuickWindow * const window = mTexture
+            ? QQuickItem::window() : nullptr) {
+        // The texture may still be sampled by the frame being rendered.
+        // Delete it only after that draw, with the QSG GL context current, so
+        // its consumer fence truthfully covers every use of the EGLImage.
+        window->scheduleRenderJob(new ObjectCleanup(mTexture),
+                                  QQuickWindow::AfterRenderingStage);
         mTexture = nullptr;
     }
 }
@@ -276,8 +305,18 @@ void QuickMozView::setActive(bool active)
         if (d->mActive != active) {
             d->mActive = active;
             // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
+            if (!active && d->mMozWindow) {
+                QtMoz::clearWindowFrameConsumer(
+                        d->mMozWindow.data(), this);
+            }
             SetIsActive(active);
             if (active) {
+                if (d->mMozWindow) {
+                    QtMoz::setWindowFrameConsumer(
+                            d->mMozWindow.data(), this, [this]() {
+                        update();
+                    });
+                }
                 resumeRendering();
                 polish();
             } else {
@@ -351,6 +390,12 @@ void QuickMozView::prepareMozWindow()
     }
 
     d->setMozWindow(mozWindow);
+    if (d->mActive) {
+        QtMoz::setWindowFrameConsumer(
+                mozWindow, this, [this]() {
+            update();
+        });
+    }
 }
 
 void QuickMozView::updateMargins()
