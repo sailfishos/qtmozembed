@@ -33,7 +33,9 @@ SOURCES += qmozcontext.cpp \
            qmozopenglwebpage.cpp \
            qmozwindow.cpp \
            qmozwindow_p.cpp \
-           runtime/qmozruntime_p.cpp
+           runtime/qmozruntime_p.cpp \
+           runtime/qmozsurface_p.cpp \
+           backends/embedlite/embedlitesurface_p.cpp
 
 HEADERS += qmozcontext.h \
            qmozcontext_p.h \
@@ -52,7 +54,9 @@ HEADERS += qmozcontext.h \
            qmozopenglwebpage.h \
            qmozwindow.h \
            qmozwindow_p.h \
-           runtime/qmozruntime_p.h
+           runtime/qmozruntime_p.h \
+           runtime/qmozsurface_p.h \
+           backends/embedlite/embedlitesurface_p.h
 
 SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
 HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
