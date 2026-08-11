@@ -4,10 +4,14 @@ CONFIG += console c++1z
 CONFIG -= app_bundle
 QT -= gui
 
-INCLUDEPATH += ../../src
+INCLUDEPATH += stubs ../../src
 
 SOURCES += tst_qmozsurface.cpp \
-           ../../src/runtime/qmozsurface_p.cpp
+           ../../src/runtime/qmozsurface_p.cpp \
+           ../../src/backends/embedlite/embedlitesurface_p.cpp
+
+HEADERS += stubs/mozilla/embedlite/EmbedLiteApp.h \
+           stubs/mozilla/embedlite/EmbedLiteWindow.h
 
 target.path = /opt/tests/qtmozembed
 INSTALLS += target

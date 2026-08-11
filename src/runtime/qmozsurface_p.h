@@ -39,6 +39,42 @@ struct QMozSurfaceImage final
 using QMozSurfaceImageCallback =
         std::function<void(const QMozSurfaceImage &)>;
 
+struct QMozSurfaceFrameToken final
+{
+    quint64 epoch;
+    quint64 sequence;
+
+    bool isValid() const
+    {
+        return epoch != 0 && sequence != 0;
+    }
+};
+
+enum class QMozSurfaceFrameFenceType {
+    NoHandle,
+    EGLSync
+};
+
+struct QMozSurfaceFrame final
+{
+    QMozSurfaceFrameToken token;
+    QMozSurfaceImage image;
+    QMozSurfaceFrameFenceType releaseFenceType;
+};
+
+struct QMozSurfaceFrameRelease final
+{
+    QMozSurfaceFrameToken token;
+    QMozSurfaceFrameFenceType fenceType;
+    void *fence;
+};
+
+using QMozSurfaceFrameCallback =
+        std::function<bool(const QMozSurfaceFrame &)>;
+using QMozSurfaceFrameReadyCallback =
+        std::function<void(const QMozSurfaceFrameToken &)>;
+using QMozSurfaceFrameDeliveryStoppedCallback = std::function<void()>;
+
 class Q_DECL_HIDDEN QMozSurface
 {
 public:
@@ -50,6 +86,21 @@ public:
     virtual bool setContentOrientation(QMozSurfaceRotation rotation) = 0;
     virtual bool withPlatformImage(
             const QMozSurfaceImageCallback &callback) = 0;
+    // Notifications are marshalled to the surface owner thread. The frame
+    // image itself is acquired synchronously on the caller's render thread.
+    virtual bool setPlatformFrameCallbacks(
+            const QMozSurfaceFrameReadyCallback &readyCallback,
+            const QMozSurfaceFrameDeliveryStoppedCallback &stoppedCallback) = 0;
+    virtual bool setPlatformFrameDeliveryEnabled(bool enabled) = 0;
+    // The image handle is borrowed for the callback. Returning true retains
+    // the token lease until releasePlatformFrame succeeds.
+    virtual bool acquirePlatformFrame(
+            const QMozSurfaceFrameToken &token,
+            const QMozSurfaceFrameCallback &callback) = 0;
+    // Fence ownership transfers to the backend only when this returns true.
+    // Release remains available while asynchronous surface teardown waits.
+    virtual bool releasePlatformFrame(
+            const QMozSurfaceFrameRelease &release) = 0;
     virtual bool clearPlatformImage() = 0;
     virtual bool suspendRendering() = 0;
     virtual bool resumeRendering() = 0;

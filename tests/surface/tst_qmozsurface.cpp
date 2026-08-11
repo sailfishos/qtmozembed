@@ -7,8 +7,19 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "runtime/qmozsurface_p.h"
+#include "backends/embedlite/embedlitesurface_p.h"
 
+#include "mozilla/embedlite/EmbedLiteApp.h"
+#include "mozilla/embedlite/EmbedLiteWindow.h"
+
+#include <QCoreApplication>
+#include <QThread>
 #include <cstdio>
+#include <string>
+#include <thread>
+#include <vector>
+
+using namespace mozilla::embedlite;
 
 namespace {
 
@@ -32,6 +43,9 @@ public:
         : mWindow(window)
         , mDestructions(destructions)
         , mDestroyRequests(0)
+        , mFrameDeliveryEnabled(false)
+        , mReleasedFrame({ { 0, 0 },
+                           QMozSurfaceFrameFenceType::NoHandle, nullptr })
     {
     }
 
@@ -71,6 +85,56 @@ public:
         return true;
     }
 
+    bool setPlatformFrameCallbacks(
+            const QMozSurfaceFrameReadyCallback &readyCallback,
+            const QMozSurfaceFrameDeliveryStoppedCallback &stoppedCallback)
+            override
+    {
+        if (mFrameDeliveryEnabled) {
+            return false;
+        }
+        mFrameReadyCallback = readyCallback;
+        mFrameDeliveryStoppedCallback = stoppedCallback;
+        return true;
+    }
+
+    bool setPlatformFrameDeliveryEnabled(bool enabled) override
+    {
+        if (enabled && !mFrameReadyCallback) {
+            return false;
+        }
+        mFrameDeliveryEnabled = enabled;
+        if (!enabled && mFrameDeliveryStoppedCallback) {
+            mFrameDeliveryStoppedCallback();
+        }
+        return true;
+    }
+
+    bool acquirePlatformFrame(
+            const QMozSurfaceFrameToken &token,
+            const QMozSurfaceFrameCallback &callback) override
+    {
+        if (!mFrameDeliveryEnabled || !token.isValid() || !callback) {
+            return false;
+        }
+        return callback({
+            token,
+            { reinterpret_cast<void *>(2), QSize(2, 3),
+              QMozSurfaceTextureTarget::ExternalOES },
+            QMozSurfaceFrameFenceType::EGLSync
+        });
+    }
+
+    bool releasePlatformFrame(
+            const QMozSurfaceFrameRelease &release) override
+    {
+        if (!release.token.isValid()) {
+            return false;
+        }
+        mReleasedFrame = release;
+        return true;
+    }
+
     bool clearPlatformImage() override
     {
         return true;
@@ -96,15 +160,49 @@ public:
         return mDestroyRequests;
     }
 
+    void notifyFrameReady(const QMozSurfaceFrameToken &token)
+    {
+        if (mFrameDeliveryEnabled && mFrameReadyCallback) {
+            mFrameReadyCallback(token);
+        }
+    }
+
+    const QMozSurfaceFrameRelease &releasedFrame() const
+    {
+        return mReleasedFrame;
+    }
+
 private:
     QMozWindow *mWindow;
     int *mDestructions;
     int mDestroyRequests;
+    bool mFrameDeliveryEnabled;
+    QMozSurfaceFrameReadyCallback mFrameReadyCallback;
+    QMozSurfaceFrameDeliveryStoppedCallback
+            mFrameDeliveryStoppedCallback;
+    QMozSurfaceFrameRelease mReleasedFrame;
 };
 
 QMozWindow *fakeWindow(void *storage)
 {
     return reinterpret_cast<QMozWindow *>(storage);
+}
+
+void processEvents()
+{
+    QCoreApplication::sendPostedEvents();
+    QCoreApplication::processEvents();
+}
+
+int eventIndex(const std::vector<std::string> &events,
+               const std::string &event)
+{
+    for (std::size_t i = 0; i < events.size(); ++i) {
+        if (events.at(i) == event) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
 }
 
 void testRegistryLifetime()
@@ -152,11 +250,226 @@ void testReentrantRemoval()
     VERIFY(destructions == 1);
 }
 
+void testPlatformFrameForwarding()
+{
+    void *storage = nullptr;
+    QMozWindow * const window = fakeWindow(&storage);
+    int destructions = 0;
+    QSharedPointer<FakeSurface> surface(
+            new FakeSurface(window, &destructions));
+    QMozSurfaceFrameToken notifiedToken = { 0, 0 };
+    bool stopped = false;
+
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [&](const QMozSurfaceFrameToken &token) {
+        notifiedToken = token;
+    }, [&]() {
+        stopped = true;
+    }));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+
+    const QMozSurfaceFrameToken token = { 7, 11 };
+    surface->notifyFrameReady(token);
+    VERIFY(notifiedToken.epoch == token.epoch);
+    VERIFY(notifiedToken.sequence == token.sequence);
+
+    bool acquired = false;
+    VERIFY(surface->acquirePlatformFrame(
+            token, [&](const QMozSurfaceFrame &frame) {
+        acquired = true;
+        VERIFY(frame.token.epoch == token.epoch);
+        VERIFY(frame.token.sequence == token.sequence);
+        VERIFY(frame.image.handle == reinterpret_cast<void *>(2));
+        VERIFY(frame.image.size == QSize(2, 3));
+        VERIFY(frame.image.textureTarget ==
+               QMozSurfaceTextureTarget::ExternalOES);
+        VERIFY(frame.releaseFenceType ==
+               QMozSurfaceFrameFenceType::EGLSync);
+        return true;
+    }));
+    VERIFY(acquired);
+
+    void * const fence = reinterpret_cast<void *>(3);
+    VERIFY(surface->releasePlatformFrame({
+        token, QMozSurfaceFrameFenceType::EGLSync, fence
+    }));
+    VERIFY(surface->releasedFrame().token.epoch == token.epoch);
+    VERIFY(surface->releasedFrame().token.sequence == token.sequence);
+    VERIFY(surface->releasedFrame().fenceType ==
+           QMozSurfaceFrameFenceType::EGLSync);
+    VERIFY(surface->releasedFrame().fence == fence);
+
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(false));
+    VERIFY(stopped);
+    surface.clear();
+    VERIFY(destructions == 1);
+}
+
+void testQueuedFrameSuppressedAfterStop()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200));
+    int readyCount = 0;
+    int stoppedCount = 0;
+    bool readyOnOwnerThread = false;
+    bool stoppedOnOwnerThread = false;
+    QThread * const ownerThread = QThread::currentThread();
+
+    VERIFY(window == &app.window);
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [&](const QMozSurfaceFrameToken &) {
+        ++readyCount;
+        readyOnOwnerThread = QThread::currentThread() == ownerThread;
+    }, [&]() {
+        ++stoppedCount;
+        stoppedOnOwnerThread = QThread::currentThread() == ownerThread;
+    }));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+    std::thread readyThread([&]() {
+        window->NotifyFrameReady({ 3, 4 });
+    });
+    readyThread.join();
+    VERIFY(readyCount == 0);
+    processEvents();
+    VERIFY(readyCount == 1);
+    VERIFY(readyOnOwnerThread);
+
+    std::thread suppressedReadyThread([&]() {
+        window->NotifyFrameReady({ 3, 5 });
+    });
+    suppressedReadyThread.join();
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(false));
+    std::thread stoppedThread([&]() {
+        window->NotifyFrameDeliveryStopped();
+    });
+    stoppedThread.join();
+    VERIFY(stoppedCount == 0);
+    processEvents();
+
+    VERIFY(readyCount == 1);
+    VERIFY(stoppedCount == 1);
+    VERIFY(stoppedOnOwnerThread);
+    surface->requestDestroy();
+    VERIFY(app.destroyCount == 1);
+    surface->backendDestroyed();
+    surface.clear();
+}
+
+void testDestroyWaitsForFrameReleaseAndStop()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200));
+    QMozSurfaceFrameToken readyToken = { 0, 0 };
+
+    VERIFY(window == &app.window);
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [&](const QMozSurfaceFrameToken &token) {
+        readyToken = token;
+    }, [&]() {
+        app.events.push_back("qt-stopped");
+    }));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+    window->NotifyFrameReady({ 7, 11 });
+    processEvents();
+    VERIFY(readyToken.epoch == 7);
+    VERIFY(readyToken.sequence == 11);
+    VERIFY(surface->acquirePlatformFrame(
+            readyToken, [](const QMozSurfaceFrame &) {
+        return true;
+    }));
+
+    surface->requestDestroy();
+    VERIFY(eventIndex(app.events, "disable-blocked") >= 0);
+    VERIFY(app.destroyCount == 0);
+
+    VERIFY(surface->releasePlatformFrame({
+        readyToken, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+    processEvents();
+    VERIFY(eventIndex(app.events, "disabled") >= 0);
+    VERIFY(app.destroyCount == 0);
+
+    window->NotifyFrameDeliveryStopped();
+    processEvents();
+    VERIFY(app.destroyCount == 1);
+    VERIFY(eventIndex(app.events, "released") <
+           eventIndex(app.events, "disabled"));
+    VERIFY(eventIndex(app.events, "disabled") <
+           eventIndex(app.events, "qt-stopped"));
+    VERIFY(eventIndex(app.events, "qt-stopped") <
+           eventIndex(app.events, "listener-cleared"));
+    VERIFY(eventIndex(app.events, "listener-cleared") <
+           eventIndex(app.events, "destroyed"));
+
+    surface->backendDestroyed();
+    VERIFY(!surface->releasePlatformFrame({
+        readyToken, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+    surface.clear();
+}
+
+void testFailedDisablePreservesQueuedFrame()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200));
+    QMozSurfaceFrameToken readyToken = { 0, 0 };
+
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [&](const QMozSurfaceFrameToken &token) {
+        readyToken = token;
+    }, QMozSurfaceFrameDeliveryStoppedCallback()));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+    window->NotifyFrameReady({ 13, 17 });
+    processEvents();
+    const QMozSurfaceFrameToken acquiredToken = readyToken;
+    VERIFY(surface->acquirePlatformFrame(
+            acquiredToken, [](const QMozSurfaceFrame &) {
+        return true;
+    }));
+
+    std::thread readyThread([&]() {
+        window->NotifyFrameReady({ 13, 19 });
+    });
+    readyThread.join();
+    VERIFY(!surface->setPlatformFrameDeliveryEnabled(false));
+    processEvents();
+    VERIFY(readyToken.epoch == 13);
+    VERIFY(readyToken.sequence == 19);
+
+    VERIFY(surface->releasePlatformFrame({
+        acquiredToken, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(false));
+    window->NotifyFrameDeliveryStopped();
+    processEvents();
+    surface->requestDestroy();
+    VERIFY(app.destroyCount == 1);
+    surface->backendDestroyed();
+    surface.clear();
+}
+
 } // namespace
 
-int main()
+int main(int argc, char **argv)
 {
+    QCoreApplication app(argc, argv);
     testRegistryLifetime();
     testReentrantRemoval();
+    testPlatformFrameForwarding();
+    testQueuedFrameSuppressedAfterStop();
+    testDestroyWaitsForFrameReleaseAndStop();
+    testFailedDisablePreservesQueuedFrame();
     return failures == 0 ? 0 : 1;
 }

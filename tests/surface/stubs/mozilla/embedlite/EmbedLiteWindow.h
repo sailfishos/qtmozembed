@@ -1,0 +1,204 @@
+/* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ *
+ * Copyright (C) 2026 Jolla Mobile Ltd
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+ * You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+#ifndef TEST_EMBEDLITEWINDOW_H
+#define TEST_EMBEDLITEWINDOW_H
+
+#include <cstdint>
+#include <functional>
+#include <string>
+#include <vector>
+
+namespace mozilla {
+namespace embedlite {
+
+enum ScreenRotation {
+    ROTATION_0,
+    ROTATION_90,
+    ROTATION_180,
+    ROTATION_270
+};
+
+enum class PlatformImageHandleType : uint8_t {
+    EGLImage
+};
+
+enum class PlatformImageTextureTarget : uint8_t {
+    Texture2D,
+    ExternalOES
+};
+
+struct PlatformImageDescriptor final
+{
+    PlatformImageHandleType handleType;
+    void *handle;
+    PlatformImageTextureTarget textureTarget;
+    int32_t width;
+    int32_t height;
+};
+
+using PlatformImageCallback =
+        std::function<void(const PlatformImageDescriptor &)>;
+
+struct PlatformFrameToken final
+{
+    uint64_t epoch;
+    uint64_t sequence;
+
+    bool IsValid() const
+    {
+        return epoch != 0 && sequence != 0;
+    }
+};
+
+enum class PlatformFrameFenceHandleType : uint8_t {
+    NoHandle,
+    EGLSync
+};
+
+struct PlatformFrameDescriptor final
+{
+    PlatformFrameToken token;
+    PlatformImageDescriptor image;
+    PlatformFrameFenceHandleType releaseFenceHandleType;
+};
+
+struct PlatformFrameRelease final
+{
+    PlatformFrameToken token;
+    PlatformFrameFenceHandleType fenceHandleType;
+    void *fenceHandle;
+};
+
+using PlatformFrameCallback =
+        std::function<bool(const PlatformFrameDescriptor &)>;
+
+class EmbedLitePlatformFrameListener
+{
+public:
+    virtual void PlatformFrameReady(const PlatformFrameToken &token) = 0;
+    virtual void PlatformFrameDeliveryStopped() = 0;
+
+protected:
+    virtual ~EmbedLitePlatformFrameListener() = default;
+};
+
+class EmbedLiteWindowListener
+{
+public:
+    virtual ~EmbedLiteWindowListener() = default;
+};
+
+class EmbedLiteWindow
+{
+public:
+    explicit EmbedLiteWindow(std::vector<std::string> *events)
+        : mEvents(events)
+        , mFrameListener(nullptr)
+        , mDeliveryEnabled(false)
+        , mAcquired(false)
+        , mReadyToken({ 0, 0 })
+        , mAcquiredToken({ 0, 0 })
+    {
+    }
+
+    void SetSize(int, int) {}
+    void SetContentOrientation(ScreenRotation) {}
+    void ScheduleUpdate() {}
+    void SuspendRendering() {}
+    void ResumeRendering() {}
+    void ClearPlatformImage() {}
+
+    bool WithPlatformImage(const PlatformImageCallback &)
+    {
+        return false;
+    }
+
+    bool SetPlatformFrameListener(
+            EmbedLitePlatformFrameListener *listener)
+    {
+        mFrameListener = listener;
+        mEvents->push_back(listener ? "listener-set" : "listener-cleared");
+        return true;
+    }
+
+    bool SetPlatformFrameDeliveryEnabled(bool enabled)
+    {
+        if (!enabled && mAcquired) {
+            mEvents->push_back("disable-blocked");
+            return false;
+        }
+        mDeliveryEnabled = enabled;
+        mEvents->push_back(enabled ? "enabled" : "disabled");
+        return true;
+    }
+
+    bool AcquirePlatformFrame(const PlatformFrameToken &token,
+                              const PlatformFrameCallback &callback)
+    {
+        if (!mDeliveryEnabled || mAcquired || !callback
+                || token.epoch != mReadyToken.epoch
+                || token.sequence != mReadyToken.sequence) {
+            return false;
+        }
+
+        const bool accepted = callback({
+            token,
+            { PlatformImageHandleType::EGLImage,
+              reinterpret_cast<void *>(2),
+              PlatformImageTextureTarget::ExternalOES, 2, 3 },
+            PlatformFrameFenceHandleType::EGLSync
+        });
+        if (accepted) {
+            mAcquired = true;
+            mAcquiredToken = token;
+            mEvents->push_back("acquired");
+        }
+        return accepted;
+    }
+
+    bool ReleasePlatformFrame(const PlatformFrameRelease &release)
+    {
+        if (!mAcquired || release.token.epoch != mAcquiredToken.epoch
+                || release.token.sequence != mAcquiredToken.sequence) {
+            return false;
+        }
+        mAcquired = false;
+        mEvents->push_back("released");
+        return true;
+    }
+
+    void NotifyFrameReady(const PlatformFrameToken &token)
+    {
+        mReadyToken = token;
+        if (mDeliveryEnabled && mFrameListener) {
+            mFrameListener->PlatformFrameReady(token);
+        }
+    }
+
+    void NotifyFrameDeliveryStopped()
+    {
+        if (mFrameListener) {
+            mEvents->push_back("stopped-notified");
+            mFrameListener->PlatformFrameDeliveryStopped();
+        }
+    }
+
+private:
+    std::vector<std::string> *mEvents;
+    EmbedLitePlatformFrameListener *mFrameListener;
+    bool mDeliveryEnabled;
+    bool mAcquired;
+    PlatformFrameToken mReadyToken;
+    PlatformFrameToken mAcquiredToken;
+};
+
+} // namespace embedlite
+} // namespace mozilla
+
+#endif // TEST_EMBEDLITEWINDOW_H
