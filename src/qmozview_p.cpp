@@ -21,6 +21,7 @@
 #include <QQmlInfo>
 
 #include <iostream>
+#include <limits>
 #include <locale>
 #include <string>
 #include <codecvt>
@@ -41,6 +42,7 @@
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
 #include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozchromesession_p.h"
 #include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
@@ -83,6 +85,59 @@ static qint64 current_timestamp(QTouchEvent *aEvent)
     gettimeofday(&te, nullptr);
     qint64 milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000;
     return milliseconds;
+}
+
+static int boundedProgressTotal(qint64 value)
+{
+    return value > std::numeric_limits<int>::max()
+            ? std::numeric_limits<int>::max()
+            : value < std::numeric_limits<int>::min()
+              ? std::numeric_limits<int>::min()
+              : static_cast<int>(value);
+}
+
+static QMozChromeSessionCallbacks chromeSessionCallbacks(
+        QMozViewPrivate *view)
+{
+    const QPointer<QMozViewPrivate> guardedView(view);
+    QMozChromeSessionCallbacks callbacks;
+    callbacks.locationChanged = [guardedView](const char *location,
+                                              bool canGoBack,
+                                              bool canGoForward) {
+        if (guardedView) {
+            guardedView->OnLocationChanged(location, canGoBack,
+                                           canGoForward);
+        }
+    };
+    callbacks.loadStarted = [guardedView](const char *location) {
+        if (guardedView) {
+            guardedView->OnLoadStarted(location);
+        }
+    };
+    callbacks.loadFinished = [guardedView]() {
+        if (guardedView) {
+            guardedView->OnLoadFinished();
+        }
+    };
+    callbacks.loadProgress = [guardedView](int progress, qint64 current,
+                                            qint64 total) {
+        if (guardedView) {
+            guardedView->OnLoadProgress(progress,
+                                        boundedProgressTotal(current),
+                                        boundedProgressTotal(total));
+        }
+    };
+    callbacks.titleChanged = [guardedView](const char16_t *title) {
+        if (guardedView) {
+            guardedView->OnTitleChanged(title);
+        }
+    };
+    callbacks.destroyed = [guardedView]() {
+        if (guardedView) {
+            guardedView->ViewDestroyed();
+        }
+    };
+    return callbacks;
 }
 
 // Map window size to orientation.
@@ -197,6 +252,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
 
 QMozViewPrivate::~QMozViewPrivate()
 {
+    QtMoz::detachChromeSession(this);
     delete mViewIface;
     mViewIface = nullptr;
     mViewInitialized = false;
@@ -488,16 +544,16 @@ qreal QMozViewPrivate::screenDensity() const
 
 void QMozViewPrivate::sendScreenProperties()
 {
-    Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
-    mView->SetScreenProperties(mDepth, screenDensity(), mDpi);
+    if (mView) {
+        mView->SetScreenProperties(mDepth, screenDensity(), mDpi);
+    }
 }
 
 void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
 {
-    Q_ASSERT_X(mView, __PRETTY_FUNCTION__, "EmbedLiteView must be created by now");
     mDepth = depth;
     mDpi = dpi;
-    if (!mHasCompositor) {
+    if (!mView || !mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
         sendScreenProperties();
@@ -520,7 +576,11 @@ void QMozViewPrivate::goBack()
         return;
 
     reset();
-    mView->GoBack(false, true);
+    if (QtMoz::isChromeHosted(mMozWindow.data())) {
+        QtMoz::chromeSessionGoBack(this);
+    } else {
+        mView->GoBack(false, true);
+    }
 }
 
 void QMozViewPrivate::goForward()
@@ -529,14 +589,22 @@ void QMozViewPrivate::goForward()
         return;
 
     reset();
-    mView->GoForward(false, true);
+    if (QtMoz::isChromeHosted(mMozWindow.data())) {
+        QtMoz::chromeSessionGoForward(this);
+    } else {
+        mView->GoForward(false, true);
+    }
 }
 
 void QMozViewPrivate::stop()
 {
     if (!mViewInitialized)
         return;
-    mView->StopLoad();
+    if (QtMoz::isChromeHosted(mMozWindow.data())) {
+        QtMoz::chromeSessionStop(this);
+    } else {
+        mView->StopLoad();
+    }
 }
 
 void QMozViewPrivate::reload()
@@ -548,7 +616,11 @@ void QMozViewPrivate::reload()
         load(mPendingUrl, mPendingFromExternal);
     } else {
         reset();
-        mView->Reload(false);
+        if (QtMoz::isChromeHosted(mMozWindow.data())) {
+            QtMoz::chromeSessionReload(this, false);
+        } else {
+            mView->Reload(false);
+        }
     }
 }
 
@@ -568,7 +640,11 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
 #endif
     mProgress = 0;
     reset();
-    mView->LoadURL(url.toUtf8().data(), fromExternal);
+    if (QtMoz::isChromeHosted(mMozWindow.data())) {
+        QtMoz::chromeSessionLoadURL(this, url, fromExternal);
+    } else {
+        mView->LoadURL(url.toUtf8().data(), fromExternal);
+    }
 
     if (mPendingUrl != url) {
         mPendingUrl = url;
@@ -579,7 +655,7 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
 
 void QMozViewPrivate::scrollTo(int x, int y)
 {
-    if (mViewInitialized) {
+    if (mViewInitialized && mView) {
         // Map to CSS pixels.
         mView->ScrollTo(x / mContentResolution, y / mContentResolution);
     }
@@ -587,7 +663,7 @@ void QMozViewPrivate::scrollTo(int x, int y)
 
 void QMozViewPrivate::scrollBy(int x, int y)
 {
-    if (mViewInitialized) {
+    if (mViewInitialized && mView) {
         // Map to CSS pixels.
         mView->ScrollBy(x / mContentResolution, y / mContentResolution);
     }
@@ -595,8 +671,10 @@ void QMozViewPrivate::scrollBy(int x, int y)
 
 void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callback, const QJSValue &errorCallback)
 {
-    if (!mViewInitialized) {
-        auto viewInitialzedError = QStringLiteral("Error: run javascript can be called only after view is initialized.");
+    if (!mViewInitialized || !mView) {
+        const QString viewInitialzedError = !mViewInitialized
+                ? QStringLiteral("Error: run javascript can be called only after view is initialized.")
+                : QStringLiteral("Error: run javascript is not available for this view.");
         if (errorCallback.isCallable()) {
             QJSValueList args = { QJSValue(viewInitialzedError) };
             // Make it possible to call const errorCallback.
@@ -662,7 +740,7 @@ void QMozViewPrivate::loadFrameScript(const QString &frameScript)
 {
     if (!mViewInitialized) {
         mPendingFrameScripts.append(frameScript);
-    } else {
+    } else if (mView) {
         mView->LoadFrameScript(frameScript.toUtf8().data());
     }
 }
@@ -674,7 +752,9 @@ void QMozViewPrivate::addMessageListener(const std::string &name)
         return;
     }
 
-    mView->AddMessageListener(name.c_str());
+    if (mView) {
+        mView->AddMessageListener(name.c_str());
+    }
 }
 
 void QMozViewPrivate::addMessageListeners(const std::vector<std::string> &messageNamesList)
@@ -686,7 +766,9 @@ void QMozViewPrivate::addMessageListeners(const std::vector<std::string> &messag
         return;
     }
 
-    mView->AddMessageListeners(messageNamesList);
+    if (mView) {
+        mView->AddMessageListeners(messageNamesList);
+    }
 }
 
 void QMozViewPrivate::timerEvent(QTimerEvent *event)
@@ -745,7 +827,7 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
                             << ", replSt:" << event->replacementStart();
 #endif
 
-    if (mViewInitialized) {
+    if (mViewInitialized && mView) {
         uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
                           ? (int32_t)event->commitString()[0].unicode()
                           : 0;
@@ -778,7 +860,7 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
 void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
 {
-    if (!mViewInitialized)
+    if (!mViewInitialized || !mView)
         return;
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
@@ -795,7 +877,7 @@ void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
 
 void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
 {
-    if (!mViewInitialized)
+    if (!mViewInitialized || !mView)
         return;
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
@@ -920,7 +1002,7 @@ void QMozViewPrivate::onCompositorCreated()
     if (mMozWindow) {
         QtMoz::startWindowFrameStream(mMozWindow.data());
     }
-    if (mDirtyState & DirtyScreenProperties) {
+    if (mView && (mDirtyState & DirtyScreenProperties)) {
         sendScreenProperties();
         mDirtyState &= ~DirtyScreenProperties;
     }
@@ -963,7 +1045,28 @@ void QMozViewPrivate::createView()
             // A normal Gecko chrome AppWindow owns its XUL browser and does
             // not have a legacy EmbedLiteView. Its compositor and token frame
             // stream are already connected by prepareMozWindow().
-            mDirtyState &= ~DirtyActive;
+            const QPointer<QMozViewPrivate> guardedView(this);
+            connect(mMozWindow.data(), &QMozWindow::initialized,
+                    this, [guardedView]() {
+                if (guardedView && guardedView->mMozWindow
+                        && !guardedView->mViewInitialized) {
+                    const bool attached = QtMoz::attachChromeSession(
+                            guardedView.data(),
+                            guardedView->mMozWindow.data(),
+                            chromeSessionCallbacks(guardedView.data()));
+                    if (guardedView && attached) {
+                        guardedView->ViewInitialized();
+                    }
+                }
+            });
+            if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
+                    && QtMoz::attachChromeSession(
+                        this, mMozWindow.data(),
+                        chromeSessionCallbacks(this))) {
+                if (guardedView) {
+                    guardedView->ViewInitialized();
+                }
+            }
             return;
         }
 
@@ -990,6 +1093,26 @@ void QMozViewPrivate::createView()
 void QMozViewPrivate::ViewInitialized()
 {
     mViewInitialized = true;
+
+    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+    if (chromeHosted) {
+        if (!mPendingUrl.isEmpty()
+                && mPendingUrl.toUtf8()
+                   != QtMoz::chromeInitialUrl(mMozWindow.data())) {
+            load(mPendingUrl, mPendingFromExternal);
+        }
+        if ((mDirtyState & DirtySize) && mMozWindow && !mSize.isEmpty()) {
+            mMozWindow->setSize(mSize.toSize());
+            mDirtyState &= ~DirtySize;
+        } else if (mMozWindow) {
+            mSize = mMozWindow->size();
+        }
+        QtMoz::chromeSessionSetFocused(this, mViewIsFocused);
+        mViewIface->viewInitialized();
+        mViewIface->canGoBackChanged();
+        mViewIface->canGoForwardChanged();
+        return;
+    }
 
     // Load frame scripts first and then message listeners.
     Q_FOREACH (const QString &frameScript, mPendingFrameScripts) {
@@ -1052,7 +1175,7 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
 {
     if (height != mDynamicToolbarHeight) {
         mDynamicToolbarHeight = height;
-        if (mViewInitialized && mDOMContentLoaded) {
+        if (mViewInitialized && mView && mDOMContentLoaded) {
             mView->SetDynamicToolbarHeight(height);
         } else {
             mDirtyState |= DirtyDynamicToolbarHeight;
@@ -1070,7 +1193,7 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             mBottomMargin = mMargins.bottom();
         }
 
-        if (mViewInitialized) {
+        if (mViewInitialized && mView) {
             mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
             mViewIface->marginsChanged();
         } else {
@@ -1084,7 +1207,7 @@ void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
     if (insets != mSafeAreaInsets) {
         mSafeAreaInsets = insets;
 
-        if (mViewInitialized) {
+        if (mViewInitialized && mView) {
             mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
             mViewIface->safeAreaInsetsChanged();
         } else {
@@ -1181,12 +1304,19 @@ void QMozViewPrivate::ViewDestroyed()
     qCInfo(lcEmbedLiteExt);
 #endif
 
+    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+    if (chromeHosted) {
+        QtMoz::detachChromeSession(this);
+    }
+
     mView = nullptr;
     mViewInitialized = false;
 
     if (mViewIface)
         mViewIface->viewDestroyed();
-    mViewIface = nullptr;
+    if (!chromeHosted) {
+        mViewIface = nullptr;
+    }
 }
 
 void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData)
@@ -1297,7 +1427,11 @@ void QMozViewPrivate::setIsFocused(bool aIsFocused)
 {
     mViewIsFocused = aIsFocused;
     if (mViewInitialized) {
-        mView->SetIsFocused(aIsFocused);
+        if (QtMoz::isChromeHosted(mMozWindow.data())) {
+            QtMoz::chromeSessionSetFocused(this, aIsFocused);
+        } else {
+            mView->SetIsFocused(aIsFocused);
+        }
     }
 }
 
@@ -1306,7 +1440,7 @@ void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
     if (mDesktopMode != aDesktopMode) {
         mDesktopMode = aDesktopMode;
 
-        if (mViewInitialized) {
+        if (mViewInitialized && mView) {
             mView->SetDesktopMode(aDesktopMode);
         }
 
@@ -1316,7 +1450,7 @@ void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
 
 void QMozViewPrivate::setThrottlePainting(bool aThrottle)
 {
-    if (mViewInitialized) {
+    if (mViewInitialized && mView) {
         mView->SetThrottlePainting(aThrottle);
     }
 }
@@ -1621,7 +1755,7 @@ void QMozViewPrivate::wheelEvent(QWheelEvent *event)
 
 void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
 {
-    if (mViewInitialized) {
+    if (mViewInitialized && mView) {
         mView->ReceiveInputEvent(event);
     }
 }
@@ -1702,7 +1836,7 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
 
 void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant &value)
 {
-    if (!mViewInitialized)
+    if (!mViewInitialized || !mView)
         return;
 
     QJsonDocument doc;
@@ -1821,7 +1955,8 @@ bool QMozViewPrivate::handleAsyncMessage(const QString &message, const QVariant 
 
 void QMozViewPrivate::clearDirtyDynamicToolbarHeight()
 {
-    if ((mDirtyState & DirtyDynamicToolbarHeight) && mViewInitialized && mDOMContentLoaded) {
+    if ((mDirtyState & DirtyDynamicToolbarHeight) && mViewInitialized
+            && mView && mDOMContentLoaded) {
         mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
         mDirtyState &= ~DirtyDynamicToolbarHeight;
     }
