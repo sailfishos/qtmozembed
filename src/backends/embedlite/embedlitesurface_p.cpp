@@ -51,7 +51,8 @@ public:
     enum Kind {
         ContinueDestroy,
         FrameReady,
-        FrameDeliveryStopped
+        FrameDeliveryStopped,
+        ChromeWindowInitializationFailed
     };
 
     SurfaceEvent(const QSharedPointer<EmbedLiteSurface> &surface, Kind kind,
@@ -99,13 +100,18 @@ CallbackDispatcher *callbackDispatcher()
 
 class Q_DECL_HIDDEN EmbedLiteSurface final
     : public QMozSurface
+    , public EmbedLiteWindowListener
+    , public EmbedLiteChromeWindowListener
     , public EmbedLitePlatformFrameListener
     , public QEnableSharedFromThis<EmbedLiteSurface>
 {
 public:
-    EmbedLiteSurface(EmbedLiteApp *app, EmbedLiteWindowListener *listener)
+    EmbedLiteSurface(
+            EmbedLiteApp *app, EmbedLiteWindowListener *listener,
+            const EmbedLiteChromeWindowFailedCallback &chromeWindowFailed)
         : mApp(app)
         , mListener(listener)
+        , mChromeWindowFailed(chromeWindowFailed)
         , mWindow(nullptr)
         , mOwnerThread(QThread::currentThread())
         , mDispatcher(callbackDispatcher())
@@ -129,7 +135,8 @@ public:
         Q_ASSERT(mActiveCalls == 0);
     }
 
-    EmbedLiteWindow *reserve(const QSize &size)
+    EmbedLiteWindow *reserve(const QSize &size,
+                             const QByteArray &chromeInitialUrl)
     {
         {
             QMutexLocker lock(&mMutex);
@@ -138,8 +145,11 @@ public:
             Q_ASSERT(!mDestroyed);
         }
 
-        EmbedLiteWindow * const window = mApp->CreateWindow(
-                size.width(), size.height(), mListener);
+        EmbedLiteWindow * const window = chromeInitialUrl.isEmpty()
+                ? mApp->CreateWindow(size.width(), size.height(), this)
+                : mApp->CreateChromeWindow(
+                    size.width(), size.height(),
+                    chromeInitialUrl.constData(), this);
         if (window && !window->SetPlatformFrameListener(this)) {
             mApp->DestroyWindow(window);
             return nullptr;
@@ -452,6 +462,52 @@ public:
         return true;
     }
 
+    void WindowInitialized() override
+    {
+        mListener->WindowInitialized();
+    }
+
+    void WindowDestroyed() override
+    {
+        // The client removes the registry's owning reference from this
+        // callback. Keep the forwarding listener alive until it unwinds.
+        const QSharedPointer<EmbedLiteSurface> self = sharedFromThis();
+        Q_ASSERT(!self.isNull());
+        mListener->WindowDestroyed();
+    }
+
+    void DrawOverlay(const nsIntRect &rect) override
+    {
+        mListener->DrawOverlay(rect);
+    }
+
+    bool PreRender() override
+    {
+        return mListener->PreRender();
+    }
+
+    void CompositorCreated() override
+    {
+        mListener->CompositorCreated();
+    }
+
+    void CompositingFinished() override
+    {
+        mListener->CompositingFinished();
+    }
+
+    void ChromeWindowInitializationFailed() override
+    {
+        if (QThread::currentThread() == mOwnerThread) {
+            dispatchSurfaceEvent(
+                    SurfaceEvent::ChromeWindowInitializationFailed, 0,
+                    { 0, 0 });
+        } else {
+            postSurfaceEvent(
+                    SurfaceEvent::ChromeWindowInitializationFailed, 0);
+        }
+    }
+
     void PlatformFrameReady(const PlatformFrameToken &token) override
     {
         QMutexLocker controlLock(&mFrameControlMutex);
@@ -664,6 +720,17 @@ private:
             continueDestroyOnOwnerThread();
             return;
         }
+        if (kind == SurfaceEvent::ChromeWindowInitializationFailed) {
+            EmbedLiteChromeWindowFailedCallback callback;
+            {
+                QMutexLocker lock(&mMutex);
+                callback = mChromeWindowFailed;
+            }
+            if (callback) {
+                callback();
+            }
+            return;
+        }
 
         QMozSurfaceFrameReadyCallback readyCallback;
         QMozSurfaceFrameDeliveryStoppedCallback stoppedCallback;
@@ -744,6 +811,7 @@ private:
 
     EmbedLiteApp *mApp;
     EmbedLiteWindowListener *mListener;
+    EmbedLiteChromeWindowFailedCallback mChromeWindowFailed;
     EmbedLiteWindow *mWindow;
     QThread *mOwnerThread;
     CallbackDispatcher *mDispatcher;
@@ -805,18 +873,21 @@ EmbedLiteSurface *embedLiteSurface(
 } // namespace
 
 QSharedPointer<QMozSurface> createEmbedLiteSurface(
-        EmbedLiteApp *app, EmbedLiteWindowListener *listener)
+        EmbedLiteApp *app, EmbedLiteWindowListener *listener,
+        const EmbedLiteChromeWindowFailedCallback &chromeWindowFailed)
 {
     const QSharedPointer<EmbedLiteSurface> surface(
-            new EmbedLiteSurface(app, listener));
+            new EmbedLiteSurface(app, listener, chromeWindowFailed));
     return surface;
 }
 
 EmbedLiteWindow *reserveEmbedLiteSurface(
-        const QSharedPointer<QMozSurface> &surface, const QSize &size)
+        const QSharedPointer<QMozSurface> &surface, const QSize &size,
+        const QByteArray &chromeInitialUrl)
 {
     EmbedLiteSurface * const embedSurface = embedLiteSurface(surface);
-    return embedSurface ? embedSurface->reserve(size) : nullptr;
+    return embedSurface
+            ? embedSurface->reserve(size, chromeInitialUrl) : nullptr;
 }
 
 bool withEmbedLiteWindow(const QSharedPointer<QMozSurface> &surface,

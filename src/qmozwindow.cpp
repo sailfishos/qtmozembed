@@ -10,8 +10,10 @@
 #include "qmozwindow.h"
 
 #include "qmozcontext.h"
+#include "qmozembedlog.h"
 #include "qmozwindow_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
@@ -38,7 +40,20 @@ void QMozWindow::reserve()
     if (!d->mWindow && !d->mReserved) {
         const QSharedPointer<QMozSurface> surface =
                 QtMoz::createEmbedLiteSurface(
-                    QMozContext::instance()->GetApp(), d.data());
+                    QMozContext::instance()->GetApp(), d.data(),
+                    [guardedWindow = QPointer<QMozWindow>(this)]() {
+            if (guardedWindow) {
+                QtMoz::markChromeInitializationFailed(
+                        guardedWindow.data());
+                qCWarning(lcEmbedLiteExt)
+                        << "Gecko chrome window initialization failed";
+                if (QtMoz::chromeQuickWindowShouldDelete(
+                        QtMoz::isChromeQuickOwned(guardedWindow.data()),
+                        true, guardedWindow->isReserved())) {
+                    guardedWindow->deleteLater();
+                }
+            }
+        });
         if (!QtMoz::installWindowSurface(this, surface)) {
             Q_ASSERT_X(false, "QMozWindow::reserve",
                        "A surface is already registered for this window");
@@ -52,7 +67,8 @@ void QMozWindow::reserve()
             return;
         }
 
-        d->mWindow = QtMoz::reserveEmbedLiteSurface(surface, d->mSize);
+        d->mWindow = QtMoz::reserveEmbedLiteSurface(
+                surface, d->mSize, QtMoz::chromeInitialUrl(this));
         if (!d->mWindow) {
             QtMoz::takeWindowFrameStream(this);
             QtMoz::takeWindowSurface(this);

@@ -56,6 +56,7 @@ HEADERS += qmozcontext.h \
            qmozopenglwebpage.h \
            qmozwindow.h \
            qmozwindow_p.h \
+           runtime/qmozchromehost_p.h \
            runtime/qmozframestream_p.h \
            runtime/qmozruntime_p.h \
            runtime/qmozsurface_p.h \

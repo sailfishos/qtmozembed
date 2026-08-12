@@ -8,6 +8,7 @@
 
 #include "runtime/qmozsurface_p.h"
 #include "runtime/qmozframestream_p.h"
+#include "runtime/qmozchromehost_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
@@ -182,6 +183,41 @@ private:
     QMozSurfaceFrameDeliveryStoppedCallback
             mFrameDeliveryStoppedCallback;
     QMozSurfaceFrameRelease mReleasedFrame;
+};
+
+class RecordingWindowListener final : public EmbedLiteWindowListener
+{
+public:
+    RecordingWindowListener()
+        : initialized(0)
+        , destroyed(0)
+        , compositorCreated(0)
+        , compositingFinished(0)
+        , overlays(0)
+        , surfaceToClear(nullptr)
+    {
+    }
+
+    void WindowInitialized() override { ++initialized; }
+    void WindowDestroyed() override
+    {
+        ++destroyed;
+        if (surfaceToClear && !surfaceToClear->isNull()) {
+            (*surfaceToClear)->backendDestroyed();
+            surfaceToClear->clear();
+        }
+    }
+    void CompositorCreated() override { ++compositorCreated; }
+    void CompositingFinished() override { ++compositingFinished; }
+    void DrawOverlay(const nsIntRect &) override { ++overlays; }
+    bool PreRender() override { return false; }
+
+    int initialized;
+    int destroyed;
+    int compositorCreated;
+    int compositingFinished;
+    int overlays;
+    QSharedPointer<QMozSurface> *surfaceToClear;
 };
 
 QMozWindow *fakeWindow(void *storage)
@@ -408,6 +444,138 @@ void testQueuedFrameSuppressedAfterStop()
     surface.clear();
 }
 
+void testChromeWindowSelection()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    const QByteArray initialUrl("https://example.com/chrome-smoke");
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200), initialUrl);
+
+    VERIFY(window == &app.window);
+    VERIFY(app.createCount == 0);
+    VERIFY(app.chromeCreateCount == 1);
+    VERIFY(app.chromeInitialUrl == initialUrl.constData());
+    VERIFY(eventIndex(app.events, "chrome-created") >= 0);
+    VERIFY(eventIndex(app.events, "listener-set") >= 0);
+
+    surface->requestDestroy();
+    VERIFY(app.destroyCount == 1);
+    VERIFY(eventIndex(app.events, "listener-cleared") <
+           eventIndex(app.events, "destroyed"));
+    surface->backendDestroyed();
+    surface.clear();
+}
+
+void testChromeWindowFailureMarshalledToOwnerThread()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QThread * const ownerThread = QThread::currentThread();
+    bool failed = false;
+    bool failedOnOwnerThread = false;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(
+                &app, &listener, [&]() {
+        failed = true;
+        failedOnOwnerThread = QThread::currentThread() == ownerThread;
+    });
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200), QByteArray("https://example.com"));
+
+    VERIFY(window == &app.window);
+    std::thread failureThread([&]() {
+        app.NotifyChromeWindowInitializationFailed();
+    });
+    failureThread.join();
+    VERIFY(!failed);
+    // Teardown may overtake the owner-thread failure event.
+    surface->backendDestroyed();
+    processEvents();
+    VERIFY(failed);
+    VERIFY(failedOnOwnerThread);
+    surface.clear();
+}
+
+void testLegacyWindowSelection()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200));
+
+    VERIFY(window == &app.window);
+    VERIFY(app.createCount == 1);
+    VERIFY(app.chromeCreateCount == 0);
+    VERIFY(eventIndex(app.events, "created") >= 0);
+    VERIFY(eventIndex(app.events, "listener-set") >= 0);
+
+    surface->requestDestroy();
+    VERIFY(app.destroyCount == 1);
+    VERIFY(eventIndex(app.events, "listener-cleared") <
+           eventIndex(app.events, "destroyed"));
+    surface->backendDestroyed();
+    surface.clear();
+}
+
+void testWindowListenerForwarding()
+{
+    EmbedLiteApp app;
+    RecordingWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200));
+
+    VERIFY(window == &app.window);
+    VERIFY(app.windowListener != &listener);
+    app.windowListener->WindowInitialized();
+    app.windowListener->CompositorCreated();
+    app.windowListener->CompositingFinished();
+    app.windowListener->DrawOverlay(nsIntRect());
+    VERIFY(!app.windowListener->PreRender());
+    VERIFY(listener.initialized == 1);
+    VERIFY(listener.compositorCreated == 1);
+    VERIFY(listener.compositingFinished == 1);
+    VERIFY(listener.overlays == 1);
+
+    listener.surfaceToClear = &surface;
+    app.windowListener->WindowDestroyed();
+    VERIFY(listener.destroyed == 1);
+    VERIFY(surface.isNull());
+}
+
+void testChromeWindowFrameGate()
+{
+    VERIFY(QtMoz::windowFrameIsValid(
+            true, true, false, false, true, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(
+            false, true, false, false, true, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(
+            true, false, false, false, true, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(
+            true, true, false, false, false, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(
+            true, true, false, false, true, false, true));
+    VERIFY(!QtMoz::windowFrameIsValid(
+            true, true, false, false, true, true, false));
+    VERIFY(QtMoz::windowFrameIsValid(
+            false, true, true, true, true, true, true));
+
+    VERIFY(!QtMoz::chromeQuickWindowShouldDelete(
+            true, false, false));
+    VERIFY(!QtMoz::chromeQuickWindowShouldDelete(
+            true, true, true));
+    VERIFY(!QtMoz::chromeQuickWindowShouldDelete(
+            false, true, false));
+    VERIFY(QtMoz::chromeQuickWindowShouldDelete(
+            true, true, false));
+}
+
 void testDestroyWaitsForFrameReleaseAndStop()
 {
     EmbedLiteApp app;
@@ -519,6 +687,11 @@ int main(int argc, char **argv)
     testPlatformFrameForwarding();
     testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
+    testChromeWindowSelection();
+    testChromeWindowFailureMarshalledToOwnerThread();
+    testLegacyWindowSelection();
+    testWindowListenerForwarding();
+    testChromeWindowFrameGate();
     testDestroyWaitsForFrameReleaseAndStop();
     testFailedDisablePreservesQueuedFrame();
     return failures == 0 ? 0 : 1;
