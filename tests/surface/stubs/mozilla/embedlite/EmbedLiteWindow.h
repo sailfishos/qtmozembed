@@ -14,6 +14,10 @@
 #include <string>
 #include <vector>
 
+struct nsIntRect
+{
+};
+
 namespace mozilla {
 namespace embedlite {
 
@@ -91,7 +95,22 @@ protected:
 class EmbedLiteWindowListener
 {
 public:
+    virtual void WindowInitialized() {}
+    virtual void WindowDestroyed() {}
+    virtual void CompositorCreated() {}
+    virtual void CompositingFinished() {}
+    virtual void DrawOverlay(const nsIntRect &) {}
+    virtual bool PreRender() { return true; }
     virtual ~EmbedLiteWindowListener() = default;
+};
+
+class EmbedLiteChromeWindowListener
+{
+public:
+    virtual void ChromeWindowInitializationFailed() = 0;
+
+protected:
+    virtual ~EmbedLiteChromeWindowListener() = default;
 };
 
 class EmbedLiteWindow
