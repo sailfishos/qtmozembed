@@ -11,6 +11,8 @@
 
 #include "../../runtime/qmozsurface_p.h"
 
+#include <QByteArray>
+
 #include <functional>
 
 namespace mozilla {
@@ -25,12 +27,16 @@ namespace QtMoz {
 
 using EmbedLiteWindowCallback = std::function<void(
         mozilla::embedlite::EmbedLiteWindow *)>;
+using EmbedLiteChromeWindowFailedCallback = std::function<void()>;
 
 Q_DECL_HIDDEN QSharedPointer<QMozSurface> createEmbedLiteSurface(
         mozilla::embedlite::EmbedLiteApp *app,
-        mozilla::embedlite::EmbedLiteWindowListener *listener);
+        mozilla::embedlite::EmbedLiteWindowListener *listener,
+        const EmbedLiteChromeWindowFailedCallback &chromeWindowFailed =
+                EmbedLiteChromeWindowFailedCallback());
 Q_DECL_HIDDEN mozilla::embedlite::EmbedLiteWindow *reserveEmbedLiteSurface(
-        const QSharedPointer<QMozSurface> &surface, const QSize &size);
+        const QSharedPointer<QMozSurface> &surface, const QSize &size,
+        const QByteArray &chromeInitialUrl = QByteArray());
 Q_DECL_HIDDEN bool withEmbedLiteWindow(
         const QSharedPointer<QMozSurface> &surface,
         const EmbedLiteWindowCallback &callback);

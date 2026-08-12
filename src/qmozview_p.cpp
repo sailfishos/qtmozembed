@@ -41,6 +41,7 @@
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
 #include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
@@ -955,7 +956,16 @@ void QMozViewPrivate::createView()
             mozView->prepareMozWindow();
         }
 
-        Q_ASSERT(mMozWindow);
+        if (!mMozWindow) {
+            return;
+        }
+        if (QtMoz::isChromeHosted(mMozWindow.data())) {
+            // A normal Gecko chrome AppWindow owns its XUL browser and does
+            // not have a legacy EmbedLiteView. Its compositor and token frame
+            // stream are already connected by prepareMozWindow().
+            mDirtyState &= ~DirtyActive;
+            return;
+        }
 
         const QSharedPointer<QMozSurface> surface =
                 QtMoz::windowSurface(mMozWindow.data());
@@ -972,11 +982,6 @@ void QMozViewPrivate::createView()
         mView->SetListener(this);
         setScreenProperties(QGuiApplication::primaryScreen()->depth(),
                             QGuiApplication::primaryScreen()->physicalDotsPerInch());
-
-        if (mozView) {
-            connect(mMozWindow.data(), &QMozWindow::compositingFinished,
-                    mozView, &QuickMozView::compositingFinished);
-        }
 
         mViewIface->uniqueIdChanged();
     }
