@@ -1759,7 +1759,12 @@ void QMozViewPrivate::wheelEvent(QWheelEvent *event)
 
 void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
 {
-    if (mViewInitialized && mView) {
+    if (!mViewInitialized) {
+        return;
+    }
+    if (QtMoz::isChromeHosted(mMozWindow.data())) {
+        QtMoz::chromeSessionReceiveInputEvent(this, event);
+    } else if (mView) {
         mView->ReceiveInputEvent(event);
     }
 }

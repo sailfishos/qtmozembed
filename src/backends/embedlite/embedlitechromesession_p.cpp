@@ -15,6 +15,7 @@
 #include <QString>
 
 #include <mozilla/embedlite/EmbedLiteChromeSession.h>
+#include <mozilla/embedlite/EmbedInputData.h>
 #include <mozilla/embedlite/EmbedLiteWindow.h>
 
 using namespace mozilla::embedlite;
@@ -108,6 +109,11 @@ public:
     bool setFocused(bool focused) override
     {
         return mSession && mSession->SetFocused(focused);
+    }
+
+    bool receiveInputEvent(const EmbedTouchInput &event) override
+    {
+        return mSession && mSession->ReceiveInputEvent(event);
     }
 
     void OnLocationChanged(const char *location, bool canGoBack,
