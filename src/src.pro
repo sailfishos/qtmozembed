@@ -33,6 +33,8 @@ SOURCES += qmozcontext.cpp \
            qmozwindow_p.cpp \
            runtime/backendapi_p.cpp \
            runtime/qmozchromesession_p.cpp \
+           runtime/qmozchromewindowregistry_p.cpp \
+           runtime/qmozchromewindowshutdown_p.cpp \
            runtime/qmozframestream_p.cpp \
            runtime/qmozruntime_p.cpp \
            runtime/qmozsurface_p.cpp \
@@ -61,6 +63,8 @@ HEADERS += qmozcontext.h \
            runtime/backendabi.h \
            runtime/backendapi_p.h \
            runtime/qmozchromesession_p.h \
+           runtime/qmozchromewindowregistry_p.h \
+           runtime/qmozchromewindowshutdown_p.h \
            runtime/qmozchromehost_p.h \
            runtime/qmozframestream_p.h \
            runtime/qmozruntime_p.h \

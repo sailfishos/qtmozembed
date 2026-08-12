@@ -1108,6 +1108,7 @@ void QMozViewPrivate::ViewInitialized()
             mSize = mMozWindow->size();
         }
         QtMoz::chromeSessionSetFocused(this, mViewIsFocused);
+        mViewIface->uniqueIdChanged();
         mViewIface->viewInitialized();
         mViewIface->canGoBackChanged();
         mViewIface->canGoForwardChanged();
@@ -1314,6 +1315,9 @@ void QMozViewPrivate::ViewDestroyed()
 
     if (mViewIface)
         mViewIface->viewDestroyed();
+    if (chromeHosted && mViewIface) {
+        mViewIface->uniqueIdChanged();
+    }
     if (!chromeHosted) {
         mViewIface = nullptr;
     }

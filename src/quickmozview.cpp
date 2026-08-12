@@ -36,6 +36,7 @@
 #include "qmozwindow_p.h"
 #include "runtime/qmozchromesession_p.h"
 #include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozchromewindowregistry_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmoztexturelease_p.h"
 
@@ -43,6 +44,9 @@ using namespace mozilla;
 using namespace mozilla::embedlite;
 
 namespace {
+
+const char ChromeViewDestroyingProperty[] =
+        "_qmozChromeViewDestroying";
 
 class ObjectCleanup : public QRunnable
 {
@@ -85,6 +89,10 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mComposited(false)
     , mFollowItemGeometry(true)
 {
+    const quint64 textureConsumerId =
+            QtMoz::registerTextureFrameConsumer(this);
+    Q_ASSERT(textureConsumerId != 0);
+    Q_UNUSED(textureConsumerId);
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
     setFlag(ItemIsFocusScope, true);
@@ -104,17 +112,27 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 
 QuickMozView::~QuickMozView()
 {
+    setProperty(ChromeViewDestroyingProperty, true);
+    const quint64 textureConsumerId =
+            QtMoz::textureFrameConsumerId(this);
     QtMoz::detachChromeSession(d);
-    if (d->mMozWindow) {
+    QMozWindow * const chromeWindow = d->mMozWindow
+            && QtMoz::isChromeQuickOwned(d->mMozWindow.data())
+            ? d->mMozWindow.data() : nullptr;
+    if (d->mMozWindow && !chromeWindow) {
         QtMoz::clearWindowFrameConsumer(d->mMozWindow.data(), this);
+        releaseResources();
     }
-    releaseResources();
 
     if (d->mView) {
         d->mView->SetIsActive(false);
         d->mView->SetListener(nullptr);
         d->mContext->GetApp()->DestroyView(d->mView);
     }
+    if (chromeWindow) {
+        QtMoz::drainTrackedChromeWindow(d->mContext, chromeWindow);
+    }
+    QtMoz::unregisterTextureFrameConsumer(this, textureConsumerId);
     delete d;
     d = nullptr;
 }
@@ -180,6 +198,13 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
 
 QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
+    if (QtMoz::takeTextureFrameInvalidation(
+            QtMoz::textureFrameConsumerId(this))) {
+        mTexture = nullptr;
+        delete oldNode;
+        oldNode = nullptr;
+    }
+
     // If the dimensions are entirely invalid return no node.
     if (width() <= 0 || height() <= 0) {
         delete oldNode;
@@ -199,7 +224,13 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
     const bool invalidTexture = !QtMoz::windowFrameIsValid(
             chromeHosted, mComposited, d->mIsPainted,
             d->mViewInitialized, d->mHasCompositor,
-            d->mContext->registeredWindow(), d->mMozWindow);
+            d->mMozWindow && d->mMozWindow->isReserved()
+                && (!chromeHosted || QtMoz::chromeInitialized(
+                        d->mMozWindow.data()))
+                && (chromeHosted
+                    || d->mContext->registeredWindow()
+                       == d->mMozWindow.data()),
+            d->mMozWindow);
 
     if (mTexture && invalidTexture) {
         delete oldNode;
@@ -234,15 +265,16 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
 
-        const QPointer<QuickMozView> guardedView(this);
-        QtMoz::attachTextureFrameLease(
-                texture, d->mMozWindow.data(), this, window(),
-                [guardedView](QMozExtTexture *invalidatedTexture) {
-            if (guardedView
-                    && guardedView->mTexture == invalidatedTexture) {
-                guardedView->mTexture = nullptr;
-            }
-        });
+        const bool attached = QtMoz::attachTextureFrameLease(
+                texture, d->mMozWindow.data(), this,
+                QtMoz::textureFrameConsumerId(this), window());
+        if (chromeHosted && !attached) {
+            qCCritical(lcEmbedLiteExt)
+                    << "Failed to attach chrome platform-frame texture";
+            delete texture;
+            mTexture = nullptr;
+            return nullptr;
+        }
 
         connect(texture, &QMozExtTexture::withPlatformImage,
                 d->mMozWindow, &QMozWindow::withPlatformImage,
@@ -268,6 +300,17 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 
 void QuickMozView::releaseResources()
 {
+    const quint64 consumerId = QtMoz::textureFrameConsumerId(this);
+    if (QtMoz::hasTextureFrameLease(consumerId)) {
+        QtMoz::scheduleTextureFrameCleanupForConsumer(consumerId);
+        mTexture = nullptr;
+        return;
+    }
+    if (QtMoz::takeTextureFrameInvalidation(consumerId)) {
+        mTexture = nullptr;
+        return;
+    }
+
 #if defined(QT_OPENGL_ES_2)
     if (QMozExtTexture * const texture = d->mMozWindow ? qobject_cast<QMozExtTexture *>(mTexture) : nullptr) {
         disconnect(texture, &QMozExtTexture::withPlatformImage,
@@ -416,39 +459,89 @@ void QuickMozView::prepareMozWindow()
     }
 
     const QByteArray chromeInitialUrl = QtMoz::chromeInitialUrl(this);
-    QMozWindow *mozWindow = d->mContext->registeredWindow();
+    const bool chromeHosted = !chromeInitialUrl.isEmpty();
+    QMozWindow *mozWindow = nullptr;
+    if (chromeHosted) {
+        if (d->mMozWindow) {
+            mozWindow = d->mMozWindow.data();
+        } else {
+            mozWindow = new QMozWindow(
+                    webContentWindowSize(mOrientation, d->mSize).toSize());
+            QtMoz::setChromeInitialUrl(mozWindow, chromeInitialUrl);
+            QtMoz::setChromeQuickOwned(mozWindow);
+            mozWindow->reserve();
+            if (!mozWindow->isReserved()) {
+                delete mozWindow;
+                return;
+            }
+            const QPointer<QuickMozView> guardedView(this);
+            const QPointer<QMozWindow> guardedWindow(mozWindow);
+            const void * const consumer = this;
+            const quint64 textureConsumerId =
+                    QtMoz::textureFrameConsumerId(this);
+            if (!QtMoz::trackChromeWindow(
+                    d->mContext, mozWindow,
+                    [guardedView, guardedWindow, consumer,
+                     textureConsumerId](
+                            const QtMoz::QMozChromeWindowDrainComplete &done) {
+                if (!guardedWindow) {
+                    done();
+                    return;
+                }
+
+                QMozWindow * const window = guardedWindow.data();
+                QtMoz::clearWindowFrameConsumer(window, consumer);
+                QtMoz::clearWindowPendingFrame(window);
+                if (!guardedView
+                        || guardedView->property(
+                            ChromeViewDestroyingProperty).toBool()) {
+                    if (!QtMoz::drainTextureFramesForConsumer(
+                            textureConsumerId, done)) {
+                        QtMoz::scheduleTextureCleanupComplete(done);
+                    }
+                    return;
+                }
+
+                QuickMozView * const view = guardedView.data();
+                if (view->d->mViewInitialized
+                        || QtMoz::chromeSessionUniqueId(view->d) != 0) {
+                    view->d->ViewDestroyed();
+                    if (!guardedView) {
+                        if (!QtMoz::drainTextureFramesForConsumer(
+                                textureConsumerId, done)) {
+                            QtMoz::scheduleTextureCleanupComplete(done);
+                        }
+                        return;
+                    }
+                }
+                view->mComposited = false;
+                view->d->mHasCompositor = false;
+                view->update();
+
+                if (QtMoz::drainTextureFramesForConsumer(
+                        textureConsumerId, done)) {
+                    return;
+                }
+                QtMoz::scheduleTextureCleanupComplete(done);
+            })) {
+                connect(mozWindow, &QMozWindow::released,
+                        mozWindow, &QObject::deleteLater);
+                mozWindow->release();
+                return;
+            }
+        }
+    } else {
+        mozWindow = d->mContext->registeredWindow();
+    }
+
     if (!mozWindow) {
         mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
-        QtMoz::setChromeInitialUrl(mozWindow, chromeInitialUrl);
-        if (!chromeInitialUrl.isEmpty()) {
-            QtMoz::setChromeQuickOwned(mozWindow);
-            const QPointer<QMozWindow> guardedWindow(mozWindow);
-            connect(mozWindow, &QMozWindow::released, this,
-                    [guardedWindow]() {
-                if (guardedWindow
-                        && QtMoz::chromeQuickWindowShouldDelete(
-                            QtMoz::isChromeQuickOwned(
-                                guardedWindow.data()),
-                            QtMoz::chromeInitializationFailed(
-                                guardedWindow.data()),
-                            guardedWindow->isReserved())) {
-                    guardedWindow->deleteLater();
-                }
-            });
-        }
         mozWindow->reserve();
         if (!mozWindow->isReserved()) {
             delete mozWindow;
             return;
         }
         d->mContext->registerWindow(mozWindow);
-    } else if (QtMoz::chromeInitialUrl(mozWindow) != chromeInitialUrl) {
-        qmlInfo(this) << "Cannot mix chrome-hosted and legacy views in one window";
-        return;
-    } else if (!chromeInitialUrl.isEmpty()
-               && d->mMozWindow != mozWindow) {
-        qmlInfo(this) << "A chrome-hosted window supports one view consumer";
-        return;
     } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
         mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
@@ -458,6 +551,30 @@ void QuickMozView::prepareMozWindow()
     }
 
     d->setMozWindow(mozWindow);
+    if (chromeHosted) {
+        const QPointer<QuickMozView> guardedView(this);
+        const QPointer<QMozWindow> guardedWindow(mozWindow);
+        const quint64 releaseConsumerId =
+                QtMoz::textureFrameConsumerId(this);
+        connect(mozWindow, &QMozWindow::released, this,
+                [guardedView, guardedWindow, releaseConsumerId]() {
+            QtMoz::finishTextureFrameConsumerDrain(releaseConsumerId);
+            if (!guardedView) {
+                return;
+            }
+            QuickMozView * const view = guardedView.data();
+            if (view->d->mMozWindow.data() == guardedWindow.data()) {
+                QtMoz::clearWindowFrameConsumer(
+                        guardedWindow.data(), view);
+                QtMoz::detachChromeSession(view->d);
+                view->mComposited = false;
+                view->d->mHasCompositor = false;
+                view->d->mViewInitialized = false;
+                view->d->mMozWindow = nullptr;
+                view->update();
+            }
+        }, Qt::UniqueConnection);
+    }
     connect(mozWindow, &QMozWindow::compositingFinished,
             this, &QuickMozView::compositingFinished,
             Qt::UniqueConnection);
@@ -905,7 +1022,8 @@ void QuickMozView::newWindow(const QString &url)
 
 quint32 QuickMozView::uniqueId() const
 {
-    return d->mView ? d->mView->GetUniqueID() : 0;
+    return d->mView ? d->mView->GetUniqueID()
+                    : QtMoz::chromeSessionUniqueId(d);
 }
 
 void QuickMozView::setParentId(unsigned parentId)

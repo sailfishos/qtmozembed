@@ -44,6 +44,7 @@ QMozExtTexture::~QMozExtTexture()
         qCCritical(lcEmbedLiteExt)
                 << "Leaking texture whose platform frame is still leased";
     }
+    QtMoz::finishTexturePlatformFrameDestruction(this);
 }
 
 int QMozExtTexture::textureId() const
