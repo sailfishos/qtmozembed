@@ -515,7 +515,6 @@ void QMozViewPrivate::goBack()
     if (!mViewInitialized)
         return;
 
-    reset();
     mView->GoBack(false, true);
 }
 
@@ -524,7 +523,6 @@ void QMozViewPrivate::goForward()
     if (!mViewInitialized)
         return;
 
-    reset();
     mView->GoForward(false, true);
 }
 
@@ -535,6 +533,18 @@ void QMozViewPrivate::stop()
     mView->StopLoad();
 }
 
+void QMozViewPrivate::cancelPendingNavigation()
+{
+    // Gecko owns the navigation; discard the provisional URL after the
+    // embedding has rejected the request.
+    if (mPendingUrl.isEmpty() || mUrl.isEmpty())
+        return;
+
+    mPendingUrl.clear();
+    mPendingFromExternal = false;
+    mViewIface->urlChanged();
+}
+
 void QMozViewPrivate::reload()
 {
     if (!mViewInitialized)
@@ -543,7 +553,6 @@ void QMozViewPrivate::reload()
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl, mPendingFromExternal);
     } else {
-        reset();
         mView->Reload(false);
     }
 }
@@ -563,7 +572,6 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    reset();
     mView->LoadURL(url.toUtf8().data(), fromExternal);
 
     if (mPendingUrl != url) {
@@ -1107,6 +1115,8 @@ void QMozViewPrivate::OnLoadStarted(const char *aLocation)
 {
     Q_UNUSED(aLocation);
 
+    // Keep the current document painted until a requested navigation starts.
+    // The request may still be cancelled by a beforeunload prompt.
     reset();
 
     if (!mIsLoading) {
@@ -1122,9 +1132,7 @@ void QMozViewPrivate::OnLoadFinished(void)
     // if loading has stopped before location change, restore back
     // previous none empty url. Normally OnLocationChange clears pending url.
     if (!mPendingUrl.isEmpty() && !mUrl.isEmpty() && (mUrl != mPendingUrl)) {
-        mPendingUrl.clear();
-        mPendingFromExternal = false;
-        mViewIface->urlChanged();
+        cancelPendingNavigation();
     }
 
     if (mIsLoading) {
