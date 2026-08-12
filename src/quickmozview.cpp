@@ -35,6 +35,7 @@
 #include "qmozexttexture.h"
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
+#include "runtime/qmozchromesession_p.h"
 #include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmoztexturelease_p.h"
@@ -104,6 +105,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 
 QuickMozView::~QuickMozView()
 {
+    QtMoz::detachChromeSession(d);
     if (d->mMozWindow) {
         QtMoz::clearWindowFrameConsumer(d->mMozWindow.data(), this);
     }
@@ -120,8 +122,12 @@ QuickMozView::~QuickMozView()
 
 void QuickMozView::SetIsActive(bool aIsActive)
 {
-    if (QThread::currentThread() == thread() && d->mView) {
-        d->mView->SetIsActive(aIsActive);
+    if (QThread::currentThread() == thread()) {
+        if (QtMoz::isChromeHosted(d->mMozWindow.data())) {
+            QtMoz::chromeSessionSetActive(d, aIsActive);
+        } else if (d->mView) {
+            d->mView->SetIsActive(aIsActive);
+        }
     } else {
         Q_EMIT setIsActive(aIsActive);
     }
@@ -325,6 +331,7 @@ void QuickMozView::setActive(bool active)
                             d->mMozWindow.data(), this);
                 }
             }
+            SetIsActive(active);
             if (!active) {
                 mComposited = false;
                 update();
@@ -547,7 +554,7 @@ void QuickMozView::forceViewActiveFocus()
     forceActiveFocus();
     if (d->mViewInitialized) {
         setActive(true);
-        d->mView->SetIsFocused(true);
+        d->setIsFocused(true);
     }
 }
 

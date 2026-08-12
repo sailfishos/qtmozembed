@@ -38,6 +38,7 @@ QMozWindow::~QMozWindow()
 void QMozWindow::reserve()
 {
     if (!d->mWindow && !d->mReserved) {
+        QtMoz::clearChromeInitialized(this);
         const QSharedPointer<QMozSurface> surface =
                 QtMoz::createEmbedLiteSurface(
                     QMozContext::instance()->GetApp(), d.data(),

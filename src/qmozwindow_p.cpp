@@ -11,6 +11,7 @@
 #include "qmozwindow_p.h"
 
 #include "qmozwindow.h"
+#include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
 
@@ -137,11 +138,15 @@ bool QMozWindowPrivate::setReadyToPaint(bool ready)
 
 void QMozWindowPrivate::WindowInitialized()
 {
+    if (QtMoz::isChromeHosted(&q)) {
+        QtMoz::markChromeInitialized(&q);
+    }
     q.initialized();
 }
 
 void QMozWindowPrivate::WindowDestroyed()
 {
+    QtMoz::clearChromeInitialized(&q);
     const QSharedPointer<QMozSurface> surface =
             QtMoz::takeWindowSurface(&q);
     if (surface) {
