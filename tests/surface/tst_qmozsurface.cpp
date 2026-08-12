@@ -10,6 +10,7 @@
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozchromesession_p.h"
+#include "runtime/qmozchromewindowshutdown_p.h"
 #include "backends/embedlite/embedlitechromesession_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
 
@@ -365,7 +366,7 @@ void testFrameStreamTracksLatestConsumerFrame()
     surface->notifyFrameReady(first);
     VERIFY(updates == 1);
 
-    const QSharedPointer<QtMoz::QMozFrameStream> stream =
+    QSharedPointer<QtMoz::QMozFrameStream> stream =
             QtMoz::windowFrameStream(window);
     QMozSurfaceFrameToken token = { 0, 0 };
     VERIFY(stream->takePendingFrame(&consumer, &token));
@@ -486,6 +487,7 @@ void testChromeSessionAdapter()
     void *windowStorage = nullptr;
     QMozWindow * const window = fakeWindow(&windowStorage);
     int consumer = 0;
+    VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(QtMoz::installWindowSurface(window, surface));
 
     std::string location;
@@ -512,6 +514,8 @@ void testChromeSessionAdapter()
     callbacks.destroyed = [&]() { destroyed = true; };
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
     VERIFY(!QtMoz::attachChromeSession(&consumer, window, callbacks));
+    VERIFY(QtMoz::chromeSessionUniqueId(&consumer)
+           == app.window.GetUniqueID());
 
     app.window.ChromeSession().NotifyState();
     VERIFY(location == "https://example.com/state");
@@ -537,15 +541,180 @@ void testChromeSessionAdapter()
 
     app.window.ChromeSession().NotifyDestroyed();
     VERIFY(destroyed);
+    VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
+    VERIFY(QtMoz::chromeSessionUniqueId(&consumer)
+           == app.window.GetUniqueID());
     QtMoz::detachChromeSession(&consumer);
+    VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionSetActive(&consumer, false));
+    app.window.SetChromeHosted(false);
+    VERIFY(!QtMoz::attachChromeSession(&consumer, window, callbacks));
 
     VERIFY(QtMoz::takeWindowSurface(window) == surface);
     surface->requestDestroy();
     surface->backendDestroyed();
     surface.clear();
+}
+
+void testChromeWindowShutdownBarrier()
+{
+    QtMoz::QMozChromeWindowShutdown shutdown;
+    int windowA = 0;
+    int windowB = 0;
+    int drainsA = 0;
+    int drainsB = 0;
+    int releasesA = 0;
+    int releasesB = 0;
+    QtMoz::QMozChromeWindowDrainComplete completeA;
+    QtMoz::QMozChromeWindowDrainComplete completeB;
+
+    VERIFY(shutdown.track(
+            &windowA,
+            [&](const QtMoz::QMozChromeWindowDrainComplete &complete) {
+        ++drainsA;
+        completeA = complete;
+    }, [&]() {
+        ++releasesA;
+    }));
+    VERIFY(shutdown.track(
+            &windowB,
+            [&](const QtMoz::QMozChromeWindowDrainComplete &complete) {
+        ++drainsB;
+        completeB = complete;
+    }, [&]() {
+        ++releasesB;
+    }));
+    VERIFY(!shutdown.track(
+            &windowA,
+            [](const QtMoz::QMozChromeWindowDrainComplete &) {},
+            []() {}));
+
+    VERIFY(shutdown.beginStop());
+    VERIFY(shutdown.isStopping());
+    VERIFY(shutdown.isWaiting());
+    VERIFY(drainsA == 1);
+    VERIFY(drainsB == 1);
+    VERIFY(releasesA == 0);
+    VERIFY(releasesB == 0);
+
+    completeA();
+    completeA();
+    VERIFY(releasesA == 1);
+    VERIFY(releasesB == 0);
+    VERIFY(shutdown.windowReleased(&windowA));
+    VERIFY(!shutdown.windowReleased(&windowA));
+    VERIFY(shutdown.isWaiting());
+
+    // A missing completion deliberately keeps the second native window live.
+    VERIFY(shutdown.beginStop());
+    VERIFY(drainsB == 1);
+    VERIFY(releasesB == 0);
+    completeB();
+    VERIFY(releasesB == 1);
+    VERIFY(shutdown.windowReleased(&windowB));
+    VERIFY(!shutdown.isWaiting());
+    VERIFY(!shutdown.beginStop());
+}
+
+void testChromeWindowShutdownSynchronousRelease()
+{
+    QtMoz::QMozChromeWindowShutdown shutdown;
+    int windowA = 0;
+    int windowB = 0;
+    int releases = 0;
+    VERIFY(shutdown.track(
+            &windowA,
+            [](const QtMoz::QMozChromeWindowDrainComplete &complete) {
+        complete();
+    }, [&]() {
+        ++releases;
+        VERIFY(shutdown.windowReleased(&windowA));
+    }));
+    VERIFY(shutdown.track(
+            &windowB,
+            [](const QtMoz::QMozChromeWindowDrainComplete &complete) {
+        complete();
+    }, [&]() {
+        ++releases;
+        VERIFY(shutdown.windowReleased(&windowB));
+    }));
+
+    VERIFY(!shutdown.beginStop());
+    VERIFY(releases == 2);
+    VERIFY(!shutdown.isWaiting());
+}
+
+void testChromeWindowDrainCompletionRetainsState()
+{
+    int window = 0;
+    int releases = 0;
+    QtMoz::QMozChromeWindowDrainComplete complete;
+    {
+        QtMoz::QMozChromeWindowShutdown shutdown;
+        VERIFY(shutdown.track(
+                &window,
+                [&](const QtMoz::QMozChromeWindowDrainComplete &callback) {
+            complete = callback;
+        }, [&]() {
+            ++releases;
+        }));
+        VERIFY(shutdown.beginDrain(&window));
+    }
+
+    complete();
+    complete();
+    VERIFY(releases == 1);
+}
+
+void testChromeWindowDrainPrecedesNativeDestroy()
+{
+    void *storage = nullptr;
+    QMozWindow * const window = fakeWindow(&storage);
+    int destructions = 0;
+    int consumer = 0;
+    QSharedPointer<FakeSurface> surface(
+            new FakeSurface(window, &destructions));
+    VERIFY(QtMoz::installWindowSurface(window, surface));
+    VERIFY(QtMoz::installWindowFrameStream(window, surface));
+    QtMoz::setWindowFrameConsumer(window, &consumer, []() {});
+    VERIFY(QtMoz::startWindowFrameStream(window));
+
+    const QMozSurfaceFrameToken token = { 29, 31 };
+    surface->notifyFrameReady(token);
+    QSharedPointer<QtMoz::QMozFrameStream> stream =
+            QtMoz::windowFrameStream(window);
+    QMozSurfaceFrameToken pending = { 0, 0 };
+    VERIFY(stream->takePendingFrame(&consumer, &pending));
+    VERIFY(surface->acquirePlatformFrame(
+            pending, [](const QMozSurfaceFrame &) {
+        return true;
+    }));
+
+    QtMoz::QMozChromeWindowShutdown shutdown;
+    QtMoz::QMozChromeWindowDrainComplete drainComplete;
+    VERIFY(shutdown.track(
+            window,
+            [&](const QtMoz::QMozChromeWindowDrainComplete &complete) {
+        QtMoz::clearWindowFrameConsumer(window, &consumer);
+        drainComplete = complete;
+    }, [&]() {
+        surface->requestDestroy();
+    }));
+    VERIFY(shutdown.beginStop());
+    VERIFY(surface->destroyRequests() == 0);
+
+    VERIFY(surface->releasePlatformFrame({
+        token, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+    drainComplete();
+    VERIFY(surface->destroyRequests() == 1);
+
+    QtMoz::takeWindowFrameStream(window)->backendDestroyed();
+    stream.clear();
+    surface.clear();
+    VERIFY(destructions == 1);
 }
 
 void testChromeWindowFailureMarshalledToOwnerThread()
@@ -768,6 +937,10 @@ int main(int argc, char **argv)
     testQueuedFrameSuppressedAfterStop();
     testChromeWindowSelection();
     testChromeSessionAdapter();
+    testChromeWindowShutdownBarrier();
+    testChromeWindowShutdownSynchronousRelease();
+    testChromeWindowDrainCompletionRetainsState();
+    testChromeWindowDrainPrecedesNativeDestroy();
     testChromeWindowFailureMarshalledToOwnerThread();
     testLegacyWindowSelection();
     testWindowListenerForwarding();
