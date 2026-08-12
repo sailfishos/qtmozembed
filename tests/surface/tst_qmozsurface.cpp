@@ -9,12 +9,15 @@
 #include "runtime/qmozsurface_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozchromesession_p.h"
+#include "backends/embedlite/embedlitechromesession_p.h"
 #include "backends/embedlite/embedlitesurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
 #include "mozilla/embedlite/EmbedLiteWindow.h"
 
 #include <QCoreApplication>
+#include <QString>
 #include <QThread>
 #include <cstdio>
 #include <string>
@@ -469,6 +472,82 @@ void testChromeWindowSelection()
     surface.clear();
 }
 
+void testChromeSessionAdapter()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const nativeWindow = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200),
+            QByteArray("https://example.com/chrome-smoke"));
+
+    VERIFY(nativeWindow == &app.window);
+    void *windowStorage = nullptr;
+    QMozWindow * const window = fakeWindow(&windowStorage);
+    int consumer = 0;
+    VERIFY(QtMoz::installWindowSurface(window, surface));
+
+    std::string location;
+    std::u16string title;
+    int progress = 0;
+    bool started = false;
+    bool finished = false;
+    bool destroyed = false;
+    QMozChromeSessionCallbacks callbacks;
+    callbacks.locationChanged = [&](const char *value, bool canGoBack,
+                                    bool canGoForward) {
+        location = value;
+        VERIFY(canGoBack);
+        VERIFY(!canGoForward);
+    };
+    callbacks.loadStarted = [&](const char *) { started = true; };
+    callbacks.loadFinished = [&]() { finished = true; };
+    callbacks.loadProgress = [&](int value, qint64 current, qint64 total) {
+        progress = value;
+        VERIFY(current == 4);
+        VERIFY(total == 10);
+    };
+    callbacks.titleChanged = [&](const char16_t *value) { title = value; };
+    callbacks.destroyed = [&]() { destroyed = true; };
+    VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
+    VERIFY(!QtMoz::attachChromeSession(&consumer, window, callbacks));
+
+    app.window.ChromeSession().NotifyState();
+    VERIFY(location == "https://example.com/state");
+    VERIFY(title == u"Example title");
+    VERIFY(progress == 42);
+    VERIFY(started);
+    VERIFY(finished);
+
+    VERIFY(QtMoz::chromeSessionLoadURL(
+            &consumer, QStringLiteral("https://example.com/next"), true));
+    VERIFY(app.window.ChromeSession().lastURL ==
+           "https://example.com/next");
+    VERIFY(app.window.ChromeSession().lastFromExternal);
+    VERIFY(QtMoz::chromeSessionGoBack(&consumer));
+    VERIFY(QtMoz::chromeSessionGoForward(&consumer));
+    VERIFY(QtMoz::chromeSessionStop(&consumer));
+    VERIFY(QtMoz::chromeSessionReload(&consumer, true));
+    VERIFY(app.window.ChromeSession().lastHardReload);
+    VERIFY(QtMoz::chromeSessionSetActive(&consumer, true));
+    VERIFY(app.window.ChromeSession().lastActive);
+    VERIFY(QtMoz::chromeSessionSetFocused(&consumer, true));
+    VERIFY(app.window.ChromeSession().lastFocused);
+
+    app.window.ChromeSession().NotifyDestroyed();
+    VERIFY(destroyed);
+    VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
+    VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
+    QtMoz::detachChromeSession(&consumer);
+    VERIFY(!QtMoz::chromeSessionSetActive(&consumer, false));
+
+    VERIFY(QtMoz::takeWindowSurface(window) == surface);
+    surface->requestDestroy();
+    surface->backendDestroyed();
+    surface.clear();
+}
+
 void testChromeWindowFailureMarshalledToOwnerThread()
 {
     EmbedLiteApp app;
@@ -688,6 +767,7 @@ int main(int argc, char **argv)
     testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
     testChromeWindowSelection();
+    testChromeSessionAdapter();
     testChromeWindowFailureMarshalledToOwnerThread();
     testLegacyWindowSelection();
     testWindowListenerForwarding();

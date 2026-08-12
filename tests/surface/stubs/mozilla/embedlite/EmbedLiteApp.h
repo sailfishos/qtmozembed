@@ -30,6 +30,7 @@ public:
             int, int, EmbedLiteWindowListener *listener)
     {
         ++createCount;
+        window.SetChromeHosted(false);
         windowListener = listener;
         events.push_back("created");
         return &window;
@@ -40,6 +41,7 @@ public:
             EmbedLiteWindowListener *listener)
     {
         ++chromeCreateCount;
+        window.SetChromeHosted(true);
         windowListener = listener;
         chromeInitialUrl = initialUrl ? initialUrl : "";
         events.push_back("chrome-created");

@@ -9,6 +9,8 @@
 #ifndef TEST_EMBEDLITEWINDOW_H
 #define TEST_EMBEDLITEWINDOW_H
 
+#include "EmbedLiteChromeSession.h"
+
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -113,11 +115,108 @@ protected:
     virtual ~EmbedLiteChromeWindowListener() = default;
 };
 
+class TestChromeSession final : public EmbedLiteChromeSession
+{
+public:
+    explicit TestChromeSession(std::vector<std::string> *events)
+        : mEvents(events)
+        , mListener(nullptr)
+    {
+    }
+
+    void SetListener(EmbedLiteChromeSessionListener *listener) override
+    {
+        mListener = listener;
+        mEvents->push_back(listener ? "session-listener-set"
+                                    : "session-listener-cleared");
+    }
+
+    bool LoadURL(const char *url, bool fromExternal) override
+    {
+        lastURL = url ? url : "";
+        lastFromExternal = fromExternal;
+        mEvents->push_back("session-load");
+        return true;
+    }
+
+    bool GoBack(bool, bool) override
+    {
+        mEvents->push_back("session-back");
+        return true;
+    }
+
+    bool GoForward(bool, bool) override
+    {
+        mEvents->push_back("session-forward");
+        return true;
+    }
+
+    bool StopLoad() override
+    {
+        mEvents->push_back("session-stop");
+        return true;
+    }
+
+    bool Reload(bool hard) override
+    {
+        lastHardReload = hard;
+        mEvents->push_back("session-reload");
+        return true;
+    }
+
+    bool SetActive(bool active) override
+    {
+        lastActive = active;
+        mEvents->push_back("session-active");
+        return true;
+    }
+
+    bool SetFocused(bool focused) override
+    {
+        lastFocused = focused;
+        mEvents->push_back("session-focused");
+        return true;
+    }
+
+    void NotifyState()
+    {
+        if (mListener) {
+            mListener->OnLocationChanged("https://example.com/state",
+                                         true, false);
+            mListener->OnLoadStarted("https://example.com/state");
+            mListener->OnLoadProgress(42, 4, 10);
+            mListener->OnTitleChanged(u"Example title");
+            mListener->OnLoadFinished();
+        }
+    }
+
+    void NotifyDestroyed()
+    {
+        EmbedLiteChromeSessionListener * const listener = mListener;
+        mListener = nullptr;
+        if (listener) {
+            listener->ChromeSessionDestroyed();
+        }
+    }
+
+    std::string lastURL;
+    bool lastFromExternal = false;
+    bool lastHardReload = false;
+    bool lastActive = false;
+    bool lastFocused = false;
+
+private:
+    std::vector<std::string> *mEvents;
+    EmbedLiteChromeSessionListener *mListener;
+};
+
 class EmbedLiteWindow
 {
 public:
     explicit EmbedLiteWindow(std::vector<std::string> *events)
         : mEvents(events)
+        , mChromeSession(events)
+        , mChromeHosted(false)
         , mFrameListener(nullptr)
         , mDeliveryEnabled(false)
         , mAcquired(false)
@@ -132,6 +231,13 @@ public:
     void SuspendRendering() {}
     void ResumeRendering() {}
     void ClearPlatformImage() {}
+
+    void SetChromeHosted(bool hosted) { mChromeHosted = hosted; }
+    EmbedLiteChromeSession *GetChromeSession()
+    {
+        return mChromeHosted ? &mChromeSession : nullptr;
+    }
+    TestChromeSession &ChromeSession() { return mChromeSession; }
 
     bool WithPlatformImage(const PlatformImageCallback &)
     {
@@ -210,6 +316,8 @@ public:
 
 private:
     std::vector<std::string> *mEvents;
+    TestChromeSession mChromeSession;
+    bool mChromeHosted;
     EmbedLitePlatformFrameListener *mFrameListener;
     bool mDeliveryEnabled;
     bool mAcquired;

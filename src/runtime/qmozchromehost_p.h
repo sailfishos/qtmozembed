@@ -22,6 +22,8 @@ static const char ChromeInitialUrlProperty[] =
         "_qmozChromeInitialUrl";
 static const char ChromeInitializationFailedProperty[] =
         "_qmozChromeInitializationFailed";
+static const char ChromeInitializedProperty[] =
+        "_qmozChromeInitialized";
 static const char ChromeQuickOwnedProperty[] =
         "_qmozChromeQuickOwned";
 
@@ -55,6 +57,25 @@ inline void markChromeInitializationFailed(QObject *object)
 {
     if (object) {
         object->setProperty(ChromeInitializationFailedProperty, true);
+    }
+}
+
+inline bool chromeInitialized(const QObject *object)
+{
+    return object && object->property(ChromeInitializedProperty).toBool();
+}
+
+inline void markChromeInitialized(QObject *object)
+{
+    if (object) {
+        object->setProperty(ChromeInitializedProperty, true);
+    }
+}
+
+inline void clearChromeInitialized(QObject *object)
+{
+    if (object) {
+        object->setProperty(ChromeInitializedProperty, false);
     }
 }
 
