@@ -60,6 +60,7 @@ HEADERS += qmozcontext.h \
            qmozwindow_p.h \
            runtime/backendabi.h \
            runtime/backendapi_p.h \
+           runtime/qmozchromehost_p.h \
            runtime/qmozframestream_p.h \
            runtime/qmozruntime_p.h \
            runtime/qmozsurface_p.h \

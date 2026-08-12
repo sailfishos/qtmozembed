@@ -20,14 +20,29 @@ public:
     EmbedLiteApp()
         : window(&events)
         , createCount(0)
+        , chromeCreateCount(0)
         , destroyCount(0)
+        , windowListener(nullptr)
     {
     }
 
-    EmbedLiteWindow *CreateWindow(int, int, EmbedLiteWindowListener *)
+    EmbedLiteWindow *CreateWindow(
+            int, int, EmbedLiteWindowListener *listener)
     {
         ++createCount;
+        windowListener = listener;
         events.push_back("created");
+        return &window;
+    }
+
+    EmbedLiteWindow *CreateChromeWindow(
+            int, int, const char *initialUrl,
+            EmbedLiteWindowListener *listener)
+    {
+        ++chromeCreateCount;
+        windowListener = listener;
+        chromeInitialUrl = initialUrl ? initialUrl : "";
+        events.push_back("chrome-created");
         return &window;
     }
 
@@ -39,10 +54,23 @@ public:
         }
     }
 
+    void NotifyChromeWindowInitializationFailed()
+    {
+        EmbedLiteChromeWindowListener * const chromeListener =
+                dynamic_cast<EmbedLiteChromeWindowListener *>(
+                    windowListener);
+        if (chromeListener) {
+            chromeListener->ChromeWindowInitializationFailed();
+        }
+    }
+
     std::vector<std::string> events;
     EmbedLiteWindow window;
     int createCount;
+    int chromeCreateCount;
     int destroyCount;
+    EmbedLiteWindowListener *windowListener;
+    std::string chromeInitialUrl;
 };
 
 } // namespace embedlite
