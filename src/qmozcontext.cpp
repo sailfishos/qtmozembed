@@ -11,6 +11,7 @@
 
 #include <QVariant>
 #include <QThread>
+#include <QTimer>
 #include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
@@ -27,6 +28,7 @@
 #include "qmozviewcreator.h"
 #include "geckoworker.h"
 #include "qmozwindow.h"
+#include "runtime/qmozchromewindowregistry_p.h"
 #include "runtime/qmozruntime_p.h"
 
 #include "mozilla/embedlite/EmbedLiteView.h"
@@ -442,11 +444,49 @@ EmbedLiteApp *QMozContext::GetApp()
 
 void QMozContext::stopEmbedding()
 {
-    if (registeredWindow()) {
-        connect(this, &QMozContext::lastWindowDestroyed, this, &QMozContext::stopEmbedding);
+    static const char stopActiveProperty[] =
+            "_qmozStopEmbeddingActive";
+    static const char stopAgainProperty[] =
+            "_qmozStopEmbeddingAgain";
+    // Public QMozContext wrappers share QMozContextPrivate and its runtime.
+    // Coordinate chrome ownership and re-entrant stops through the canonical
+    // wrapper regardless of which valid wrapper receives this call.
+    QMozContext * const coordinator = QMozContext::instance();
+    if (coordinator->property(stopActiveProperty).toBool()) {
+        coordinator->setProperty(stopAgainProperty, true);
+        return;
+    }
+    coordinator->setProperty(stopActiveProperty, true);
+
+    bool waitingForWindows = false;
+    const bool hasLegacyWindow = registeredWindow();
+    const bool hasChromeWindows =
+            QtMoz::hasTrackedChromeWindows(coordinator);
+    if (hasLegacyWindow || hasChromeWindows) {
+        connect(coordinator, &QMozContext::lastWindowDestroyed,
+                coordinator, &QMozContext::stopEmbedding,
+                Qt::UniqueConnection);
+    }
+    if (hasLegacyWindow) {
         d->destroyWindow();
-    } else {
+        waitingForWindows = true;
+    }
+    if (hasChromeWindows
+            && QtMoz::releaseTrackedChromeWindows(coordinator)) {
+        waitingForWindows = true;
+    }
+    if (!waitingForWindows) {
+        disconnect(coordinator, &QMozContext::lastWindowDestroyed,
+                   coordinator, &QMozContext::stopEmbedding);
         d->mRuntime->stop();
+    }
+    coordinator->setProperty(stopActiveProperty, false);
+    if (coordinator->property(stopAgainProperty).toBool()) {
+        coordinator->setProperty(stopAgainProperty, false);
+        if (waitingForWindows) {
+            QTimer::singleShot(
+                    0, coordinator, &QMozContext::stopEmbedding);
+        }
     }
 }
 

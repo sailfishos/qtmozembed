@@ -92,6 +92,12 @@ void detachChromeSession(const void *consumer)
     }
 }
 
+quint32 chromeSessionUniqueId(const void *consumer)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session ? session->uniqueId() : 0;
+}
+
 bool chromeSessionLoadURL(const void *consumer, const QString &url,
                           bool fromExternal)
 {

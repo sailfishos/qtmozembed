@@ -31,6 +31,7 @@ class Q_DECL_HIDDEN QMozChromeSession
 public:
     virtual ~QMozChromeSession() {}
 
+    virtual quint32 uniqueId() const = 0;
     virtual void setCallbacks(
             const QMozChromeSessionCallbacks &callbacks) = 0;
     virtual void clearCallbacks() = 0;
@@ -49,6 +50,7 @@ Q_DECL_HIDDEN bool attachChromeSession(
         const void *consumer, QMozWindow *window,
         const QMozChromeSessionCallbacks &callbacks);
 Q_DECL_HIDDEN void detachChromeSession(const void *consumer);
+Q_DECL_HIDDEN quint32 chromeSessionUniqueId(const void *consumer);
 Q_DECL_HIDDEN bool chromeSessionLoadURL(
         const void *consumer, const QString &url, bool fromExternal);
 Q_DECL_HIDDEN bool chromeSessionGoBack(const void *consumer);

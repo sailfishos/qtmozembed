@@ -28,8 +28,9 @@ class EmbedLiteChromeSessionAdapter final
 {
 public:
     explicit EmbedLiteChromeSessionAdapter(
-            EmbedLiteChromeSession *session)
+            EmbedLiteChromeSession *session, quint32 uniqueId)
         : mSession(session)
+        , mUniqueId(uniqueId)
     {
     }
 
@@ -38,6 +39,11 @@ public:
         if (mSession) {
             mSession->SetListener(nullptr);
         }
+    }
+
+    quint32 uniqueId() const override
+    {
+        return mUniqueId;
     }
 
     void setCallbacks(
@@ -188,6 +194,7 @@ public:
 
 private:
     EmbedLiteChromeSession *mSession;
+    const quint32 mUniqueId;
     QMozChromeSessionCallbacks mCallbacks;
 };
 
@@ -199,14 +206,16 @@ QSharedPointer<QMozChromeSession> createEmbedLiteChromeSession(
         const QSharedPointer<QMozSurface> &surface)
 {
     EmbedLiteChromeSession *session = nullptr;
+    quint32 uniqueId = 0;
     if (!withEmbedLiteWindow(surface, [&](EmbedLiteWindow *window) {
         session = window->GetChromeSession();
-    }) || !session) {
+        uniqueId = window->GetUniqueID();
+    }) || !session || uniqueId == 0) {
         return QSharedPointer<QMozChromeSession>();
     }
 
     const QSharedPointer<EmbedLiteChromeSessionAdapter> adapter(
-            new EmbedLiteChromeSessionAdapter(session));
+            new EmbedLiteChromeSessionAdapter(session, uniqueId));
     return adapter;
 }
 

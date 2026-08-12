@@ -216,6 +216,7 @@ public:
     explicit EmbedLiteWindow(std::vector<std::string> *events)
         : mEvents(events)
         , mChromeSession(events)
+        , mUniqueID(nextUniqueID())
         , mChromeHosted(false)
         , mFrameListener(nullptr)
         , mDeliveryEnabled(false)
@@ -233,6 +234,7 @@ public:
     void ClearPlatformImage() {}
 
     void SetChromeHosted(bool hosted) { mChromeHosted = hosted; }
+    uint32_t GetUniqueID() const { return mUniqueID; }
     EmbedLiteChromeSession *GetChromeSession()
     {
         return mChromeHosted ? &mChromeSession : nullptr;
@@ -315,8 +317,15 @@ public:
     }
 
 private:
+    static uint32_t nextUniqueID()
+    {
+        static uint32_t id = 0;
+        return ++id;
+    }
+
     std::vector<std::string> *mEvents;
     TestChromeSession mChromeSession;
+    uint32_t mUniqueID;
     bool mChromeHosted;
     EmbedLitePlatformFrameListener *mFrameListener;
     bool mDeliveryEnabled;
