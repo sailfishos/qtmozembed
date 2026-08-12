@@ -539,10 +539,25 @@ void testChromeSessionAdapter()
     VERIFY(QtMoz::chromeSessionSetFocused(&consumer, true));
     VERIFY(app.window.ChromeSession().lastFocused);
 
+    mozilla::embedlite::EmbedTouchInput touch(
+            mozilla::embedlite::EmbedTouchInput::MULTITOUCH_START, 123);
+    touch.touches.push_back(mozilla::embedlite::TouchData(
+            7, mozilla::embedlite::TouchPointF(20.0f, 30.0f), 0.5f));
+    VERIFY(QtMoz::chromeSessionReceiveInputEvent(&consumer, touch));
+    VERIFY(app.window.ChromeSession().lastTouchType
+           == mozilla::embedlite::EmbedTouchInput::MULTITOUCH_START);
+    VERIFY(app.window.ChromeSession().lastTouchTimeStamp == 123);
+    VERIFY(app.window.ChromeSession().lastTouchCount == 1);
+    VERIFY(app.window.ChromeSession().lastTouchIdentifier == 7);
+    VERIFY(app.window.ChromeSession().lastTouchX == 20.0f);
+    VERIFY(app.window.ChromeSession().lastTouchY == 30.0f);
+    VERIFY(app.window.ChromeSession().lastTouchPressure == 0.5f);
+
     app.window.ChromeSession().NotifyDestroyed();
     VERIFY(destroyed);
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
+    VERIFY(!QtMoz::chromeSessionReceiveInputEvent(&consumer, touch));
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer)
            == app.window.GetUniqueID());

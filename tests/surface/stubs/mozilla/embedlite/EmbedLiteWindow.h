@@ -10,6 +10,7 @@
 #define TEST_EMBEDLITEWINDOW_H
 
 #include "EmbedLiteChromeSession.h"
+#include "EmbedInputData.h"
 
 #include <cstdint>
 #include <functional>
@@ -178,6 +179,21 @@ public:
         return true;
     }
 
+    bool ReceiveInputEvent(const EmbedTouchInput &event) override
+    {
+        lastTouchType = event.type;
+        lastTouchTimeStamp = event.timeStamp;
+        lastTouchCount = event.touches.size();
+        if (!event.touches.empty()) {
+            lastTouchIdentifier = event.touches.front().identifier;
+            lastTouchX = event.touches.front().touchPoint.x;
+            lastTouchY = event.touches.front().touchPoint.y;
+            lastTouchPressure = event.touches.front().pressure;
+        }
+        mEvents->push_back("session-touch");
+        return true;
+    }
+
     void NotifyState()
     {
         if (mListener) {
@@ -204,6 +220,14 @@ public:
     bool lastHardReload = false;
     bool lastActive = false;
     bool lastFocused = false;
+    EmbedTouchInput::EmbedTouchType lastTouchType =
+            EmbedTouchInput::MULTITOUCH_SENTINEL;
+    uint32_t lastTouchTimeStamp = 0;
+    std::size_t lastTouchCount = 0;
+    int32_t lastTouchIdentifier = 0;
+    float lastTouchX = 0.0f;
+    float lastTouchY = 0.0f;
+    float lastTouchPressure = 0.0f;
 
 private:
     std::vector<std::string> *mEvents;

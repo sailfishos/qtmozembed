@@ -16,6 +16,12 @@
 class QMozWindow;
 class QString;
 
+namespace mozilla {
+namespace embedlite {
+class EmbedTouchInput;
+}
+}
+
 struct QMozChromeSessionCallbacks final
 {
     std::function<void(const char *, bool, bool)> locationChanged;
@@ -42,6 +48,8 @@ public:
     virtual bool reload(bool hard) = 0;
     virtual bool setActive(bool active) = 0;
     virtual bool setFocused(bool focused) = 0;
+    virtual bool receiveInputEvent(
+            const mozilla::embedlite::EmbedTouchInput &event) = 0;
 };
 
 namespace QtMoz {
@@ -61,6 +69,9 @@ Q_DECL_HIDDEN bool chromeSessionSetActive(
         const void *consumer, bool active);
 Q_DECL_HIDDEN bool chromeSessionSetFocused(
         const void *consumer, bool focused);
+Q_DECL_HIDDEN bool chromeSessionReceiveInputEvent(
+        const void *consumer,
+        const mozilla::embedlite::EmbedTouchInput &event);
 
 } // namespace QtMoz
 

@@ -141,4 +141,12 @@ bool chromeSessionSetFocused(const void *consumer, bool focused)
     return session && session->setFocused(focused);
 }
 
+bool chromeSessionReceiveInputEvent(
+        const void *consumer,
+        const mozilla::embedlite::EmbedTouchInput &event)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->receiveInputEvent(event);
+}
+
 } // namespace QtMoz

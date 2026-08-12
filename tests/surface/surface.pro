@@ -16,6 +16,7 @@ SOURCES += tst_qmozsurface.cpp \
 
 HEADERS += stubs/mozilla/embedlite/EmbedLiteApp.h \
            stubs/mozilla/embedlite/EmbedLiteChromeSession.h \
+           stubs/mozilla/embedlite/EmbedInputData.h \
            stubs/mozilla/embedlite/EmbedLiteWindow.h
 
 target.path = /opt/tests/qtmozembed
