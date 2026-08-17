@@ -53,6 +53,17 @@ struct QMozChromeTabSnapshot final
     qint64 total;
 };
 
+struct QMozChromeBeforeUnloadPrompt final
+{
+    quint64 requestId;
+    quint64 tabId;
+    quint64 persistentId;
+    QString title;
+    QString text;
+    QString leaveLabel;
+    QString stayLabel;
+};
+
 struct QMozChromeSessionCallbacks final
 {
     std::function<void(const char *, bool, bool)> locationChanged;
@@ -62,6 +73,8 @@ struct QMozChromeSessionCallbacks final
     std::function<void(const char16_t *)> titleChanged;
     std::function<void(quint64, quint64,
                        const QVector<QMozChromeTabSnapshot> &)> tabsChanged;
+    std::function<void(const QMozChromeBeforeUnloadPrompt &)>
+            beforeUnloadPrompt;
     std::function<void()> destroyed;
 };
 
@@ -91,6 +104,8 @@ public:
     virtual bool associateTab(quint64 tabId, quint64 persistentId) = 0;
     virtual bool selectTab(quint64 tabId) = 0;
     virtual bool closeTab(quint64 tabId) = 0;
+    virtual bool resolveBeforeUnloadPrompt(
+            quint64 requestId, quint64 tabId, bool permit) = 0;
 };
 
 namespace QtMoz {
@@ -126,6 +141,9 @@ Q_DECL_HIDDEN bool chromeSessionSelectTab(
         const void *consumer, quint64 tabId);
 Q_DECL_HIDDEN bool chromeSessionCloseTab(
         const void *consumer, quint64 tabId);
+Q_DECL_HIDDEN bool chromeSessionResolveBeforeUnloadPrompt(
+        const void *consumer, quint64 requestId, quint64 tabId,
+        bool permit);
 
 } // namespace QtMoz
 

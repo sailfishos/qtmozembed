@@ -292,6 +292,15 @@ public:
         return true;
     }
 
+    bool ResolveBeforeUnloadPrompt(
+            uint64_t requestId, uint64_t tabId, bool permit) override
+    {
+        lastBeforeUnloadRequestId = requestId;
+        lastBeforeUnloadTabId = tabId;
+        lastBeforeUnloadPermit = permit;
+        return true;
+    }
+
     void NotifyTabs()
     {
         if (!mListener) {
@@ -320,6 +329,18 @@ public:
         mListener->OnTabsChanged(5, 42, tabs, 2);
     }
 
+    void NotifyBeforeUnloadPrompt()
+    {
+        if (!mListener) {
+            return;
+        }
+        const EmbedLiteChromeBeforeUnloadPrompt prompt = {
+            12345678901234567ULL, 42, 77, u"Leave this page?",
+            u"Changes you made may not be saved.", u"Leave", u"Stay"
+        };
+        mListener->OnBeforeUnloadPrompt(prompt);
+    }
+
     void NotifyDestroyed()
     {
         EmbedLiteChromeTabSessionListener * const listener = mListener;
@@ -336,6 +357,9 @@ public:
     std::string lastURL;
     uint64_t lastTabId = 0;
     uint64_t lastPersistentId = 0;
+    uint64_t lastBeforeUnloadRequestId = 0;
+    uint64_t lastBeforeUnloadTabId = 0;
+    bool lastBeforeUnloadPermit = false;
     bool lastFromExternal = false;
     bool lastInBackground = false;
 
