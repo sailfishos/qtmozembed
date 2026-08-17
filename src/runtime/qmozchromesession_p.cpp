@@ -20,7 +20,13 @@ namespace {
 
 struct ChromeSessionRegistry
 {
-    QHash<const void *, QSharedPointer<QMozChromeSession>> sessions;
+    struct Entry {
+        QSharedPointer<QMozChromeSession> session;
+        quint64 generation;
+    };
+
+    QHash<const void *, Entry> sessions;
+    quint64 nextGeneration = 1;
 };
 
 Q_GLOBAL_STATIC(ChromeSessionRegistry, chromeSessionRegistry)
@@ -36,7 +42,7 @@ QSharedPointer<QMozChromeSession> chromeSession(const void *consumer)
 {
     assertOwnerThread();
     ChromeSessionRegistry * const registry = chromeSessionRegistry();
-    return registry && consumer ? registry->sessions.value(consumer)
+    return registry && consumer ? registry->sessions.value(consumer).session
                                 : QSharedPointer<QMozChromeSession>();
 }
 
@@ -62,20 +68,30 @@ bool attachChromeSession(const void *consumer, QMozWindow *window,
 
     QMozChromeSessionCallbacks registeredCallbacks = callbacks;
     const std::function<void()> destroyed = callbacks.destroyed;
-    registeredCallbacks.destroyed = [consumer, destroyed]() {
+    const quint64 generation = registry->nextGeneration++;
+    registeredCallbacks.destroyed = [consumer, generation, destroyed]() {
         assertOwnerThread();
         ChromeSessionRegistry * const registry = chromeSessionRegistry();
+        bool currentGeneration = false;
         if (registry) {
-            registry->sessions.take(consumer);
+            const auto it = registry->sessions.find(consumer);
+            if (it != registry->sessions.end()
+                    && it.value().generation == generation) {
+                registry->sessions.erase(it);
+                currentGeneration = true;
+            }
         }
-        if (destroyed) {
+        if (currentGeneration && destroyed) {
             destroyed();
         }
     };
 
-    registry->sessions.insert(consumer, session);
+    ChromeSessionRegistry::Entry entry;
+    entry.session = session;
+    entry.generation = generation;
+    registry->sessions.insert(consumer, entry);
     session->setCallbacks(registeredCallbacks);
-    return registry->sessions.value(consumer) == session;
+    return registry->sessions.value(consumer).session == session;
 }
 
 void detachChromeSession(const void *consumer)
@@ -86,7 +102,7 @@ void detachChromeSession(const void *consumer)
         return;
     }
     const QSharedPointer<QMozChromeSession> session =
-            registry->sessions.take(consumer);
+            registry->sessions.take(consumer).session;
     if (session) {
         session->clearCallbacks();
     }
@@ -147,6 +163,43 @@ bool chromeSessionReceiveInputEvent(
 {
     const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
     return session && session->receiveInputEvent(event);
+}
+
+bool chromeSessionRestoreTabs(
+        const void *consumer,
+        const QVector<QMozChromeRestoredTab> &tabs,
+        int selectedTabIndex)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->restoreTabs(tabs, selectedTabIndex);
+}
+
+bool chromeSessionNewTab(const void *consumer, const QString &url,
+                         quint64 persistentId, bool fromExternal,
+                         bool inBackground)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->newTab(url, persistentId, fromExternal,
+                                      inBackground);
+}
+
+bool chromeSessionAssociateTab(const void *consumer, quint64 tabId,
+                               quint64 persistentId)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->associateTab(tabId, persistentId);
+}
+
+bool chromeSessionSelectTab(const void *consumer, quint64 tabId)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->selectTab(tabId);
+}
+
+bool chromeSessionCloseTab(const void *consumer, quint64 tabId)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->closeTab(tabId);
 }
 
 } // namespace QtMoz

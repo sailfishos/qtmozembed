@@ -11,16 +11,47 @@
 
 #include <QtGlobal>
 
+#include <QString>
+#include <QVector>
+
 #include <functional>
 
 class QMozWindow;
-class QString;
-
 namespace mozilla {
 namespace embedlite {
 class EmbedTouchInput;
 }
 }
+
+struct QMozChromeHistoryEntry final
+{
+    QString location;
+    QString title;
+};
+
+struct QMozChromeRestoredTab final
+{
+    quint64 persistentId;
+    QVector<QMozChromeHistoryEntry> history;
+    int selectedHistoryIndex;
+};
+
+struct QMozChromeTabSnapshot final
+{
+    quint64 id;
+    quint64 persistentId;
+    quint64 locationRevision;
+    QString location;
+    QString title;
+    bool loading;
+    bool closing;
+    bool discarded;
+    bool canGoBack;
+    bool canGoForward;
+    int progress;
+    qint64 current;
+    qint64 total;
+};
 
 struct QMozChromeSessionCallbacks final
 {
@@ -29,6 +60,8 @@ struct QMozChromeSessionCallbacks final
     std::function<void()> loadFinished;
     std::function<void(int, qint64, qint64)> loadProgress;
     std::function<void(const char16_t *)> titleChanged;
+    std::function<void(quint64, quint64,
+                       const QVector<QMozChromeTabSnapshot> &)> tabsChanged;
     std::function<void()> destroyed;
 };
 
@@ -50,6 +83,14 @@ public:
     virtual bool setFocused(bool focused) = 0;
     virtual bool receiveInputEvent(
             const mozilla::embedlite::EmbedTouchInput &event) = 0;
+    virtual bool restoreTabs(
+            const QVector<QMozChromeRestoredTab> &tabs,
+            int selectedTabIndex) = 0;
+    virtual bool newTab(const QString &url, quint64 persistentId,
+                        bool fromExternal, bool inBackground) = 0;
+    virtual bool associateTab(quint64 tabId, quint64 persistentId) = 0;
+    virtual bool selectTab(quint64 tabId) = 0;
+    virtual bool closeTab(quint64 tabId) = 0;
 };
 
 namespace QtMoz {
@@ -72,6 +113,19 @@ Q_DECL_HIDDEN bool chromeSessionSetFocused(
 Q_DECL_HIDDEN bool chromeSessionReceiveInputEvent(
         const void *consumer,
         const mozilla::embedlite::EmbedTouchInput &event);
+Q_DECL_HIDDEN bool chromeSessionRestoreTabs(
+        const void *consumer,
+        const QVector<QMozChromeRestoredTab> &tabs,
+        int selectedTabIndex);
+Q_DECL_HIDDEN bool chromeSessionNewTab(
+        const void *consumer, const QString &url, quint64 persistentId,
+        bool fromExternal, bool inBackground);
+Q_DECL_HIDDEN bool chromeSessionAssociateTab(
+        const void *consumer, quint64 tabId, quint64 persistentId);
+Q_DECL_HIDDEN bool chromeSessionSelectTab(
+        const void *consumer, quint64 tabId);
+Q_DECL_HIDDEN bool chromeSessionCloseTab(
+        const void *consumer, quint64 tabId);
 
 } // namespace QtMoz
 

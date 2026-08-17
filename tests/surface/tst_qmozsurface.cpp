@@ -401,7 +401,7 @@ void testQueuedFrameSuppressedAfterStop()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200));
+            surface, QSize(100, 200), false);
     int readyCount = 0;
     int stoppedCount = 0;
     bool readyOnOwnerThread = false;
@@ -456,7 +456,7 @@ void testChromeWindowSelection()
             QtMoz::createEmbedLiteSurface(&app, &listener);
     const QByteArray initialUrl("https://example.com/chrome-smoke");
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200), initialUrl);
+            surface, QSize(100, 200), true, initialUrl);
 
     VERIFY(window == &app.window);
     VERIFY(app.createCount == 0);
@@ -473,6 +473,28 @@ void testChromeWindowSelection()
     surface.clear();
 }
 
+void testChromeTabWindowSelection()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200), true);
+
+    VERIFY(window == &app.window);
+    VERIFY(app.createCount == 0);
+    VERIFY(app.chromeCreateCount == 0);
+    VERIFY(app.chromeTabCreateCount == 1);
+    VERIFY(eventIndex(app.events, "chrome-tab-created") >= 0);
+    VERIFY(eventIndex(app.events, "listener-set") >= 0);
+
+    surface->requestDestroy();
+    VERIFY(app.destroyCount == 1);
+    surface->backendDestroyed();
+    surface.clear();
+}
+
 void testChromeSessionAdapter()
 {
     EmbedLiteApp app;
@@ -480,7 +502,7 @@ void testChromeSessionAdapter()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const nativeWindow = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200),
+            surface, QSize(100, 200), true,
             QByteArray("https://example.com/chrome-smoke"));
 
     VERIFY(nativeWindow == &app.window);
@@ -496,6 +518,10 @@ void testChromeSessionAdapter()
     bool started = false;
     bool finished = false;
     bool destroyed = false;
+    quint64 tabsRevision = 0;
+    quint64 selectedTabId = 0;
+    QVector<QMozChromeTabSnapshot> tabs;
+    int tabSnapshotCount = 0;
     QMozChromeSessionCallbacks callbacks;
     callbacks.locationChanged = [&](const char *value, bool canGoBack,
                                     bool canGoForward) {
@@ -511,6 +537,14 @@ void testChromeSessionAdapter()
         VERIFY(total == 10);
     };
     callbacks.titleChanged = [&](const char16_t *value) { title = value; };
+    callbacks.tabsChanged = [&](
+            quint64 revision, quint64 selected,
+            const QVector<QMozChromeTabSnapshot> &snapshot) {
+        ++tabSnapshotCount;
+        tabsRevision = revision;
+        selectedTabId = selected;
+        tabs = snapshot;
+    };
     callbacks.destroyed = [&]() { destroyed = true; };
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
     VERIFY(!QtMoz::attachChromeSession(&consumer, window, callbacks));
@@ -523,6 +557,52 @@ void testChromeSessionAdapter()
     VERIFY(progress == 42);
     VERIFY(started);
     VERIFY(finished);
+
+    app.window.ChromeTabSession().NotifyTabs();
+    VERIFY(tabsRevision == 3);
+    VERIFY(selectedTabId == 42);
+    VERIFY(tabs.count() == 1);
+    VERIFY(tabs.at(0).id == 42);
+    VERIFY(tabs.at(0).persistentId == 77);
+    VERIFY(tabs.at(0).location == QStringLiteral(
+            "https://example.com/tab"));
+    VERIFY(tabs.at(0).title == QStringLiteral("Tab title"));
+    VERIFY(tabs.at(0).loading);
+    VERIFY(!tabs.at(0).closing);
+    VERIFY(!tabs.at(0).discarded);
+    VERIFY(tabSnapshotCount == 1);
+    app.window.ChromeTabSession().NotifyInvalidTabs();
+    VERIFY(tabSnapshotCount == 1);
+    VERIFY(tabsRevision == 3);
+
+    QMozChromeHistoryEntry historyEntry;
+    historyEntry.location = QStringLiteral("https://example.com/restored");
+    historyEntry.title = QStringLiteral("Restored title");
+    QMozChromeRestoredTab restoredTab;
+    restoredTab.persistentId = 91;
+    restoredTab.history.append(historyEntry);
+    restoredTab.selectedHistoryIndex = 0;
+    QVector<QMozChromeRestoredTab> restoredTabs;
+    restoredTabs.append(restoredTab);
+    VERIFY(QtMoz::chromeSessionRestoreTabs(&consumer, restoredTabs, 0));
+    VERIFY(app.window.ChromeTabSession().lastRestoreCount == 1);
+    VERIFY(app.window.ChromeTabSession().lastRestoreSelectedIndex == 0);
+    VERIFY(app.window.ChromeTabSession().lastRestorePersistentId == 91);
+    VERIFY(app.window.ChromeTabSession().lastRestoreLocation ==
+           "https://example.com/restored");
+    VERIFY(QtMoz::chromeSessionNewTab(
+            &consumer, QStringLiteral("https://example.com/new"),
+            92, true, true));
+    VERIFY(app.window.ChromeTabSession().lastURL ==
+           "https://example.com/new");
+    VERIFY(app.window.ChromeTabSession().lastPersistentId == 92);
+    VERIFY(app.window.ChromeTabSession().lastFromExternal);
+    VERIFY(app.window.ChromeTabSession().lastInBackground);
+    VERIFY(QtMoz::chromeSessionAssociateTab(&consumer, 42, 93));
+    VERIFY(app.window.ChromeTabSession().lastTabId == 42);
+    VERIFY(app.window.ChromeTabSession().lastPersistentId == 93);
+    VERIFY(QtMoz::chromeSessionSelectTab(&consumer, 42));
+    VERIFY(QtMoz::chromeSessionCloseTab(&consumer, 42));
 
     VERIFY(QtMoz::chromeSessionLoadURL(
             &consumer, QStringLiteral("https://example.com/next"), true));
@@ -554,6 +634,8 @@ void testChromeSessionAdapter()
     VERIFY(app.window.ChromeSession().lastTouchPressure == 0.5f);
 
     app.window.ChromeSession().NotifyDestroyed();
+    VERIFY(!destroyed);
+    app.window.ChromeTabSession().NotifyDestroyed();
     VERIFY(destroyed);
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
@@ -746,7 +828,8 @@ void testChromeWindowFailureMarshalledToOwnerThread()
         failedOnOwnerThread = QThread::currentThread() == ownerThread;
     });
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200), QByteArray("https://example.com"));
+            surface, QSize(100, 200), true,
+            QByteArray("https://example.com"));
 
     VERIFY(window == &app.window);
     std::thread failureThread([&]() {
@@ -769,7 +852,7 @@ void testLegacyWindowSelection()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200));
+            surface, QSize(100, 200), false);
 
     VERIFY(window == &app.window);
     VERIFY(app.createCount == 1);
@@ -792,7 +875,7 @@ void testWindowListenerForwarding()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200));
+            surface, QSize(100, 200), false);
 
     VERIFY(window == &app.window);
     VERIFY(app.windowListener != &listener);
@@ -846,7 +929,7 @@ void testDestroyWaitsForFrameReleaseAndStop()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200));
+            surface, QSize(100, 200), false);
     QMozSurfaceFrameToken readyToken = { 0, 0 };
 
     VERIFY(window == &app.window);
@@ -903,7 +986,7 @@ void testFailedDisablePreservesQueuedFrame()
     QSharedPointer<QMozSurface> surface =
             QtMoz::createEmbedLiteSurface(&app, &listener);
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
-            surface, QSize(100, 200));
+            surface, QSize(100, 200), false);
     QMozSurfaceFrameToken readyToken = { 0, 0 };
 
     VERIFY(surface->setPlatformFrameCallbacks(
@@ -951,6 +1034,7 @@ int main(int argc, char **argv)
     testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
     testChromeWindowSelection();
+    testChromeTabWindowSelection();
     testChromeSessionAdapter();
     testChromeWindowShutdownBarrier();
     testChromeWindowShutdownSynchronousRelease();

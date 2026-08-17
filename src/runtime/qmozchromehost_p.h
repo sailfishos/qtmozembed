@@ -15,11 +15,14 @@
 
 namespace QtMoz {
 
-// Private opt-in used while the normal Gecko chrome-window backend is being
-// brought up alongside the legacy EmbedLiteView path. Keeping the selection
-// on QObject avoids changing any installed class layout.
+// Private opt-in for the normal Gecko chrome-window backend. Keeping hosted
+// selection separate from the optional initial URL permits a genuine
+// zero-tab window, while QObject properties avoid changing installed class
+// layout.
 static const char ChromeInitialUrlProperty[] =
         "_qmozChromeInitialUrl";
+static const char ChromeHostedProperty[] =
+        "_qmozChromeHosted";
 static const char ChromeInitializationFailedProperty[] =
         "_qmozChromeInitializationFailed";
 static const char ChromeInitializedProperty[] =
@@ -36,13 +39,23 @@ inline QByteArray chromeInitialUrl(const QObject *object)
 
 inline bool isChromeHosted(const QObject *object)
 {
-    return !chromeInitialUrl(object).isEmpty();
+    return object && object->property(ChromeHostedProperty).toBool();
+}
+
+inline void setChromeHosted(QObject *object, bool hosted)
+{
+    if (object) {
+        object->setProperty(ChromeHostedProperty, hosted);
+    }
 }
 
 inline void setChromeInitialUrl(QObject *object, const QByteArray &url)
 {
     if (object) {
         object->setProperty(ChromeInitialUrlProperty, url);
+        if (!url.isEmpty()) {
+            setChromeHosted(object, true);
+        }
     }
 }
 

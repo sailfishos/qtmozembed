@@ -10,6 +10,7 @@
 #define TEST_EMBEDLITEWINDOW_H
 
 #include "EmbedLiteChromeSession.h"
+#include "EmbedLiteChromeTabSession.h"
 #include "EmbedInputData.h"
 
 #include <cstdint>
@@ -234,12 +235,122 @@ private:
     EmbedLiteChromeSessionListener *mListener;
 };
 
+class TestChromeTabSession final : public EmbedLiteChromeTabSession
+{
+public:
+    explicit TestChromeTabSession(std::vector<std::string> *events)
+        : mEvents(events)
+        , mListener(nullptr)
+    {
+    }
+
+    void SetTabListener(
+            EmbedLiteChromeTabSessionListener *listener) override
+    {
+        mListener = listener;
+        mEvents->push_back(listener ? "tab-listener-set"
+                                    : "tab-listener-cleared");
+    }
+
+    bool RestoreTabs(const EmbedLiteChromeRestoredTab *tabs,
+                     uint32_t tabCount, int32_t selectedTabIndex) override
+    {
+        lastRestoreCount = tabCount;
+        lastRestoreSelectedIndex = selectedTabIndex;
+        lastRestorePersistentId = tabCount ? tabs[0].persistentId : 0;
+        lastRestoreLocation = tabCount && tabs[0].historyCount
+                ? tabs[0].history[0].location : "";
+        return true;
+    }
+
+    bool NewTab(const char *url, uint64_t persistentId,
+                bool fromExternal, bool inBackground) override
+    {
+        lastURL = url ? url : "";
+        lastPersistentId = persistentId;
+        lastFromExternal = fromExternal;
+        lastInBackground = inBackground;
+        return true;
+    }
+
+    bool AssociateTab(uint64_t tabId, uint64_t persistentId) override
+    {
+        lastTabId = tabId;
+        lastPersistentId = persistentId;
+        return true;
+    }
+
+    bool SelectTab(uint64_t tabId) override
+    {
+        lastTabId = tabId;
+        return true;
+    }
+
+    bool CloseTab(uint64_t tabId) override
+    {
+        lastTabId = tabId;
+        return true;
+    }
+
+    void NotifyTabs()
+    {
+        if (!mListener) {
+            return;
+        }
+        const EmbedLiteChromeTabSnapshot tab = {
+            42, 77, 9, "https://example.com/tab", u"Tab title",
+            true, false, false, true, false, 25, 1, 4
+        };
+        mListener->OnTabsChanged(3, tab.id, &tab, 1);
+    }
+
+    void NotifyInvalidTabs()
+    {
+        if (!mListener) {
+            return;
+        }
+        mListener->OnTabsChanged(4, 42, nullptr, 1);
+
+        const EmbedLiteChromeTabSnapshot tabs[] = {
+            { 42, 77, 9, "https://example.com/one", u"One",
+              false, false, false, false, false, 100, 1, 1 },
+            { 42, 78, 10, "https://example.com/two", u"Two",
+              false, false, false, false, false, 100, 1, 1 }
+        };
+        mListener->OnTabsChanged(5, 42, tabs, 2);
+    }
+
+    void NotifyDestroyed()
+    {
+        EmbedLiteChromeTabSessionListener * const listener = mListener;
+        mListener = nullptr;
+        if (listener) {
+            listener->ChromeTabSessionDestroyed();
+        }
+    }
+
+    uint32_t lastRestoreCount = 0;
+    int32_t lastRestoreSelectedIndex = -1;
+    uint64_t lastRestorePersistentId = 0;
+    std::string lastRestoreLocation;
+    std::string lastURL;
+    uint64_t lastTabId = 0;
+    uint64_t lastPersistentId = 0;
+    bool lastFromExternal = false;
+    bool lastInBackground = false;
+
+private:
+    std::vector<std::string> *mEvents;
+    EmbedLiteChromeTabSessionListener *mListener;
+};
+
 class EmbedLiteWindow
 {
 public:
     explicit EmbedLiteWindow(std::vector<std::string> *events)
         : mEvents(events)
         , mChromeSession(events)
+        , mChromeTabSession(events)
         , mUniqueID(nextUniqueID())
         , mChromeHosted(false)
         , mFrameListener(nullptr)
@@ -264,6 +375,11 @@ public:
         return mChromeHosted ? &mChromeSession : nullptr;
     }
     TestChromeSession &ChromeSession() { return mChromeSession; }
+    EmbedLiteChromeTabSession *GetChromeTabSession()
+    {
+        return mChromeHosted ? &mChromeTabSession : nullptr;
+    }
+    TestChromeTabSession &ChromeTabSession() { return mChromeTabSession; }
 
     bool WithPlatformImage(const PlatformImageCallback &)
     {
@@ -349,6 +465,7 @@ private:
 
     std::vector<std::string> *mEvents;
     TestChromeSession mChromeSession;
+    TestChromeTabSession mChromeTabSession;
     uint32_t mUniqueID;
     bool mChromeHosted;
     EmbedLitePlatformFrameListener *mFrameListener;

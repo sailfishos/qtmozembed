@@ -21,6 +21,7 @@ public:
         : window(&events)
         , createCount(0)
         , chromeCreateCount(0)
+        , chromeTabCreateCount(0)
         , destroyCount(0)
         , windowListener(nullptr)
     {
@@ -48,6 +49,17 @@ public:
         return &window;
     }
 
+    EmbedLiteWindow *CreateChromeTabWindow(
+            int, int, EmbedLiteWindowListener *listener)
+    {
+        ++chromeTabCreateCount;
+        window.SetChromeHosted(true);
+        windowListener = listener;
+        chromeInitialUrl.clear();
+        events.push_back("chrome-tab-created");
+        return &window;
+    }
+
     void DestroyWindow(EmbedLiteWindow *destroyedWindow)
     {
         if (destroyedWindow == &window) {
@@ -70,6 +82,7 @@ public:
     EmbedLiteWindow window;
     int createCount;
     int chromeCreateCount;
+    int chromeTabCreateCount;
     int destroyCount;
     EmbedLiteWindowListener *windowListener;
     std::string chromeInitialUrl;
