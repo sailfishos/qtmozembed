@@ -12,6 +12,7 @@
 
 #include <QMatrix>
 #include <QMutex>
+#include <QVariantList>
 #include <QtQuick/QQuickItem>
 #include <QtGui/QOpenGLShaderProgram>
 #include "qmozview_defined_wrapper.h"
@@ -21,6 +22,7 @@ class QSGTexture;
 QT_END_NAMESPACE
 
 class QMozViewPrivate;
+class QAbstractItemModel;
 class QMozWindow;
 class QMozSecurity;
 
@@ -34,6 +36,9 @@ class QuickMozView : public QQuickItem
     Q_PROPERTY(Qt::ScreenOrientation orientation READ orientation WRITE setOrientation NOTIFY orientationChanged RESET resetOrientation FINAL)
     Q_PROPERTY(qreal viewportWidth READ viewportWidth WRITE setViewportWidth NOTIFY viewportWidthChanged RESET resetViewportWidth)
     Q_PROPERTY(qreal viewportHeight READ viewportHeight WRITE setViewportHeight NOTIFY viewportHeightChanged RESET resetViewportHeight)
+    Q_PROPERTY(QAbstractItemModel *tabModel READ tabModel CONSTANT FINAL)
+    Q_PROPERTY(QString selectedTabId READ selectedTabId NOTIFY selectedTabChanged FINAL)
+    Q_PROPERTY(int selectedTabIndex READ selectedTabIndex NOTIFY selectedTabChanged FINAL)
 
     Q_MOZ_VIEW_PROPERTIES
 
@@ -53,6 +58,19 @@ public:
     void setHidden(bool);
 
     bool loaded() const;
+
+    QAbstractItemModel *tabModel() const;
+    QString selectedTabId() const;
+    int selectedTabIndex() const;
+    Q_INVOKABLE bool restoreTabs(const QVariantList &tabs,
+                                 int selectedTabIndex);
+    Q_INVOKABLE bool newTab(const QString &url,
+                            const QString &persistentId,
+                            bool fromExternal, bool inBackground);
+    Q_INVOKABLE bool associateTab(const QString &tabId,
+                                  const QString &persistentId);
+    Q_INVOKABLE bool selectTab(const QString &tabId);
+    Q_INVOKABLE bool closeTab(const QString &tabId);
 
     Qt::ScreenOrientation orientation() const;
     void setOrientation(Qt::ScreenOrientation orientation);
@@ -82,6 +100,7 @@ Q_SIGNALS:
     void orientationChanged();
     void viewportWidthChanged();
     void viewportHeightChanged();
+    void selectedTabChanged();
 
     Q_MOZ_VIEW_SIGNALS
 

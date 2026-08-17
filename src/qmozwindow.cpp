@@ -69,7 +69,8 @@ void QMozWindow::reserve()
         }
 
         d->mWindow = QtMoz::reserveEmbedLiteSurface(
-                surface, d->mSize, QtMoz::chromeInitialUrl(this));
+                surface, d->mSize, QtMoz::isChromeHosted(this),
+                QtMoz::chromeInitialUrl(this));
         if (!d->mWindow) {
             QtMoz::takeWindowFrameStream(this);
             QtMoz::takeWindowSurface(this);

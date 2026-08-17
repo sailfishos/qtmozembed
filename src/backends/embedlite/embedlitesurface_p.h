@@ -36,6 +36,7 @@ Q_DECL_HIDDEN QSharedPointer<QMozSurface> createEmbedLiteSurface(
                 EmbedLiteChromeWindowFailedCallback());
 Q_DECL_HIDDEN mozilla::embedlite::EmbedLiteWindow *reserveEmbedLiteSurface(
         const QSharedPointer<QMozSurface> &surface, const QSize &size,
+        bool chromeHosted,
         const QByteArray &chromeInitialUrl = QByteArray());
 Q_DECL_HIDDEN bool withEmbedLiteWindow(
         const QSharedPointer<QMozSurface> &surface,

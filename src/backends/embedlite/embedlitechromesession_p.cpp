@@ -12,9 +12,12 @@
 
 #include <QByteArray>
 #include <QEnableSharedFromThis>
+#include <QSet>
 #include <QString>
+#include <QVector>
 
 #include <mozilla/embedlite/EmbedLiteChromeSession.h>
+#include <mozilla/embedlite/EmbedLiteChromeTabSession.h>
 #include <mozilla/embedlite/EmbedInputData.h>
 #include <mozilla/embedlite/EmbedLiteWindow.h>
 
@@ -25,20 +28,26 @@ namespace {
 class EmbedLiteChromeSessionAdapter final
     : public QMozChromeSession
     , public EmbedLiteChromeSessionListener
+    , public EmbedLiteChromeTabSessionListener
     , public QEnableSharedFromThis<EmbedLiteChromeSessionAdapter>
 {
 public:
     explicit EmbedLiteChromeSessionAdapter(
-            EmbedLiteChromeSession *session, quint32 uniqueId)
-        : mSession(session)
+            EmbedLiteChromeSession *legacySession,
+            EmbedLiteChromeTabSession *tabSession, quint32 uniqueId)
+        : mLegacySession(legacySession)
+        , mTabSession(tabSession)
         , mUniqueId(uniqueId)
     {
     }
 
     ~EmbedLiteChromeSessionAdapter() override
     {
-        if (mSession) {
-            mSession->SetListener(nullptr);
+        if (mLegacySession) {
+            mLegacySession->SetListener(nullptr);
+        }
+        if (mTabSession) {
+            mTabSession->SetTabListener(nullptr);
         }
     }
 
@@ -56,8 +65,11 @@ public:
             return;
         }
         mCallbacks = callbacks;
-        if (mSession) {
-            mSession->SetListener(this);
+        if (mLegacySession) {
+            mLegacySession->SetListener(this);
+        }
+        if (mTabSession) {
+            mTabSession->SetTabListener(this);
         }
     }
 
@@ -68,8 +80,11 @@ public:
         if (self.isNull()) {
             return;
         }
-        if (mSession) {
-            mSession->SetListener(nullptr);
+        if (mLegacySession) {
+            mLegacySession->SetListener(nullptr);
+        }
+        if (mTabSession) {
+            mTabSession->SetTabListener(nullptr);
         }
         mCallbacks = QMozChromeSessionCallbacks();
     }
@@ -77,43 +92,110 @@ public:
     bool loadURL(const QString &url, bool fromExternal) override
     {
         const QByteArray encoded = url.toUtf8();
-        return mSession
-                && mSession->LoadURL(encoded.constData(), fromExternal);
+        return mLegacySession
+                && mLegacySession->LoadURL(encoded.constData(), fromExternal);
     }
 
     bool goBack() override
     {
-        return mSession && mSession->GoBack(false, true);
+        return mLegacySession && mLegacySession->GoBack(false, true);
     }
 
     bool goForward() override
     {
-        return mSession && mSession->GoForward(false, true);
+        return mLegacySession && mLegacySession->GoForward(false, true);
     }
 
     bool stop() override
     {
-        return mSession && mSession->StopLoad();
+        return mLegacySession && mLegacySession->StopLoad();
     }
 
     bool reload(bool hard) override
     {
-        return mSession && mSession->Reload(hard);
+        return mLegacySession && mLegacySession->Reload(hard);
     }
 
     bool setActive(bool active) override
     {
-        return mSession && mSession->SetActive(active);
+        return mLegacySession && mLegacySession->SetActive(active);
     }
 
     bool setFocused(bool focused) override
     {
-        return mSession && mSession->SetFocused(focused);
+        return mLegacySession && mLegacySession->SetFocused(focused);
     }
 
     bool receiveInputEvent(const EmbedTouchInput &event) override
     {
-        return mSession && mSession->ReceiveInputEvent(event);
+        return mLegacySession && mLegacySession->ReceiveInputEvent(event);
+    }
+
+    bool restoreTabs(const QVector<QMozChromeRestoredTab> &tabs,
+                     int selectedTabIndex) override
+    {
+        if (!mTabSession) {
+            return false;
+        }
+
+        QVector<QVector<QByteArray> > locations(tabs.count());
+        QVector<QVector<QString> > titles(tabs.count());
+        QVector<QVector<EmbedLiteChromeHistoryEntry> > history(tabs.count());
+        QVector<EmbedLiteChromeRestoredTab> restored(tabs.count());
+        for (int tabIndex = 0; tabIndex < tabs.count(); ++tabIndex) {
+            const QMozChromeRestoredTab &sourceTab = tabs.at(tabIndex);
+            locations[tabIndex].resize(sourceTab.history.count());
+            titles[tabIndex].resize(sourceTab.history.count());
+            history[tabIndex].resize(sourceTab.history.count());
+            for (int historyIndex = 0;
+                    historyIndex < sourceTab.history.count(); ++historyIndex) {
+                const QMozChromeHistoryEntry &sourceEntry =
+                        sourceTab.history.at(historyIndex);
+                locations[tabIndex][historyIndex] =
+                        sourceEntry.location.toUtf8();
+                titles[tabIndex][historyIndex] = sourceEntry.title;
+                EmbedLiteChromeHistoryEntry &entry =
+                        history[tabIndex][historyIndex];
+                entry.location = locations[tabIndex][historyIndex].constData();
+                entry.title = reinterpret_cast<const char16_t *>(
+                        titles[tabIndex][historyIndex].utf16());
+            }
+
+            EmbedLiteChromeRestoredTab &targetTab = restored[tabIndex];
+            targetTab.persistentId = sourceTab.persistentId;
+            targetTab.history = history[tabIndex].constData();
+            targetTab.historyCount = history[tabIndex].count();
+            targetTab.selectedHistoryIndex =
+                    sourceTab.selectedHistoryIndex;
+        }
+
+        return mTabSession->RestoreTabs(restored.constData(), restored.count(),
+                                        selectedTabIndex);
+    }
+
+    bool newTab(const QString &url, quint64 persistentId,
+                bool fromExternal, bool inBackground) override
+    {
+        const QByteArray encoded = url.toUtf8();
+        return mTabSession
+                && mTabSession->NewTab(encoded.constData(), persistentId,
+                                       fromExternal, inBackground);
+    }
+
+    bool associateTab(quint64 tabId, quint64 persistentId) override
+    {
+        return mTabSession
+                && mTabSession->AssociateTab(tabId, persistentId);
+    }
+
+    bool selectTab(quint64 tabId) override
+    {
+        return mTabSession && mTabSession->SelectTab(tabId);
+    }
+
+    bool closeTab(quint64 tabId) override
+    {
+        return mTabSession && mTabSession->CloseTab(tabId);
     }
 
     void OnLocationChanged(const char *location, bool canGoBack,
@@ -183,6 +265,72 @@ public:
         }
     }
 
+    void OnTabsChanged(
+            uint64_t revision, uint64_t selectedTabId,
+            const EmbedLiteChromeTabSnapshot *tabs,
+            uint32_t tabCount) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull()) {
+            return;
+        }
+
+        if (!revision || (tabCount && !tabs)
+                || (!tabCount && selectedTabId)
+                || (tabCount && !selectedTabId)) {
+            return;
+        }
+
+        QVector<QMozChromeTabSnapshot> snapshot;
+        snapshot.reserve(tabCount);
+        QSet<quint64> runtimeIds;
+        QSet<quint64> persistentIds;
+        bool selectedFound = false;
+        for (uint32_t i = 0; i < tabCount; ++i) {
+            const EmbedLiteChromeTabSnapshot &source = tabs[i];
+            if (!source.id || runtimeIds.contains(source.id)
+                    || (source.persistentId
+                        && persistentIds.contains(source.persistentId))) {
+                return;
+            }
+            runtimeIds.insert(source.id);
+            if (source.persistentId) {
+                persistentIds.insert(source.persistentId);
+            }
+            selectedFound |= source.id == selectedTabId;
+
+            QMozChromeTabSnapshot target;
+            target.id = source.id;
+            target.persistentId = source.persistentId;
+            target.locationRevision = source.locationRevision;
+            target.location = QString::fromUtf8(
+                    source.location ? source.location : "");
+            target.title = source.title
+                    ? QString::fromUtf16(
+                        reinterpret_cast<const ushort *>(source.title))
+                    : QString();
+            target.loading = source.loading;
+            target.closing = source.closing;
+            target.discarded = source.discarded;
+            target.canGoBack = source.canGoBack;
+            target.canGoForward = source.canGoForward;
+            target.progress = source.progress;
+            target.current = source.current;
+            target.total = source.total;
+            snapshot.append(target);
+        }
+
+        if (tabCount && !selectedFound) {
+            return;
+        }
+
+        const auto callback = mCallbacks.tabsChanged;
+        if (callback) {
+            callback(revision, selectedTabId, snapshot);
+        }
+    }
+
     void ChromeSessionDestroyed() override
     {
         const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
@@ -190,7 +338,27 @@ public:
         if (self.isNull()) {
             return;
         }
-        mSession = nullptr;
+        mLegacySession = nullptr;
+        notifyDestroyedIfComplete();
+    }
+
+    void ChromeTabSessionDestroyed() override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull()) {
+            return;
+        }
+        mTabSession = nullptr;
+        notifyDestroyedIfComplete();
+    }
+
+private:
+    void notifyDestroyedIfComplete()
+    {
+        if (mLegacySession || mTabSession) {
+            return;
+        }
         const auto callback = mCallbacks.destroyed;
         mCallbacks = QMozChromeSessionCallbacks();
         if (callback) {
@@ -198,8 +366,8 @@ public:
         }
     }
 
-private:
-    EmbedLiteChromeSession *mSession;
+    EmbedLiteChromeSession *mLegacySession;
+    EmbedLiteChromeTabSession *mTabSession;
     const quint32 mUniqueId;
     QMozChromeSessionCallbacks mCallbacks;
 };
@@ -211,17 +379,20 @@ namespace QtMoz {
 QSharedPointer<QMozChromeSession> createEmbedLiteChromeSession(
         const QSharedPointer<QMozSurface> &surface)
 {
-    EmbedLiteChromeSession *session = nullptr;
+    EmbedLiteChromeSession *legacySession = nullptr;
+    EmbedLiteChromeTabSession *tabSession = nullptr;
     quint32 uniqueId = 0;
     if (!withEmbedLiteWindow(surface, [&](EmbedLiteWindow *window) {
-        session = window->GetChromeSession();
+        legacySession = window->GetChromeSession();
+        tabSession = window->GetChromeTabSession();
         uniqueId = window->GetUniqueID();
-    }) || !session || uniqueId == 0) {
+    }) || !legacySession || !tabSession || uniqueId == 0) {
         return QSharedPointer<QMozChromeSession>();
     }
 
     const QSharedPointer<EmbedLiteChromeSessionAdapter> adapter(
-            new EmbedLiteChromeSessionAdapter(session, uniqueId));
+            new EmbedLiteChromeSessionAdapter(
+                legacySession, tabSession, uniqueId));
     return adapter;
 }
 

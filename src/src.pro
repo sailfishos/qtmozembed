@@ -39,6 +39,7 @@ SOURCES += qmozcontext.cpp \
            runtime/qmozframestream_p.cpp \
            runtime/qmozruntime_p.cpp \
            runtime/qmozsurface_p.cpp \
+           runtime/qmoztabmodel_p.cpp \
            runtime/qmoztexturelease_p.cpp \
            backends/embedlite/embedlitechromesession_p.cpp \
            backends/embedlite/embedlitesurface_p.cpp
@@ -67,6 +68,7 @@ HEADERS += qmozcontext.h \
            runtime/qmozframestream_p.h \
            runtime/qmozruntime_p.h \
            runtime/qmozsurface_p.h \
+           runtime/qmoztabmodel_p.h \
            runtime/qmoztexturelease_p.h \
            backends/embedlite/embedlitechromesession_p.h \
            backends/embedlite/embedlitesurface_p.h
