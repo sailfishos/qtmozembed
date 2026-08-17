@@ -202,4 +202,13 @@ bool chromeSessionCloseTab(const void *consumer, quint64 tabId)
     return session && session->closeTab(tabId);
 }
 
+bool chromeSessionResolveBeforeUnloadPrompt(
+        const void *consumer, quint64 requestId, quint64 tabId,
+        bool permit)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->resolveBeforeUnloadPrompt(
+            requestId, tabId, permit);
+}
+
 } // namespace QtMoz

@@ -198,6 +198,14 @@ public:
         return mTabSession && mTabSession->CloseTab(tabId);
     }
 
+    bool resolveBeforeUnloadPrompt(
+            quint64 requestId, quint64 tabId, bool permit) override
+    {
+        return mTabSession
+                && mTabSession->ResolveBeforeUnloadPrompt(
+                    requestId, tabId, permit);
+    }
+
     void OnLocationChanged(const char *location, bool canGoBack,
                            bool canGoForward) override
     {
@@ -328,6 +336,42 @@ public:
         const auto callback = mCallbacks.tabsChanged;
         if (callback) {
             callback(revision, selectedTabId, snapshot);
+        }
+    }
+
+    void OnBeforeUnloadPrompt(
+            const EmbedLiteChromeBeforeUnloadPrompt &prompt) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull() || !prompt.requestId || !prompt.tabId) {
+            return;
+        }
+
+        QMozChromeBeforeUnloadPrompt copied;
+        copied.requestId = prompt.requestId;
+        copied.tabId = prompt.tabId;
+        copied.persistentId = prompt.persistentId;
+        copied.title = prompt.title
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(prompt.title))
+                : QString();
+        copied.text = prompt.text
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(prompt.text))
+                : QString();
+        copied.leaveLabel = prompt.leaveLabel
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(prompt.leaveLabel))
+                : QString();
+        copied.stayLabel = prompt.stayLabel
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(prompt.stayLabel))
+                : QString();
+
+        const auto callback = mCallbacks.beforeUnloadPrompt;
+        if (callback) {
+            callback(copied);
         }
     }
 

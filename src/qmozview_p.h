@@ -164,6 +164,8 @@ public:
     void updateChromeTabs(
             quint64 revision, quint64 selectedTabId,
             const QVector<QMozChromeTabSnapshot> &tabs);
+    void showChromeBeforeUnloadPrompt(
+            const QMozChromeBeforeUnloadPrompt &prompt);
     void clearChromeTabs();
 
     void setParentId(unsigned parentId);

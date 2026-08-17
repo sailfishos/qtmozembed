@@ -67,6 +67,8 @@ using namespace mozilla::embedlite;
 #define CONTENT_LOADED "chrome:contentloaded"
 #define RUN_JAVASCRIPT "embedui:runjavascript"
 #define RUN_JAVASCRIPT_REPLY "embed:runjavascript"
+#define CONFIRM "embed:confirm"
+#define CONFIRM_RESPONSE "confirmresponse"
 #define FORMASSIST_RESULT "FormAssist:AutoCompleteResult"
 #define FORMASSIST_HIDE "FormAssist:Hide"
 #define INPUTMETHOD_SET_INPUT_CONTEXT "InputMethodHandler:SetInputContext"
@@ -98,6 +100,12 @@ static QMozChromeSessionCallbacks chromeSessionCallbacks(
             const QVector<QMozChromeTabSnapshot> &tabs) {
         if (guardedView) {
             guardedView->updateChromeTabs(revision, selectedTabId, tabs);
+        }
+    };
+    callbacks.beforeUnloadPrompt = [guardedView](
+            const QMozChromeBeforeUnloadPrompt &prompt) {
+        if (guardedView) {
+            guardedView->showChromeBeforeUnloadPrompt(prompt);
         }
     };
     callbacks.destroyed = [guardedView]() {
@@ -482,6 +490,33 @@ void QMozViewPrivate::updateChromeTabs(
         mIsLoading = loading;
         mViewIface->loadingChanged();
     }
+}
+
+void QMozViewPrivate::showChromeBeforeUnloadPrompt(
+        const QMozChromeBeforeUnloadPrompt &prompt)
+{
+    const quint32 winId = QtMoz::chromeSessionUniqueId(this);
+    if (!mViewIface || !winId) {
+        return;
+    }
+
+    QVariantList buttons;
+    buttons.append(prompt.leaveLabel);
+    buttons.append(prompt.stayLabel);
+
+    QVariantMap data;
+    data.insert(QStringLiteral("winId"), winId);
+    data.insert(QStringLiteral("requestId"),
+                QString::number(prompt.requestId));
+    data.insert(QStringLiteral("tabId"), QString::number(prompt.tabId));
+    data.insert(QStringLiteral("persistentId"),
+                QString::number(prompt.persistentId));
+    data.insert(QStringLiteral("title"), prompt.title);
+    data.insert(QStringLiteral("text"), prompt.text);
+    data.insert(QStringLiteral("buttons"), buttons);
+    data.insert(QStringLiteral("inputs"), QVariantList());
+    data.insert(QStringLiteral("inPermitUnload"), true);
+    mViewIface->recvAsyncMessage(QLatin1String(CONFIRM), data);
 }
 
 void QMozViewPrivate::clearChromeTabs()
@@ -1214,6 +1249,31 @@ void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &v
 
     if (message == QLatin1String(RUN_JAVASCRIPT)) {
         qmlInfo(q) << "Error: trying to send reserved message:" << message;
+        return;
+    }
+
+    if (message == QLatin1String(CONFIRM_RESPONSE)
+            && QtMoz::isChromeHosted(mMozWindow.data())) {
+        QVariant responseValue = value;
+        if (value.userType() == QMetaType::type("QJSValue")) {
+            responseValue = qvariant_cast<QJSValue>(value).toVariant();
+        }
+        const QVariantMap response = responseValue.toMap();
+        const QVariant requestValue = response.value(
+                QStringLiteral("requestId"));
+        const QVariant tabValue = response.value(QStringLiteral("tabId"));
+        const QVariant acceptedValue = response.value(
+                QStringLiteral("accepted"));
+        quint64 requestId = 0;
+        quint64 tabId = 0;
+        if (requestValue.type() == QVariant::String
+                && tabValue.type() == QVariant::String
+                && acceptedValue.type() == QVariant::Bool
+                && parseDecimalId(requestValue.toString(), false, &requestId)
+                && parseDecimalId(tabValue.toString(), false, &tabId)) {
+            QtMoz::chromeSessionResolveBeforeUnloadPrompt(
+                    this, requestId, tabId, acceptedValue.toBool());
+        }
         return;
     }
 
