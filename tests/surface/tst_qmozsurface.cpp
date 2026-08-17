@@ -522,6 +522,8 @@ void testChromeSessionAdapter()
     quint64 selectedTabId = 0;
     QVector<QMozChromeTabSnapshot> tabs;
     int tabSnapshotCount = 0;
+    QMozChromeBeforeUnloadPrompt beforeUnloadPrompt;
+    int beforeUnloadPromptCount = 0;
     QMozChromeSessionCallbacks callbacks;
     callbacks.locationChanged = [&](const char *value, bool canGoBack,
                                     bool canGoForward) {
@@ -544,6 +546,11 @@ void testChromeSessionAdapter()
         tabsRevision = revision;
         selectedTabId = selected;
         tabs = snapshot;
+    };
+    callbacks.beforeUnloadPrompt = [&](
+            const QMozChromeBeforeUnloadPrompt &prompt) {
+        ++beforeUnloadPromptCount;
+        beforeUnloadPrompt = prompt;
     };
     callbacks.destroyed = [&]() { destroyed = true; };
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
@@ -575,6 +582,17 @@ void testChromeSessionAdapter()
     VERIFY(tabSnapshotCount == 1);
     VERIFY(tabsRevision == 3);
 
+    app.window.ChromeTabSession().NotifyBeforeUnloadPrompt();
+    VERIFY(beforeUnloadPromptCount == 1);
+    VERIFY(beforeUnloadPrompt.requestId == 12345678901234567ULL);
+    VERIFY(beforeUnloadPrompt.tabId == 42);
+    VERIFY(beforeUnloadPrompt.persistentId == 77);
+    VERIFY(beforeUnloadPrompt.title == QStringLiteral("Leave this page?"));
+    VERIFY(beforeUnloadPrompt.text == QStringLiteral(
+            "Changes you made may not be saved."));
+    VERIFY(beforeUnloadPrompt.leaveLabel == QStringLiteral("Leave"));
+    VERIFY(beforeUnloadPrompt.stayLabel == QStringLiteral("Stay"));
+
     QMozChromeHistoryEntry historyEntry;
     historyEntry.location = QStringLiteral("https://example.com/restored");
     historyEntry.title = QStringLiteral("Restored title");
@@ -603,6 +621,12 @@ void testChromeSessionAdapter()
     VERIFY(app.window.ChromeTabSession().lastPersistentId == 93);
     VERIFY(QtMoz::chromeSessionSelectTab(&consumer, 42));
     VERIFY(QtMoz::chromeSessionCloseTab(&consumer, 42));
+    VERIFY(QtMoz::chromeSessionResolveBeforeUnloadPrompt(
+            &consumer, 12345678901234567ULL, 42, true));
+    VERIFY(app.window.ChromeTabSession().lastBeforeUnloadRequestId
+           == 12345678901234567ULL);
+    VERIFY(app.window.ChromeTabSession().lastBeforeUnloadTabId == 42);
+    VERIFY(app.window.ChromeTabSession().lastBeforeUnloadPermit);
 
     VERIFY(QtMoz::chromeSessionLoadURL(
             &consumer, QStringLiteral("https://example.com/next"), true));
