@@ -1,11 +1,11 @@
-%global min_xulrunner_version 140.12.0
+%global min_xulrunner_version 140.12.0-4
 
 %define system_nspr       1
 %define system_pixman     1
 
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
-Version:    2.0.0
+Version:    2.1.0
 Release:    1
 License:    MPLv2.0
 URL:        https://github.com/sailfishos/qtmozembed/
@@ -30,6 +30,7 @@ BuildRequires:  pkgconfig(systemsettings) >= 0.5.25
 Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
 Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
 Requires:       embedlite-components-qt5 >= 2.0.0
+Provides:       qtmozembed-chrome-tabs = 1
 
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}
@@ -39,6 +40,7 @@ Qt embeddings for Gecko browser engine
 
 %package devel
 Requires:   %{name} = %{version}-%{release}
+Provides:   qtmozembed-chrome-tabs-devel = 1
 Summary:    Headers for qtmozembed
 
 %description devel
