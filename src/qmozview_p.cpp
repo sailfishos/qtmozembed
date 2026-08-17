@@ -18,10 +18,10 @@
 #include <QTouchEvent>
 #include <QQuickWindow>
 #include <QScreen>
+#include <QSet>
 #include <QQmlInfo>
 
 #include <iostream>
-#include <limits>
 #include <locale>
 #include <string>
 #include <codecvt>
@@ -46,6 +46,7 @@
 #include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozsurface_p.h"
+#include "runtime/qmoztabmodel_p.h"
 
 #include "quickmozview.h"
 
@@ -87,49 +88,16 @@ static qint64 current_timestamp(QTouchEvent *aEvent)
     return milliseconds;
 }
 
-static int boundedProgressTotal(qint64 value)
-{
-    return value > std::numeric_limits<int>::max()
-            ? std::numeric_limits<int>::max()
-            : value < std::numeric_limits<int>::min()
-              ? std::numeric_limits<int>::min()
-              : static_cast<int>(value);
-}
-
 static QMozChromeSessionCallbacks chromeSessionCallbacks(
         QMozViewPrivate *view)
 {
     const QPointer<QMozViewPrivate> guardedView(view);
     QMozChromeSessionCallbacks callbacks;
-    callbacks.locationChanged = [guardedView](const char *location,
-                                              bool canGoBack,
-                                              bool canGoForward) {
+    callbacks.tabsChanged = [guardedView](
+            quint64 revision, quint64 selectedTabId,
+            const QVector<QMozChromeTabSnapshot> &tabs) {
         if (guardedView) {
-            guardedView->OnLocationChanged(location, canGoBack,
-                                           canGoForward);
-        }
-    };
-    callbacks.loadStarted = [guardedView](const char *location) {
-        if (guardedView) {
-            guardedView->OnLoadStarted(location);
-        }
-    };
-    callbacks.loadFinished = [guardedView]() {
-        if (guardedView) {
-            guardedView->OnLoadFinished();
-        }
-    };
-    callbacks.loadProgress = [guardedView](int progress, qint64 current,
-                                            qint64 total) {
-        if (guardedView) {
-            guardedView->OnLoadProgress(progress,
-                                        boundedProgressTotal(current),
-                                        boundedProgressTotal(total));
-        }
-    };
-    callbacks.titleChanged = [guardedView](const char16_t *title) {
-        if (guardedView) {
-            guardedView->OnTitleChanged(title);
+            guardedView->updateChromeTabs(revision, selectedTabId, tabs);
         }
     };
     callbacks.destroyed = [guardedView]() {
@@ -226,8 +194,18 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mNextJSCallId(0)
     , mAutoCompleteActive(false)
     , mAutoCompleteList()
+    , mTabModel(new QMozTabModel(this))
+    , mTabSnapshotRevision(0)
+    , mHasTabSnapshot(false)
+    , mPendingSelectedTabIndex(-1)
+    , mRestoreRequested(false)
+    , mRestorePending(false)
     , mDirtyState(0)
     , mPendingFromExternal(false)
+    , mPendingUrlTabId(0)
+    , mPendingUrlLocationRevision(0)
+    , mPendingUrlSnapshotRevision(0)
+    , mPendingUrlSawLoading(false)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
@@ -259,6 +237,297 @@ QMozViewPrivate::~QMozViewPrivate()
     // Destroyed by EmbedLiteApp::ViewDestroyed but
     // cannot really be used after destroyed.
     mView = nullptr;
+}
+
+static bool parseDecimalId(const QString &text, bool allowZero,
+                           quint64 *result)
+{
+    if (!result || text.isEmpty()) {
+        return false;
+    }
+    bool ok = false;
+    const quint64 value = text.toULongLong(&ok, 10);
+    if (!ok || (!allowZero && value == 0)
+            || QString::number(value) != text) {
+        return false;
+    }
+    *result = value;
+    return true;
+}
+
+QAbstractItemModel *QMozViewPrivate::tabModel() const
+{
+    return mTabModel;
+}
+
+QString QMozViewPrivate::selectedTabId() const
+{
+    return mTabModel->selectedTabId();
+}
+
+int QMozViewPrivate::selectedTabIndex() const
+{
+    return mTabModel->selectedTabIndex();
+}
+
+bool QMozViewPrivate::restoreTabs(const QVariantList &tabs,
+                                  int selectedTabIndex)
+{
+    if (mRestoreRequested) {
+        return false;
+    }
+
+    QVector<QMozChromeRestoredTab> restored;
+    QSet<quint64> persistentIds;
+    restored.reserve(tabs.count());
+    for (const QVariant &tabValue : tabs) {
+        const QVariantMap tabMap = tabValue.toMap();
+        quint64 persistentId = 0;
+        if (!parseDecimalId(tabMap.value(
+                QStringLiteral("persistentId")).toString(), false,
+                &persistentId)) {
+            return false;
+        }
+        if (persistentIds.contains(persistentId)) {
+            return false;
+        }
+        persistentIds.insert(persistentId);
+
+        const QVariantList historyValues = tabMap.value(
+                QStringLiteral("history")).toList();
+        QMozChromeRestoredTab tab;
+        tab.persistentId = persistentId;
+        tab.selectedHistoryIndex = tabMap.value(
+                QStringLiteral("selectedHistoryIndex"), -1).toInt();
+        tab.history.reserve(historyValues.count());
+        for (const QVariant &historyValue : historyValues) {
+            const QVariantMap historyMap = historyValue.toMap();
+            QMozChromeHistoryEntry entry;
+            entry.location = historyMap.value(
+                    QStringLiteral("location")).toString();
+            entry.title = historyMap.value(
+                    QStringLiteral("title")).toString();
+            if (entry.location.isEmpty()) {
+                return false;
+            }
+            tab.history.append(entry);
+        }
+        if (tab.history.isEmpty()) {
+            if (tab.selectedHistoryIndex != -1) {
+                return false;
+            }
+            QMozChromeHistoryEntry blankEntry;
+            blankEntry.location = QStringLiteral("about:blank");
+            tab.history.append(blankEntry);
+            tab.selectedHistoryIndex = 0;
+        } else if (tab.selectedHistoryIndex < 0
+                   || tab.selectedHistoryIndex >= tab.history.count()) {
+            return false;
+        }
+        restored.append(tab);
+    }
+
+    if ((restored.isEmpty() && selectedTabIndex != -1)
+            || (!restored.isEmpty()
+                && (selectedTabIndex < 0
+                    || selectedTabIndex >= restored.count()))) {
+        return false;
+    }
+    mRestoreRequested = true;
+    if (QtMoz::chromeSessionUniqueId(this) == 0) {
+        mPendingRestoredTabs = restored;
+        mPendingSelectedTabIndex = selectedTabIndex;
+        mRestorePending = true;
+        return true;
+    }
+
+    const bool accepted = QtMoz::chromeSessionRestoreTabs(
+            this, restored, selectedTabIndex);
+    if (!accepted) {
+        mRestoreRequested = false;
+    }
+    return accepted;
+}
+
+bool QMozViewPrivate::newTab(const QString &url,
+                             const QString &persistentId,
+                             bool fromExternal, bool inBackground)
+{
+    quint64 id = 0;
+    if (!parseDecimalId(persistentId, false, &id)) {
+        return false;
+    }
+    return !url.isEmpty()
+            && QtMoz::chromeSessionNewTab(
+                this, url, id, fromExternal, inBackground);
+}
+
+bool QMozViewPrivate::associateTab(const QString &tabId,
+                                   const QString &persistentId)
+{
+    quint64 runtimeId = 0;
+    quint64 durableId = 0;
+    return parseDecimalId(tabId, false, &runtimeId)
+            && parseDecimalId(persistentId, false, &durableId)
+            && QtMoz::chromeSessionAssociateTab(
+                this, runtimeId, durableId);
+}
+
+bool QMozViewPrivate::selectTab(const QString &tabId)
+{
+    quint64 runtimeId = 0;
+    return parseDecimalId(tabId, false, &runtimeId)
+            && QtMoz::chromeSessionSelectTab(this, runtimeId);
+}
+
+bool QMozViewPrivate::closeTab(const QString &tabId)
+{
+    quint64 runtimeId = 0;
+    return parseDecimalId(tabId, false, &runtimeId)
+            && QtMoz::chromeSessionCloseTab(this, runtimeId);
+}
+
+void QMozViewPrivate::updateChromeTabs(
+        quint64 revision, quint64 selectedTabId,
+        const QVector<QMozChromeTabSnapshot> &tabs)
+{
+    if (mHasTabSnapshot && revision <= mTabSnapshotRevision) {
+        return;
+    }
+    const QUrl oldExposedUrl = url();
+    const QString oldSelectedTabId = mTabModel->selectedTabId();
+    const int oldSelectedTabIndex = mTabModel->selectedTabIndex();
+    const QMozChromeTabSnapshot * const oldSelected =
+            mTabModel->selectedTab();
+    const quint64 oldSelectedRuntimeId = oldSelected ? oldSelected->id : 0;
+    const quint64 oldLocationRevision = oldSelected
+            ? oldSelected->locationRevision : 0;
+
+    mHasTabSnapshot = true;
+    mTabSnapshotRevision = revision;
+    mTabModel->setSnapshot(tabs, selectedTabId, revision);
+    if (oldSelectedTabId != mTabModel->selectedTabId()
+            || oldSelectedTabIndex != mTabModel->selectedTabIndex()) {
+        if (QuickMozView *view = qobject_cast<QuickMozView *>(q.data())) {
+            Q_EMIT view->selectedTabChanged();
+        }
+    }
+
+    const QMozChromeTabSnapshot * const selected =
+            mTabModel->selectedTab();
+    const QString location = selected ? selected->location : QString();
+    const QString title = selected ? selected->title : QString();
+    const bool canGoBack = selected && selected->canGoBack;
+    const bool canGoForward = selected && selected->canGoForward;
+    const bool loading = selected && selected->loading;
+    const int progress = selected ? selected->progress : 0;
+
+    bool resolvePendingUrl = false;
+    if (!mPendingUrl.isEmpty()) {
+        if (mPendingUrlTabId) {
+            if (!selected || selected->id != mPendingUrlTabId
+                    || selected->locationRevision
+                       != mPendingUrlLocationRevision) {
+                resolvePendingUrl = true;
+            } else if (selected->loading) {
+                mPendingUrlSawLoading = true;
+            } else if (mPendingUrlSawLoading
+                       || revision > mPendingUrlSnapshotRevision) {
+                resolvePendingUrl = true;
+            }
+        } else if (selected && selected->location == mPendingUrl) {
+            // A configured initial URL can be committed before the chrome
+            // session is attached and before load() records its tab identity.
+            resolvePendingUrl = true;
+        }
+    }
+    if (resolvePendingUrl) {
+        clearPendingUrl();
+    }
+
+    const bool committedLocationChanged = mUrl != location;
+    const bool selectedLocationChanged =
+            oldSelectedRuntimeId != (selected ? selected->id : 0)
+            || oldLocationRevision
+               != (selected ? selected->locationRevision : 0);
+    mUrl = location;
+    if (oldExposedUrl != url()) {
+        mViewIface->urlChanged();
+    }
+    if (committedLocationChanged || selectedLocationChanged) {
+        mViewIface->locationChanged();
+    }
+    if (mTitle != title) {
+        mTitle = title;
+        mViewIface->titleChanged();
+    }
+    if (mCanGoBack != canGoBack) {
+        mCanGoBack = canGoBack;
+        mViewIface->canGoBackChanged();
+    }
+    if (mCanGoForward != canGoForward) {
+        mCanGoForward = canGoForward;
+        mViewIface->canGoForwardChanged();
+    }
+    if (mProgress != progress) {
+        mProgress = progress;
+        mViewIface->loadProgressChanged();
+    }
+    if (mIsLoading != loading) {
+        mIsLoading = loading;
+        mViewIface->loadingChanged();
+    }
+}
+
+void QMozViewPrivate::clearChromeTabs()
+{
+    const bool selectedChanged = !mTabModel->selectedTabId().isEmpty()
+            || mTabModel->selectedTabIndex() != -1;
+    const QUrl oldExposedUrl = url();
+    const bool locationChanged = selectedChanged || !mUrl.isEmpty();
+
+    mTabSnapshotRevision = 0;
+    mHasTabSnapshot = false;
+    mPendingRestoredTabs.clear();
+    mPendingSelectedTabIndex = -1;
+    mRestoreRequested = false;
+    mRestorePending = false;
+
+    clearPendingUrl();
+    mUrl.clear();
+    if (oldExposedUrl != url()) {
+        mViewIface->urlChanged();
+    }
+    if (locationChanged) {
+        mViewIface->locationChanged();
+    }
+    if (!mTitle.isEmpty()) {
+        mTitle.clear();
+        mViewIface->titleChanged();
+    }
+    if (mCanGoBack) {
+        mCanGoBack = false;
+        mViewIface->canGoBackChanged();
+    }
+    if (mCanGoForward) {
+        mCanGoForward = false;
+        mViewIface->canGoForwardChanged();
+    }
+    if (mProgress) {
+        mProgress = 0;
+        mViewIface->loadProgressChanged();
+    }
+    if (mIsLoading) {
+        mIsLoading = false;
+        mViewIface->loadingChanged();
+    }
+
+    mTabModel->clear();
+    if (selectedChanged) {
+        if (QuickMozView *view = qobject_cast<QuickMozView *>(q.data())) {
+            Q_EMIT view->selectedTabChanged();
+        }
+    }
 }
 
 void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY)
@@ -570,6 +839,16 @@ bool QMozViewPrivate::isUrlResolved() const
     return mPendingUrl.isEmpty() && !mUrl.isEmpty();
 }
 
+void QMozViewPrivate::clearPendingUrl()
+{
+    mPendingUrl.clear();
+    mPendingFromExternal = false;
+    mPendingUrlTabId = 0;
+    mPendingUrlLocationRevision = 0;
+    mPendingUrlSnapshotRevision = 0;
+    mPendingUrlSawLoading = false;
+}
+
 void QMozViewPrivate::goBack()
 {
     if (!mViewInitialized)
@@ -639,24 +918,44 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
         return;
 
     if (!mViewInitialized) {
+        const QUrl oldExposedUrl = this->url();
+        clearPendingUrl();
         mPendingUrl = url;
         mPendingFromExternal = fromExternal;
-        mViewIface->urlChanged();
+        if (oldExposedUrl != this->url()) {
+            mViewIface->urlChanged();
+        }
         return;
     }
 #ifdef DEVELOPMENT_BUILD
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QtMoz::chromeSessionLoadURL(this, url, fromExternal);
+    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+    if (chromeHosted) {
+        const QMozChromeTabSnapshot * const selected =
+                mTabModel->selectedTab();
+        const quint64 selectedId = selected ? selected->id : 0;
+        const quint64 selectedLocationRevision = selected
+                ? selected->locationRevision : 0;
+        const bool selectedLoading = selected && selected->loading;
+        if (!QtMoz::chromeSessionLoadURL(this, url, fromExternal)) {
+            return;
+        }
+        mPendingUrlTabId = selectedId;
+        mPendingUrlLocationRevision = selectedLocationRevision;
+        mPendingUrlSnapshotRevision = mTabSnapshotRevision;
+        mPendingUrlSawLoading = selectedLoading;
     } else {
         mView->LoadURL(url.toUtf8().data(), fromExternal);
     }
 
-    if (mPendingUrl != url) {
+    const QUrl oldExposedUrl = this->url();
+    if (mPendingUrl != url || mPendingFromExternal != fromExternal) {
         mPendingUrl = url;
         mPendingFromExternal = fromExternal;
+    }
+    if (oldExposedUrl != this->url()) {
         mViewIface->urlChanged();
     }
 }
@@ -933,6 +1232,26 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
     }
 }
 
+bool QMozViewPrivate::attachChromeSession()
+{
+    const bool attached = mMozWindow
+            && QtMoz::isChromeHosted(mMozWindow.data())
+            && (QtMoz::chromeSessionUniqueId(this) != 0
+                || QtMoz::attachChromeSession(
+                    this, mMozWindow.data(), chromeSessionCallbacks(this)));
+    if (attached && mRestorePending) {
+        const bool accepted = QtMoz::chromeSessionRestoreTabs(
+                this, mPendingRestoredTabs, mPendingSelectedTabIndex);
+        mPendingRestoredTabs.clear();
+        mPendingSelectedTabIndex = -1;
+        mRestorePending = false;
+        if (!accepted) {
+            mRestoreRequested = false;
+        }
+    }
+    return attached;
+}
+
 void QMozViewPrivate::setParentId(unsigned parentId)
 {
     if (parentId != mParentID) {
@@ -1058,19 +1377,15 @@ void QMozViewPrivate::createView()
                     this, [guardedView]() {
                 if (guardedView && guardedView->mMozWindow
                         && !guardedView->mViewInitialized) {
-                    const bool attached = QtMoz::attachChromeSession(
-                            guardedView.data(),
-                            guardedView->mMozWindow.data(),
-                            chromeSessionCallbacks(guardedView.data()));
+                    const bool attached =
+                            guardedView->attachChromeSession();
                     if (guardedView && attached) {
                         guardedView->ViewInitialized();
                     }
                 }
             });
             if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
-                    && QtMoz::attachChromeSession(
-                        this, mMozWindow.data(),
-                        chromeSessionCallbacks(this))) {
+                    && attachChromeSession()) {
                 if (guardedView) {
                     guardedView->ViewInitialized();
                 }
@@ -1241,13 +1556,13 @@ void QMozViewPrivate::OnLocationChanged(const char *aLocation, bool aCanGoBack, 
         mViewIface->canGoForwardChanged();
     }
 
-    mPendingUrl.clear();
-    mPendingFromExternal = false;
+    clearPendingUrl();
 
     if (mUrl != aLocation) {
         mUrl = QString(aLocation);
         mViewIface->urlChanged();
     }
+    mViewIface->locationChanged();
 }
 
 void QMozViewPrivate::OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal)
@@ -1316,6 +1631,7 @@ void QMozViewPrivate::ViewDestroyed()
     const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
     if (chromeHosted) {
         QtMoz::detachChromeSession(this);
+        clearChromeTabs();
     }
 
     mView = nullptr;
