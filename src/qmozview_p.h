@@ -22,6 +22,8 @@
 #include <QSGSimpleTextureNode>
 #include <QKeyEvent>
 #include <QJSValue>
+#include <QVariantList>
+#include <QVector>
 
 #ifndef Q_MOC_RUN
 #include <mozilla/embedlite/EmbedLiteView.h>
@@ -32,9 +34,12 @@
 #include "qmozview_templated_wrapper.h"
 #include "qmozview_defined_wrapper.h"
 #include "qmozsecurity.h"
+#include "runtime/qmozchromesession_p.h"
 
 class QTouchEvent;
+class QAbstractItemModel;
 class QMozContext;
+class QMozTabModel;
 class QMozWindow;
 
 namespace mozilla {
@@ -128,6 +133,7 @@ public:
     void stop();
     void reload();
     void load(const QString &url, bool fromExternal);
+    void clearPendingUrl();
     void loadFrameScript(const QString &frameScript);
     void addMessageListener(const std::string &name);
     void addMessageListeners(const std::vector<std::string> &messageNamesList);
@@ -143,6 +149,21 @@ public:
 
     void sendAsyncMessage(const QString &message, const QVariant &value);
     void setMozWindow(QMozWindow *);
+    bool attachChromeSession();
+
+    QAbstractItemModel *tabModel() const;
+    QString selectedTabId() const;
+    int selectedTabIndex() const;
+    bool restoreTabs(const QVariantList &tabs, int selectedTabIndex);
+    bool newTab(const QString &url, const QString &persistentId,
+                bool fromExternal, bool inBackground);
+    bool associateTab(const QString &tabId, const QString &persistentId);
+    bool selectTab(const QString &tabId);
+    bool closeTab(const QString &tabId);
+    void updateChromeTabs(
+            quint64 revision, quint64 selectedTabId,
+            const QVector<QMozChromeTabSnapshot> &tabs);
+    void clearChromeTabs();
 
     void setParentId(unsigned parentId);
     void setParentBrowsingContext(uintptr_t parentBrowsingContext);
@@ -266,10 +287,22 @@ protected:
     bool mAutoCompleteActive;
     QStringList mAutoCompleteList;
 
+    QMozTabModel *mTabModel;
+    quint64 mTabSnapshotRevision;
+    bool mHasTabSnapshot;
+    QVector<QMozChromeRestoredTab> mPendingRestoredTabs;
+    int mPendingSelectedTabIndex;
+    bool mRestoreRequested;
+    bool mRestorePending;
+
     DirtyState mDirtyState;
 
     QString mPendingUrl;
     bool mPendingFromExternal;
+    quint64 mPendingUrlTabId;
+    quint64 mPendingUrlLocationRevision;
+    quint64 mPendingUrlSnapshotRevision;
+    bool mPendingUrlSawLoading;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };

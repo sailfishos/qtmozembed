@@ -222,5 +222,6 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void httpUserAgentChanged(); \
     void domContentLoadedChanged(); \
     void scrollableSizeChanged(); \
+    void locationChanged(); \
 
 #endif /* qmozview_defined_wrapper_h */

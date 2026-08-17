@@ -419,6 +419,50 @@ bool QuickMozView::loaded() const
     return d->mLoaded;
 }
 
+QAbstractItemModel *QuickMozView::tabModel() const
+{
+    return d->tabModel();
+}
+
+QString QuickMozView::selectedTabId() const
+{
+    return d->selectedTabId();
+}
+
+int QuickMozView::selectedTabIndex() const
+{
+    return d->selectedTabIndex();
+}
+
+bool QuickMozView::restoreTabs(const QVariantList &tabs,
+                               int selectedTabIndex)
+{
+    return d->restoreTabs(tabs, selectedTabIndex);
+}
+
+bool QuickMozView::newTab(const QString &url,
+                          const QString &persistentId,
+                          bool fromExternal, bool inBackground)
+{
+    return d->newTab(url, persistentId, fromExternal, inBackground);
+}
+
+bool QuickMozView::associateTab(const QString &tabId,
+                                const QString &persistentId)
+{
+    return d->associateTab(tabId, persistentId);
+}
+
+bool QuickMozView::selectTab(const QString &tabId)
+{
+    return d->selectTab(tabId);
+}
+
+bool QuickMozView::closeTab(const QString &tabId)
+{
+    return d->closeTab(tabId);
+}
+
 /*!
  * \fn QuickMozView::updateContentSize(const QSize &size)
  * Updates web content size to given \a size. Web content size can be
@@ -459,7 +503,7 @@ void QuickMozView::prepareMozWindow()
     }
 
     const QByteArray chromeInitialUrl = QtMoz::chromeInitialUrl(this);
-    const bool chromeHosted = !chromeInitialUrl.isEmpty();
+    const bool chromeHosted = QtMoz::isChromeHosted(this);
     QMozWindow *mozWindow = nullptr;
     if (chromeHosted) {
         if (d->mMozWindow) {
@@ -468,6 +512,7 @@ void QuickMozView::prepareMozWindow()
             mozWindow = new QMozWindow(
                     webContentWindowSize(mOrientation, d->mSize).toSize());
             QtMoz::setChromeInitialUrl(mozWindow, chromeInitialUrl);
+            QtMoz::setChromeHosted(mozWindow, true);
             QtMoz::setChromeQuickOwned(mozWindow);
             mozWindow->reserve();
             if (!mozWindow->isReserved()) {
@@ -552,6 +597,7 @@ void QuickMozView::prepareMozWindow()
 
     d->setMozWindow(mozWindow);
     if (chromeHosted) {
+        d->attachChromeSession();
         const QPointer<QuickMozView> guardedView(this);
         const QPointer<QMozWindow> guardedWindow(mozWindow);
         const quint64 releaseConsumerId =
@@ -567,6 +613,7 @@ void QuickMozView::prepareMozWindow()
                 QtMoz::clearWindowFrameConsumer(
                         guardedWindow.data(), view);
                 QtMoz::detachChromeSession(view->d);
+                view->d->clearChromeTabs();
                 view->mComposited = false;
                 view->d->mHasCompositor = false;
                 view->d->mViewInitialized = false;

@@ -66,6 +66,7 @@ public:
 
     virtual void parentIdChanged() = 0;
     virtual void uniqueIdChanged() = 0;
+    virtual void locationChanged() = 0;
 };
 
 template<class TMozQView>
@@ -278,6 +279,11 @@ public:
     void scrollableSizeChanged()
     {
         Q_EMIT view.scrollableSizeChanged();
+    }
+
+    void locationChanged() override
+    {
+        Q_EMIT view.locationChanged();
     }
 
     TMozQView &view;
