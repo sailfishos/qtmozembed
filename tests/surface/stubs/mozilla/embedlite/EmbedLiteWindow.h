@@ -10,6 +10,7 @@
 #define TEST_EMBEDLITEWINDOW_H
 
 #include "EmbedLiteChromeSession.h"
+#include "EmbedLiteChromeInputSession.h"
 #include "EmbedLiteChromeTabSession.h"
 #include "EmbedInputData.h"
 
@@ -368,6 +369,90 @@ private:
     EmbedLiteChromeTabSessionListener *mListener;
 };
 
+class TestChromeInputSession final : public EmbedLiteChromeInputSession
+{
+public:
+    explicit TestChromeInputSession(std::vector<std::string> *events)
+        : mEvents(events)
+        , mListener(nullptr)
+    {
+    }
+
+    void SetInputListener(
+            EmbedLiteChromeInputSessionListener *listener) override
+    {
+        mListener = listener;
+        mEvents->push_back(listener ? "input-listener-set"
+                                    : "input-listener-cleared");
+    }
+
+    bool SendTextEvent(
+            const char *commit, const char *preedit,
+            int32_t replacementStart, int32_t replacementLength) override
+    {
+        lastCommit = commit ? commit : "";
+        lastPreedit = preedit ? preedit : "";
+        lastReplacementStart = replacementStart;
+        lastReplacementLength = replacementLength;
+        return true;
+    }
+
+    bool SendKeyPress(
+            int32_t domKeyCode, int32_t modifiers,
+            int32_t charCode) override
+    {
+        lastPressDomKeyCode = domKeyCode;
+        lastPressModifiers = modifiers;
+        lastPressCharCode = charCode;
+        return true;
+    }
+
+    bool SendKeyRelease(
+            int32_t domKeyCode, int32_t modifiers,
+            int32_t charCode) override
+    {
+        lastReleaseDomKeyCode = domKeyCode;
+        lastReleaseModifiers = modifiers;
+        lastReleaseCharCode = charCode;
+        return true;
+    }
+
+    void NotifyInputContext(
+            const char16_t *inputType, const char16_t *inputMode,
+            const char16_t *actionHint)
+    {
+        if (!mListener) {
+            return;
+        }
+        mListener->OnInputContextChanged(
+                2, 1, inputType, inputMode, actionHint, 3, 4);
+    }
+
+    void NotifyDestroyed()
+    {
+        EmbedLiteChromeInputSessionListener * const listener = mListener;
+        mListener = nullptr;
+        if (listener) {
+            listener->ChromeInputSessionDestroyed();
+        }
+    }
+
+    std::string lastCommit;
+    std::string lastPreedit;
+    int32_t lastReplacementStart = 0;
+    int32_t lastReplacementLength = 0;
+    int32_t lastPressDomKeyCode = 0;
+    int32_t lastPressModifiers = 0;
+    int32_t lastPressCharCode = 0;
+    int32_t lastReleaseDomKeyCode = 0;
+    int32_t lastReleaseModifiers = 0;
+    int32_t lastReleaseCharCode = 0;
+
+private:
+    std::vector<std::string> *mEvents;
+    EmbedLiteChromeInputSessionListener *mListener;
+};
+
 class EmbedLiteWindow
 {
 public:
@@ -375,6 +460,7 @@ public:
         : mEvents(events)
         , mChromeSession(events)
         , mChromeTabSession(events)
+        , mChromeInputSession(events)
         , mUniqueID(nextUniqueID())
         , mChromeHosted(false)
         , mFrameListener(nullptr)
@@ -404,6 +490,14 @@ public:
         return mChromeHosted ? &mChromeTabSession : nullptr;
     }
     TestChromeTabSession &ChromeTabSession() { return mChromeTabSession; }
+    EmbedLiteChromeInputSession *GetChromeInputSession()
+    {
+        return mChromeHosted ? &mChromeInputSession : nullptr;
+    }
+    TestChromeInputSession &ChromeInputSession()
+    {
+        return mChromeInputSession;
+    }
 
     bool WithPlatformImage(const PlatformImageCallback &)
     {
@@ -490,6 +584,7 @@ private:
     std::vector<std::string> *mEvents;
     TestChromeSession mChromeSession;
     TestChromeTabSession mChromeTabSession;
+    TestChromeInputSession mChromeInputSession;
     uint32_t mUniqueID;
     bool mChromeHosted;
     EmbedLitePlatformFrameListener *mFrameListener;
