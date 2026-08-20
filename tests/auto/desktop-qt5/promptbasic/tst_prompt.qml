@@ -51,7 +51,7 @@ TestWindow {
 
                 responseMessages[appWindow.testCaseNum] = {
                     winId: data.winId,
-                    checkvalue: true,
+                    checkvalue: false,
                     accepted: true,
                     promptvalue: responsePrompt
                 }
