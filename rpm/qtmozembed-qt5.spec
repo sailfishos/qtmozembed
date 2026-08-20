@@ -1,4 +1,4 @@
-%global min_xulrunner_version 140.12.0-8
+%global min_xulrunner_version 140.12.0-9
 
 %define system_nspr       1
 %define system_pixman     1
@@ -6,7 +6,7 @@
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
 Version:    2.1.0
-Release:    1
+Release:    2
 License:    MPLv2.0
 URL:        https://github.com/sailfishos/qtmozembed/
 Source0:    %{name}-%{version}.tar.bz2

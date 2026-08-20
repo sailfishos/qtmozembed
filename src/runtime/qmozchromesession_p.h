@@ -64,6 +64,17 @@ struct QMozChromeBeforeUnloadPrompt final
     QString stayLabel;
 };
 
+struct QMozChromeInputContext final
+{
+    int enabled;
+    int open;
+    QString inputType;
+    QString inputMode;
+    QString actionHint;
+    int cause;
+    int focusChange;
+};
+
 struct QMozChromeSessionCallbacks final
 {
     std::function<void(const char *, bool, bool)> locationChanged;
@@ -75,6 +86,8 @@ struct QMozChromeSessionCallbacks final
                        const QVector<QMozChromeTabSnapshot> &)> tabsChanged;
     std::function<void(const QMozChromeBeforeUnloadPrompt &)>
             beforeUnloadPrompt;
+    std::function<void(const QMozChromeInputContext &)>
+            inputContextChanged;
     std::function<void()> destroyed;
 };
 
@@ -96,6 +109,13 @@ public:
     virtual bool setFocused(bool focused) = 0;
     virtual bool receiveInputEvent(
             const mozilla::embedlite::EmbedTouchInput &event) = 0;
+    virtual bool sendTextEvent(
+            const QString &commit, const QString &preedit,
+            int replacementStart, int replacementLength) = 0;
+    virtual bool sendKeyPress(
+            int domKeyCode, int modifiers, int charCode) = 0;
+    virtual bool sendKeyRelease(
+            int domKeyCode, int modifiers, int charCode) = 0;
     virtual bool restoreTabs(
             const QVector<QMozChromeRestoredTab> &tabs,
             int selectedTabIndex) = 0;
@@ -128,6 +148,16 @@ Q_DECL_HIDDEN bool chromeSessionSetFocused(
 Q_DECL_HIDDEN bool chromeSessionReceiveInputEvent(
         const void *consumer,
         const mozilla::embedlite::EmbedTouchInput &event);
+Q_DECL_HIDDEN bool chromeSessionSendTextEvent(
+        const void *consumer, const QString &commit,
+        const QString &preedit, int replacementStart,
+        int replacementLength);
+Q_DECL_HIDDEN bool chromeSessionSendKeyPress(
+        const void *consumer, int domKeyCode, int modifiers,
+        int charCode);
+Q_DECL_HIDDEN bool chromeSessionSendKeyRelease(
+        const void *consumer, int domKeyCode, int modifiers,
+        int charCode);
 Q_DECL_HIDDEN bool chromeSessionRestoreTabs(
         const void *consumer,
         const QVector<QMozChromeRestoredTab> &tabs,
