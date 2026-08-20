@@ -9,6 +9,7 @@
 #ifndef TEST_EMBEDLITEWINDOW_H
 #define TEST_EMBEDLITEWINDOW_H
 
+#include "EmbedLiteChromeContentSession.h"
 #include "EmbedLiteChromeSession.h"
 #include "EmbedLiteChromeInputSession.h"
 #include "EmbedLiteChromeTabSession.h"
@@ -453,6 +454,288 @@ private:
     EmbedLiteChromeInputSessionListener *mListener;
 };
 
+class TestChromeContentSession final : public EmbedLiteChromeContentSession
+{
+public:
+    explicit TestChromeContentSession(std::vector<std::string> *events)
+        : mEvents(events)
+        , mListener(nullptr)
+    {
+    }
+
+    void SetContentListener(
+            EmbedLiteChromeContentSessionListener *listener) override
+    {
+        mListener = listener;
+        mEvents->push_back(listener ? "content-listener-set"
+                                    : "content-listener-cleared");
+    }
+
+    bool LoadFrameScript(const char *uri) override
+    {
+        ++loadFrameScriptCallCount;
+        lastFrameScript = uri ? uri : "";
+        if (failNextLoadFrameScript) {
+            failNextLoadFrameScript = false;
+            return false;
+        }
+        return true;
+    }
+
+    bool AddMessageListener(const char *name) override
+    {
+        ++addMessageListenerCallCount;
+        lastAddedListener = name ? name : "";
+        if (failNextAddMessageListener) {
+            failNextAddMessageListener = false;
+            return false;
+        }
+        return true;
+    }
+
+    bool RemoveMessageListener(const char *name) override
+    {
+        lastRemovedListener = name ? name : "";
+        return true;
+    }
+
+    bool SendAsyncMessage(uint64_t tabId, const char16_t *name,
+                          const char16_t *json) override
+    {
+        lastTabId = tabId;
+        lastMessageName = name ? name : u"";
+        lastMessageJson = json ? json : u"";
+        return true;
+    }
+
+    bool SendMouseEvent(
+            uint64_t tabId, EmbedLiteChromeMouseType type,
+            int32_t x, int32_t y, uint64_t time, uint32_t button,
+            uint32_t buttons, uint32_t modifiers,
+            uint32_t clickCount) override
+    {
+        lastTabId = tabId;
+        lastMouseType = type;
+        lastX = x;
+        lastY = y;
+        lastTime = time;
+        lastButton = button;
+        lastButtons = buttons;
+        lastModifiers = modifiers;
+        lastClickCount = clickCount;
+        return true;
+    }
+
+    bool SendWheelEvent(
+            uint64_t tabId, int32_t x, int32_t y, uint64_t time,
+            double deltaX, double deltaY, uint32_t deltaMode,
+            uint32_t modifiers) override
+    {
+        lastTabId = tabId;
+        lastX = x;
+        lastY = y;
+        lastTime = time;
+        lastDeltaX = deltaX;
+        lastDeltaY = deltaY;
+        lastDeltaMode = deltaMode;
+        lastModifiers = modifiers;
+        return true;
+    }
+
+    bool ScrollTo(uint64_t tabId, int32_t x, int32_t y) override
+    {
+        lastTabId = tabId;
+        lastX = x;
+        lastY = y;
+        lastRelativeScroll = false;
+        return true;
+    }
+
+    bool ScrollBy(uint64_t tabId, int32_t x, int32_t y) override
+    {
+        lastTabId = tabId;
+        lastX = x;
+        lastY = y;
+        lastRelativeScroll = true;
+        return true;
+    }
+
+    bool ZoomToRect(uint64_t tabId, float x, float y,
+                    float width, float height) override
+    {
+        lastTabId = tabId;
+        lastZoomX = x;
+        lastZoomY = y;
+        lastZoomWidth = width;
+        lastZoomHeight = height;
+        return true;
+    }
+
+    bool SetDesktopMode(uint64_t tabId, bool desktopMode) override
+    {
+        lastTabId = tabId;
+        lastDesktopMode = desktopMode;
+        return true;
+    }
+
+    bool SetThrottlePainting(uint64_t tabId, bool throttle) override
+    {
+        lastTabId = tabId;
+        lastThrottlePainting = throttle;
+        return true;
+    }
+
+    bool SuspendTimeouts(uint64_t tabId) override
+    {
+        lastTabId = tabId;
+        lastTimeoutsSuspended = true;
+        return true;
+    }
+
+    bool ResumeTimeouts(uint64_t tabId) override
+    {
+        lastTabId = tabId;
+        lastTimeoutsSuspended = false;
+        return true;
+    }
+
+    bool SetHttpUserAgent(
+            uint64_t tabId, const char16_t *httpUserAgent) override
+    {
+        lastTabId = tabId;
+        lastHttpUserAgent = httpUserAgent ? httpUserAgent : u"";
+        return true;
+    }
+
+    bool SetMargins(uint64_t tabId, int32_t top, int32_t right,
+                    int32_t bottom, int32_t left) override
+    {
+        lastTabId = tabId;
+        lastTop = top;
+        lastRight = right;
+        lastBottom = bottom;
+        lastLeft = left;
+        return true;
+    }
+
+    bool SetSafeAreaInsets(uint64_t tabId, int32_t top, int32_t right,
+                           int32_t bottom, int32_t left) override
+    {
+        lastTabId = tabId;
+        lastSafeTop = top;
+        lastSafeRight = right;
+        lastSafeBottom = bottom;
+        lastSafeLeft = left;
+        return true;
+    }
+
+    bool SetDynamicToolbarHeight(uint64_t tabId, int32_t height) override
+    {
+        lastTabId = tabId;
+        lastDynamicToolbarHeight = height;
+        return true;
+    }
+
+    bool SetScreenProperties(
+            int32_t depth, float density, float dpi) override
+    {
+        lastDepth = depth;
+        lastDensity = density;
+        lastDpi = dpi;
+        return true;
+    }
+
+    void NotifyState(const char *securityStatus)
+    {
+        if (!mListener) {
+            return;
+        }
+        const EmbedLiteChromeContentState state = {
+            42, 77, 13, 11, securityStatus, 5, true, true, 6, 7,
+            1200, 2400, 30, 40, 30.5, 40.5, 360.0, 640.0
+        };
+        mListener->OnContentStateChanged(state);
+    }
+
+    void NotifyAsyncMessage(const char16_t *name, const char16_t *json)
+    {
+        if (mListener) {
+            mListener->RecvAsyncMessage(42, 77, 11, name, json);
+        }
+    }
+
+    void NotifyWindowCloseRequested()
+    {
+        if (mListener) {
+            mListener->OnWindowCloseRequested(42, 77);
+        }
+    }
+
+    void NotifyCloseResult(uint64_t tabId, bool closed)
+    {
+        if (mListener) {
+            mListener->OnTabCloseResult(tabId, closed);
+        }
+    }
+
+    void NotifyDestroyed()
+    {
+        EmbedLiteChromeContentSessionListener * const listener = mListener;
+        mListener = nullptr;
+        if (listener) {
+            listener->ChromeContentSessionDestroyed();
+        }
+    }
+
+    uint64_t lastTabId = 0;
+    bool failNextLoadFrameScript = false;
+    bool failNextAddMessageListener = false;
+    int loadFrameScriptCallCount = 0;
+    int addMessageListenerCallCount = 0;
+    std::string lastFrameScript;
+    std::string lastAddedListener;
+    std::string lastRemovedListener;
+    std::u16string lastMessageName;
+    std::u16string lastMessageJson;
+    EmbedLiteChromeMouseType lastMouseType =
+            EmbedLiteChromeMouseType::Move;
+    int32_t lastX = 0;
+    int32_t lastY = 0;
+    uint64_t lastTime = 0;
+    uint32_t lastButton = 0;
+    uint32_t lastButtons = 0;
+    uint32_t lastModifiers = 0;
+    uint32_t lastClickCount = 0;
+    double lastDeltaX = 0.0;
+    double lastDeltaY = 0.0;
+    uint32_t lastDeltaMode = 0;
+    bool lastRelativeScroll = false;
+    float lastZoomX = 0.0f;
+    float lastZoomY = 0.0f;
+    float lastZoomWidth = 0.0f;
+    float lastZoomHeight = 0.0f;
+    bool lastDesktopMode = false;
+    bool lastThrottlePainting = false;
+    bool lastTimeoutsSuspended = false;
+    std::u16string lastHttpUserAgent;
+    int32_t lastTop = 0;
+    int32_t lastRight = 0;
+    int32_t lastBottom = 0;
+    int32_t lastLeft = 0;
+    int32_t lastSafeTop = 0;
+    int32_t lastSafeRight = 0;
+    int32_t lastSafeBottom = 0;
+    int32_t lastSafeLeft = 0;
+    int32_t lastDynamicToolbarHeight = 0;
+    int32_t lastDepth = 0;
+    float lastDensity = 0.0f;
+    float lastDpi = 0.0f;
+
+private:
+    std::vector<std::string> *mEvents;
+    EmbedLiteChromeContentSessionListener *mListener;
+};
+
 class EmbedLiteWindow
 {
 public:
@@ -461,6 +744,7 @@ public:
         , mChromeSession(events)
         , mChromeTabSession(events)
         , mChromeInputSession(events)
+        , mChromeContentSession(events)
         , mUniqueID(nextUniqueID())
         , mChromeHosted(false)
         , mFrameListener(nullptr)
@@ -497,6 +781,14 @@ public:
     TestChromeInputSession &ChromeInputSession()
     {
         return mChromeInputSession;
+    }
+    EmbedLiteChromeContentSession *GetChromeContentSession()
+    {
+        return mChromeHosted ? &mChromeContentSession : nullptr;
+    }
+    TestChromeContentSession &ChromeContentSession()
+    {
+        return mChromeContentSession;
     }
 
     bool WithPlatformImage(const PlatformImageCallback &)
@@ -585,6 +877,7 @@ private:
     TestChromeSession mChromeSession;
     TestChromeTabSession mChromeTabSession;
     TestChromeInputSession mChromeInputSession;
+    TestChromeContentSession mChromeContentSession;
     uint32_t mUniqueID;
     bool mChromeHosted;
     EmbedLitePlatformFrameListener *mFrameListener;

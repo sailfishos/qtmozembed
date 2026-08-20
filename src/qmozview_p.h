@@ -65,6 +65,9 @@ public:
         DirtyScreenProperties = 0x0008,
         DirtyActive = 0x0010,
         DirtySafeAreaInsets = 0x0020,
+        DirtyDesktopMode = 0x0040,
+        DirtyThrottlePainting = 0x0080,
+        DirtyHttpUserAgent = 0x0100,
     };
 
     Q_DECLARE_FLAGS(DirtyState, DirtyStateBit)
@@ -149,6 +152,9 @@ public:
     void wheelEvent(QWheelEvent *event);
 
     void sendAsyncMessage(const QString &message, const QVariant &value);
+    bool sendAsyncMessageToTab(
+            const QString &tabId, const QString &message,
+            const QVariant &value);
     void setMozWindow(QMozWindow *);
     bool attachChromeSession();
 
@@ -164,9 +170,18 @@ public:
     void updateChromeTabs(
             quint64 revision, quint64 selectedTabId,
             const QVector<QMozChromeTabSnapshot> &tabs);
+    void updateChromeContentState(const QMozChromeContentState &state);
+    void recvChromeAsyncMessage(
+            quint64 tabId, quint64 persistentId, quint64 locationRevision,
+            const QString &message, const QString &json);
+    void chromeWindowCloseRequested(
+            quint64 tabId, quint64 persistentId);
     void showChromeBeforeUnloadPrompt(
             const QMozChromeBeforeUnloadPrompt &prompt);
+    void chromeTabCloseResult(quint64 tabId, bool closed);
     void clearChromeTabs();
+    quint64 selectedChromeTabId() const;
+    bool fullscreen() const;
 
     void setParentId(unsigned parentId);
     void setParentBrowsingContext(uintptr_t parentBrowsingContext);
@@ -197,12 +212,24 @@ protected:
     void recvMouseMove(int posX, int posY);
     void recvMousePress(int posX, int posY);
     void recvMouseRelease(int posX, int posY);
+    void recvMouseEvent(
+            QMouseEvent *event, QMozChromeMouseType type);
 
     void doSendAsyncMessage(const QString &message, const QVariant &value);
-    bool handleAsyncMessage(const QString &message, const QVariant &data);
+    bool doSendAsyncMessageToTab(
+            quint64 tabId, const QString &message, const QVariant &value);
+    bool handleAsyncMessage(const QString &message, const QVariant &data,
+                            quint64 tabId = 0,
+                            quint64 persistentId = 0);
+    void queuePendingFrameScript(const QString &frameScript);
+    void queuePendingMessageListener(const std::string &name);
+    void removePendingMessageListener(const std::string &name);
+    void scheduleChromeRegistrationRetry();
+    void flushPendingChromeRegistrations(bool scheduleRetry = true);
     void clearDirtyDynamicToolbarHeight();
     qreal screenDensity() const;
     void sendScreenProperties();
+    void applyChromePageSettings();
 
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
@@ -215,6 +242,7 @@ protected:
     bool mPrivateMode;
     bool mHidden;
     bool mDesktopMode;
+    bool mThrottlePainting;
     bool mActive;
     bool mLoaded;
     bool mDOMContentLoaded;
@@ -264,6 +292,7 @@ protected:
     QMozScrollDecorator mHorizontalScrollDecorator;
     float mContentResolution;
     bool mIsPainted;
+    bool mFullscreen;
     Qt::InputMethodHints mInputMethodHints;
     Qt::InputMethodHints mInputMethodAttributes;
     QVariant mSurroundingText;
@@ -283,8 +312,13 @@ protected:
     QMozSecurity mSecurity;
     int mDepth;
     qreal mDpi;
-    // Pair of success and error callbacks.
-    QMap<uint, QPair<QJSValue, QJSValue> > mPendingJSCalls;
+    struct PendingJSCall {
+        QJSValue callback;
+        QJSValue errorCallback;
+        quint64 tabId;
+        quint64 persistentId;
+    };
+    QMap<uint, PendingJSCall> mPendingJSCalls;
     uint mNextJSCallId;
     QString mHttpUserAgent;
     bool mAutoCompleteActive;
@@ -293,6 +327,10 @@ protected:
     QMozTabModel *mTabModel;
     quint64 mTabSnapshotRevision;
     bool mHasTabSnapshot;
+    quint64 mContentStateTabId;
+    quint64 mContentStatePersistentId;
+    quint64 mContentStateLocationRevision;
+    quint64 mContentStateRevision;
     QVector<QMozChromeRestoredTab> mPendingRestoredTabs;
     int mPendingSelectedTabIndex;
     bool mRestoreRequested;
@@ -306,6 +344,7 @@ protected:
     quint64 mPendingUrlLocationRevision;
     quint64 mPendingUrlSnapshotRevision;
     bool mPendingUrlSawLoading;
+    bool mChromeRegistrationRetryScheduled;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };
