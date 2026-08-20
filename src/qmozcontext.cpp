@@ -12,7 +12,6 @@
 #include <QVariant>
 #include <QThread>
 #include <QTimer>
-#include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QtQml/qqml.h>
@@ -114,9 +113,9 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     setenv("LC_NUMERIC", "C", 1);
     setlocale(LC_NUMERIC, "C");
 
-    // GRE_HOME must be set before QMozContext is initialized. With invoker PWD is empty.
-    QByteArray binaryPath = QCoreApplication::applicationDirPath().toLocal8Bit();
-    setenv("GRE_HOME", binaryPath.constData(), 1);
+    // Use the packaged GRE path before initializing the runtime. The
+    // application and working directories must not influence library loading.
+    setenv("GRE_HOME", BUILD_GRE_HOME, 1);
 
     mRuntime = new QMozRuntime(this, mAsyncContext, this);
 }
