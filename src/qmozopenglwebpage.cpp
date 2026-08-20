@@ -21,6 +21,8 @@
 #include "qmozscrolldecorator.h"
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
+#include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozchromesession_p.h"
 
 #define LOG_COMPONENT "QMozOpenGLWebPage"
 
@@ -157,7 +159,11 @@ void QMozOpenGLWebPage::setActive(bool active)
 
     if (d->mActive != active) {
         d->mActive = active;
-        d->mView->SetIsActive(d->mActive);
+        if (QtMoz::isChromeHosted(d->mMozWindow.data())) {
+            QtMoz::chromeSessionSetActive(d, d->mActive);
+        } else {
+            d->mView->SetIsActive(d->mActive);
+        }
         Q_EMIT activeChanged();
     }
 }
@@ -267,7 +273,13 @@ void QMozOpenGLWebPage::update()
         return;
     }
 
-    d->mView->ScheduleUpdate();
+    if (QtMoz::isChromeHosted(d->mMozWindow.data())) {
+        if (d->mMozWindow) {
+            d->mMozWindow->scheduleUpdate();
+        }
+    } else {
+        d->mView->ScheduleUpdate();
+    }
 }
 
 void QMozOpenGLWebPage::forceActiveFocus()
@@ -574,9 +586,21 @@ QMozSecurity *QMozOpenGLWebPage::security()
     return &d->mSecurity;
 }
 
+bool QMozOpenGLWebPage::fullscreen() const
+{
+    return d->fullscreen();
+}
+
 void QMozOpenGLWebPage::sendAsyncMessage(const QString &name, const QVariant &value)
 {
     d->sendAsyncMessage(name, value);
+}
+
+bool QMozOpenGLWebPage::sendAsyncMessageToTab(
+        const QString &tabId, const QString &name,
+        const QVariant &value)
+{
+    return d->sendAsyncMessageToTab(tabId, name, value);
 }
 
 void QMozOpenGLWebPage::addMessageListener(const QString &name)
@@ -603,7 +627,8 @@ void QMozOpenGLWebPage::newWindow(const QString &url)
 
 quint32 QMozOpenGLWebPage::uniqueId() const
 {
-    return d->mView ? d->mView->GetUniqueID() : 0;
+    return d->mView ? d->mView->GetUniqueID()
+                    : QtMoz::chromeSessionUniqueId(d);
 }
 
 void QMozOpenGLWebPage::setParentId(unsigned parentId)
@@ -637,7 +662,14 @@ void QMozOpenGLWebPage::suspendView()
         return;
     }
     setActive(false);
-    d->mView->SuspendTimeouts();
+    if (QtMoz::isChromeHosted(d->mMozWindow.data())) {
+        const quint64 tabId = d->selectedChromeTabId();
+        if (tabId) {
+            QtMoz::chromeSessionSuspendTimeouts(d, tabId);
+        }
+    } else {
+        d->mView->SuspendTimeouts();
+    }
 }
 
 void QMozOpenGLWebPage::resumeView()
@@ -654,7 +686,14 @@ void QMozOpenGLWebPage::resumeView()
         d->setThrottlePainting(true);
     }
 
-    d->mView->ResumeTimeouts();
+    if (QtMoz::isChromeHosted(d->mMozWindow.data())) {
+        const quint64 tabId = d->selectedChromeTabId();
+        if (tabId) {
+            QtMoz::chromeSessionResumeTimeouts(d, tabId);
+        }
+    } else {
+        d->mView->ResumeTimeouts();
+    }
 }
 
 /*!

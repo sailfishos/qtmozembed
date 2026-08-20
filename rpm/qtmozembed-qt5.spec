@@ -29,7 +29,7 @@ BuildRequires:  qt5-qttools
 BuildRequires:  pkgconfig(systemsettings) >= 0.5.25
 Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
 Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
-Requires:       embedlite-components-qt5 >= 2.0.0
+Requires:       embedlite-components-qt5 >= 2.1.0
 
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}

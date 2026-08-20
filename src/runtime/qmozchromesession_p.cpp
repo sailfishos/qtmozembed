@@ -193,6 +193,143 @@ bool chromeSessionSendKeyRelease(
             && session->sendKeyRelease(domKeyCode, modifiers, charCode);
 }
 
+bool chromeSessionLoadFrameScript(const void *consumer, const QString &uri)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->loadFrameScript(uri);
+}
+
+bool chromeSessionAddMessageListener(
+        const void *consumer, const QByteArray &name)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->addMessageListener(name);
+}
+
+bool chromeSessionRemoveMessageListener(
+        const void *consumer, const QByteArray &name)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->removeMessageListener(name);
+}
+
+bool chromeSessionSendAsyncMessage(
+        const void *consumer, quint64 tabId,
+        const QString &name, const QString &json)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->sendAsyncMessage(tabId, name, json);
+}
+
+bool chromeSessionSendMouseEvent(
+        const void *consumer, quint64 tabId, QMozChromeMouseType type,
+        qint32 x, qint32 y, quint64 time, quint32 button,
+        quint32 buttons, quint32 modifiers, quint32 clickCount)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->sendMouseEvent(
+            tabId, type, x, y, time, button, buttons,
+            modifiers, clickCount);
+}
+
+bool chromeSessionSendWheelEvent(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y,
+        quint64 time, double deltaX, double deltaY,
+        quint32 deltaMode, quint32 modifiers)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->sendWheelEvent(
+            tabId, x, y, time, deltaX, deltaY, deltaMode, modifiers);
+}
+
+bool chromeSessionScrollTo(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->scrollTo(tabId, x, y);
+}
+
+bool chromeSessionScrollBy(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->scrollBy(tabId, x, y);
+}
+
+bool chromeSessionZoomToRect(
+        const void *consumer, quint64 tabId, float x, float y,
+        float width, float height)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->zoomToRect(tabId, x, y, width, height);
+}
+
+bool chromeSessionSetDesktopMode(
+        const void *consumer, quint64 tabId, bool desktopMode)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setDesktopMode(tabId, desktopMode);
+}
+
+bool chromeSessionSetThrottlePainting(
+        const void *consumer, quint64 tabId, bool throttle)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setThrottlePainting(tabId, throttle);
+}
+
+bool chromeSessionSuspendTimeouts(const void *consumer, quint64 tabId)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->suspendTimeouts(tabId);
+}
+
+bool chromeSessionResumeTimeouts(const void *consumer, quint64 tabId)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->resumeTimeouts(tabId);
+}
+
+bool chromeSessionSetHttpUserAgent(
+        const void *consumer, quint64 tabId,
+        const QString &httpUserAgent)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setHttpUserAgent(tabId, httpUserAgent);
+}
+
+bool chromeSessionSetMargins(
+        const void *consumer, quint64 tabId, qint32 top, qint32 right,
+        qint32 bottom, qint32 left)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setMargins(
+            tabId, top, right, bottom, left);
+}
+
+bool chromeSessionSetSafeAreaInsets(
+        const void *consumer, quint64 tabId, qint32 top, qint32 right,
+        qint32 bottom, qint32 left)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setSafeAreaInsets(
+            tabId, top, right, bottom, left);
+}
+
+bool chromeSessionSetDynamicToolbarHeight(
+        const void *consumer, quint64 tabId, qint32 height)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setDynamicToolbarHeight(tabId, height);
+}
+
+bool chromeSessionSetScreenProperties(
+        const void *consumer, qint32 depth, float density, float dpi)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setScreenProperties(depth, density, dpi);
+}
+
 bool chromeSessionRestoreTabs(
         const void *consumer,
         const QVector<QMozChromeRestoredTab> &tabs,
