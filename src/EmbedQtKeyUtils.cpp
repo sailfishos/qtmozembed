@@ -4,12 +4,13 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <iterator>
+
 #include <Qt>
 
 #include "EmbedQtKeyUtils.h"
 
 #include "nsIDOMWindowUtils.h"
-#include "mozilla/ArrayUtils.h"      // for ArrayLength
 
 
 struct nsKeyConverter {
@@ -363,7 +364,7 @@ MozKey::QtKeyCodeToDOMKeyCode(int aKeysym, int aModifier)
         return aKeysym - Qt::Key_0 + dom::KeyboardEventBinding::DOM_VK_NUMPAD0;
 
     // misc other things
-    for (i = 0; i < ArrayLength(nsKeycodes); i++) {
+    for (i = 0; i < std::size(nsKeycodes); i++) {
         if (nsKeycodes[i].keysym == aKeysym)
             return (nsKeycodes[i].vkCode);
     }
@@ -403,7 +404,7 @@ MozKey::DOMKeyCodeToQtKeyCode(uint32_t aKeysym)
     }
 
     // misc other things
-    for (i = 0; i < ArrayLength(nsKeycodes); ++i) {
+    for (i = 0; i < std::size(nsKeycodes); ++i) {
         if (nsKeycodes[i].vkCode == aKeysym) {
             return nsKeycodes[i].keysym;
         }

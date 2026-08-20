@@ -14,7 +14,9 @@
 #include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QtQml/QtQml>
+#include <QtQml/qqml.h>
+#include <QJSValue>
+#include <qpa/qplatformnativeinterface.h>
 
 #include <dlfcn.h>
 #include <link.h>
@@ -29,6 +31,7 @@
 #include "qmozwindow.h"
 
 #include "nsDebug.h"
+#include "mozilla/embedlite/EmbedLiteAPI.h"
 #include "mozilla/embedlite/EmbedLiteMessagePump.h"
 #include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedInitGlue.h"
@@ -87,6 +90,23 @@ static void platform_egl_workaround_close() {
   }
 }
 
+static void configureEGLDisplay(EmbedLiteApp *app)
+{
+    QPlatformNativeInterface * const nativeInterface =
+            QGuiApplication::platformNativeInterface();
+    void * const display = nativeInterface
+            ? nativeInterface->nativeResourceForIntegration(
+                  QByteArrayLiteral("egldisplay"))
+            : nullptr;
+
+    if (!display) {
+        qCWarning(lcEmbedLiteExt) << "Qt did not provide an EGLDisplay;"
+                                  << "disabling accelerated Gecko rendering";
+    }
+    app->SetEGLDisplay(display);
+    app->SetIsAccelerated(display != nullptr);
+}
+
 QMozContextPrivate *QMozContextPrivate::instance()
 {
     return mozContextPrivateInstance();
@@ -122,7 +142,6 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
 
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(this);
-    mApp->SetIsAccelerated(true);
     if (mAsyncContext) {
         mQtPump = new MessagePumpQt(mApp);
     }
@@ -156,11 +175,6 @@ bool QMozContextPrivate::StopChildThread()
 void QMozContextPrivate::Initialized()
 {
     mInitialized = true;
-#if defined(GL_PROVIDER_EGL) || defined(GL_PROVIDER_GLX)
-    if (mApp->GetRenderType() == EmbedLiteApp::RENDER_AUTO) {
-        mApp->SetIsAccelerated(true);
-    }
-#endif
     mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
 
     std::vector<std::string> observersList;
@@ -437,6 +451,7 @@ void QMozContext::CancelTask(QMozContext::TaskHandle handle)
 void QMozContext::runEmbedding(int aDelay)
 {
     if (!d->mEmbedStarted) {
+        configureEGLDisplay(d->mApp);
         d->mEmbedStarted = true;
         if (d->mAsyncContext) {
             d->mApp->StartWithCustomPump(EmbedLiteApp::EMBED_THREAD, d->EmbedLoop());

@@ -1,4 +1,6 @@
-CONFIG += qt thread debug ordered create_pc create_prl no_install_prl c++1z
+# Gecko 153 headers require C++20, which Qt 5.6 qmake cannot select by name.
+QMAKE_CXXFLAGS += -std=gnu++20
+CONFIG += qt thread debug ordered create_pc create_prl no_install_prl
 QT += openglextensions
 TARGET = qt5embedwidget
 TEMPLATE = lib
@@ -61,7 +63,7 @@ include($$RELATIVE_PATH/relative-objdir.pri)
 
 PREFIX = /usr
 
-QT += quick qml
+QT += quick qml gui-private
 
 #DEFINES += Q_DEBUG_LOG
 
