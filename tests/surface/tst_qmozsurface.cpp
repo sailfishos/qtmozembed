@@ -526,6 +526,19 @@ void testChromeSessionAdapter()
     int beforeUnloadPromptCount = 0;
     QMozChromeInputContext inputContext;
     int inputContextCount = 0;
+    QMozChromeContentState contentState;
+    int contentStateCount = 0;
+    quint64 messageTabId = 0;
+    quint64 messagePersistentId = 0;
+    quint64 messageLocationRevision = 0;
+    QString messageName;
+    QString messageJson;
+    int asyncMessageCount = 0;
+    quint64 closeRequestTabId = 0;
+    quint64 closeRequestPersistentId = 0;
+    quint64 closeResultTabId = 0;
+    bool closeResultClosed = false;
+    int closeResultCount = 0;
     QMozChromeSessionCallbacks callbacks;
     callbacks.locationChanged = [&](const char *value, bool canGoBack,
                                     bool canGoForward) {
@@ -558,6 +571,32 @@ void testChromeSessionAdapter()
             const QMozChromeInputContext &context) {
         ++inputContextCount;
         inputContext = context;
+    };
+    callbacks.contentStateChanged = [&contentState, &contentStateCount](
+            const QMozChromeContentState &state) {
+        ++contentStateCount;
+        contentState = state;
+    };
+    callbacks.asyncMessage = [&](quint64 tabId, quint64 persistentId,
+                                 quint64 locationRevision,
+                                 const QString &name,
+                                 const QString &json) {
+        ++asyncMessageCount;
+        messageTabId = tabId;
+        messagePersistentId = persistentId;
+        messageLocationRevision = locationRevision;
+        messageName = name;
+        messageJson = json;
+    };
+    callbacks.windowCloseRequested = [&](quint64 tabId,
+                                         quint64 persistentId) {
+        closeRequestTabId = tabId;
+        closeRequestPersistentId = persistentId;
+    };
+    callbacks.tabCloseResult = [&](quint64 tabId, bool closed) {
+        ++closeResultCount;
+        closeResultTabId = tabId;
+        closeResultClosed = closed;
     };
     callbacks.destroyed = [&]() { destroyed = true; };
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
@@ -617,6 +656,52 @@ void testChromeSessionAdapter()
     VERIFY(inputContext.cause == 3);
     VERIFY(inputContext.focusChange == 4);
 
+    std::string securityStatus("{\"identity\":\"secure\"}");
+    app.window.ChromeContentSession().NotifyState(
+            securityStatus.c_str());
+    securityStatus[2] = 'x';
+    VERIFY(contentStateCount == 1);
+    VERIFY(contentState.tabId == 42);
+    VERIFY(contentState.persistentId == 77);
+    VERIFY(contentState.locationRevision == 11);
+    VERIFY(contentState.revision == 13);
+    VERIFY(contentState.securityStatus
+           == QStringLiteral("{\"identity\":\"secure\"}"));
+    VERIFY(contentState.securityState == 5);
+    VERIFY(contentState.fullscreen);
+    VERIFY(contentState.firstPaint);
+    VERIFY(contentState.firstPaintX == 6);
+    VERIFY(contentState.firstPaintY == 7);
+    VERIFY(contentState.scrollWidth == 1200);
+    VERIFY(contentState.scrollHeight == 2400);
+    VERIFY(contentState.scrollX == 30);
+    VERIFY(contentState.scrollY == 40);
+    VERIFY(contentState.viewportX == 30.5);
+    VERIFY(contentState.viewportY == 40.5);
+    VERIFY(contentState.viewportWidth == 360.0);
+    VERIFY(contentState.viewportHeight == 640.0);
+
+    std::u16string incomingName = u"Content:SelectionCopied";
+    std::u16string incomingJson = u"{\"text\":\"copied\"}";
+    app.window.ChromeContentSession().NotifyAsyncMessage(
+            incomingName.c_str(), incomingJson.c_str());
+    incomingName[0] = u'x';
+    incomingJson[2] = u'x';
+    VERIFY(asyncMessageCount == 1);
+    VERIFY(messageTabId == 42);
+    VERIFY(messagePersistentId == 77);
+    VERIFY(messageLocationRevision == 11);
+    VERIFY(messageName == QStringLiteral("Content:SelectionCopied"));
+    VERIFY(messageJson == QStringLiteral("{\"text\":\"copied\"}"));
+
+    app.window.ChromeContentSession().NotifyWindowCloseRequested();
+    VERIFY(closeRequestTabId == 42);
+    VERIFY(closeRequestPersistentId == 77);
+    app.window.ChromeContentSession().NotifyCloseResult(42, false);
+    VERIFY(closeResultCount == 1);
+    VERIFY(closeResultTabId == 42);
+    VERIFY(!closeResultClosed);
+
     VERIFY(QtMoz::chromeSessionSendTextEvent(
             &consumer, QString::fromUtf8("committed \xc3\xa4"),
             QString::fromUtf8("preedit \xe2\x82\xac"), -2, 5));
@@ -634,6 +719,99 @@ void testChromeSessionAdapter()
     VERIFY(app.window.ChromeInputSession().lastReleaseDomKeyCode == 27);
     VERIFY(app.window.ChromeInputSession().lastReleaseModifiers == 4);
     VERIFY(app.window.ChromeInputSession().lastReleaseCharCode == 66);
+
+    app.window.ChromeContentSession().failNextLoadFrameScript = true;
+    VERIFY(!QtMoz::chromeSessionLoadFrameScript(
+            &consumer, QStringLiteral("chrome://embed/content/script.js")));
+    VERIFY(app.window.ChromeContentSession().loadFrameScriptCallCount == 1);
+    VERIFY(QtMoz::chromeSessionLoadFrameScript(
+            &consumer, QStringLiteral("chrome://embed/content/script.js")));
+    VERIFY(app.window.ChromeContentSession().loadFrameScriptCallCount == 2);
+    VERIFY(app.window.ChromeContentSession().lastFrameScript
+           == "chrome://embed/content/script.js");
+    app.window.ChromeContentSession().failNextAddMessageListener = true;
+    VERIFY(!QtMoz::chromeSessionAddMessageListener(
+            &consumer, QByteArray("Content:ContextMenu")));
+    VERIFY(app.window.ChromeContentSession().addMessageListenerCallCount == 1);
+    VERIFY(QtMoz::chromeSessionAddMessageListener(
+            &consumer, QByteArray("Content:ContextMenu")));
+    VERIFY(app.window.ChromeContentSession().addMessageListenerCallCount == 2);
+    VERIFY(app.window.ChromeContentSession().lastAddedListener
+           == "Content:ContextMenu");
+    VERIFY(QtMoz::chromeSessionRemoveMessageListener(
+            &consumer, QByteArray("Content:ContextMenu")));
+    VERIFY(app.window.ChromeContentSession().lastRemovedListener
+           == "Content:ContextMenu");
+    VERIFY(QtMoz::chromeSessionSendAsyncMessage(
+            &consumer, 42, QStringLiteral("embedui:runjavascript"),
+            QStringLiteral("{\"script\":\"1+1\"}")));
+    VERIFY(app.window.ChromeContentSession().lastMessageName
+           == u"embedui:runjavascript");
+    VERIFY(app.window.ChromeContentSession().lastMessageJson
+           == u"{\"script\":\"1+1\"}");
+    VERIFY(QtMoz::chromeSessionSendMouseEvent(
+            &consumer, 42, QMozChromeMouseType::Down,
+            10, 20, 1234, 1, 3, 4, 2));
+    VERIFY(app.window.ChromeContentSession().lastMouseType
+           == EmbedLiteChromeMouseType::Down);
+    VERIFY(app.window.ChromeContentSession().lastX == 10);
+    VERIFY(app.window.ChromeContentSession().lastY == 20);
+    VERIFY(app.window.ChromeContentSession().lastTime == 1234);
+    VERIFY(app.window.ChromeContentSession().lastButton == 1);
+    VERIFY(app.window.ChromeContentSession().lastButtons == 3);
+    VERIFY(app.window.ChromeContentSession().lastModifiers == 4);
+    VERIFY(app.window.ChromeContentSession().lastClickCount == 2);
+    VERIFY(QtMoz::chromeSessionSendWheelEvent(
+            &consumer, 42, 30, 40, 5678, 1.5, -2.5, 0, 8));
+    VERIFY(app.window.ChromeContentSession().lastX == 30);
+    VERIFY(app.window.ChromeContentSession().lastY == 40);
+    VERIFY(app.window.ChromeContentSession().lastDeltaX == 1.5);
+    VERIFY(app.window.ChromeContentSession().lastDeltaY == -2.5);
+    VERIFY(app.window.ChromeContentSession().lastDeltaMode == 0);
+    VERIFY(app.window.ChromeContentSession().lastModifiers == 8);
+    VERIFY(QtMoz::chromeSessionScrollTo(&consumer, 42, 50, 60));
+    VERIFY(!app.window.ChromeContentSession().lastRelativeScroll);
+    VERIFY(QtMoz::chromeSessionScrollBy(&consumer, 42, -5, 6));
+    VERIFY(app.window.ChromeContentSession().lastRelativeScroll);
+    VERIFY(QtMoz::chromeSessionZoomToRect(
+            &consumer, 42, 1.0f, 2.0f, 300.0f, 400.0f));
+    VERIFY(app.window.ChromeContentSession().lastZoomX == 1.0f);
+    VERIFY(app.window.ChromeContentSession().lastZoomY == 2.0f);
+    VERIFY(app.window.ChromeContentSession().lastZoomWidth == 300.0f);
+    VERIFY(app.window.ChromeContentSession().lastZoomHeight == 400.0f);
+    VERIFY(QtMoz::chromeSessionSetDesktopMode(&consumer, 42, true));
+    VERIFY(app.window.ChromeContentSession().lastDesktopMode);
+    VERIFY(QtMoz::chromeSessionSetThrottlePainting(
+            &consumer, 42, true));
+    VERIFY(app.window.ChromeContentSession().lastThrottlePainting);
+    VERIFY(QtMoz::chromeSessionSuspendTimeouts(&consumer, 42));
+    VERIFY(app.window.ChromeContentSession().lastTimeoutsSuspended);
+    VERIFY(QtMoz::chromeSessionResumeTimeouts(&consumer, 42));
+    VERIFY(!app.window.ChromeContentSession().lastTimeoutsSuspended);
+    VERIFY(QtMoz::chromeSessionSetHttpUserAgent(
+            &consumer, 42, QStringLiteral("Hosted UA")));
+    VERIFY(app.window.ChromeContentSession().lastHttpUserAgent
+           == u"Hosted UA");
+    VERIFY(QtMoz::chromeSessionSetMargins(
+            &consumer, 42, 1, 2, 3, 4));
+    VERIFY(app.window.ChromeContentSession().lastTop == 1);
+    VERIFY(app.window.ChromeContentSession().lastRight == 2);
+    VERIFY(app.window.ChromeContentSession().lastBottom == 3);
+    VERIFY(app.window.ChromeContentSession().lastLeft == 4);
+    VERIFY(QtMoz::chromeSessionSetSafeAreaInsets(
+            &consumer, 42, 5, 6, 7, 8));
+    VERIFY(app.window.ChromeContentSession().lastSafeTop == 5);
+    VERIFY(app.window.ChromeContentSession().lastSafeRight == 6);
+    VERIFY(app.window.ChromeContentSession().lastSafeBottom == 7);
+    VERIFY(app.window.ChromeContentSession().lastSafeLeft == 8);
+    VERIFY(QtMoz::chromeSessionSetDynamicToolbarHeight(
+            &consumer, 42, 96));
+    VERIFY(app.window.ChromeContentSession().lastDynamicToolbarHeight == 96);
+    VERIFY(QtMoz::chromeSessionSetScreenProperties(
+            &consumer, 24, 2.0f, 480.0f));
+    VERIFY(app.window.ChromeContentSession().lastDepth == 24);
+    VERIFY(app.window.ChromeContentSession().lastDensity == 2.0f);
+    VERIFY(app.window.ChromeContentSession().lastDpi == 480.0f);
 
     QMozChromeHistoryEntry historyEntry;
     historyEntry.location = QStringLiteral("https://example.com/restored");
@@ -704,12 +882,17 @@ void testChromeSessionAdapter()
     app.window.ChromeTabSession().NotifyDestroyed();
     VERIFY(!destroyed);
     app.window.ChromeInputSession().NotifyDestroyed();
+    VERIFY(!destroyed);
+    app.window.ChromeContentSession().NotifyDestroyed();
     VERIFY(destroyed);
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
     VERIFY(!QtMoz::chromeSessionReceiveInputEvent(&consumer, touch));
     VERIFY(!QtMoz::chromeSessionSendTextEvent(
             &consumer, QStringLiteral("text"), QString(), 0, 0));
+    VERIFY(!QtMoz::chromeSessionSendAsyncMessage(
+            &consumer, 42, QStringLiteral("message"),
+            QStringLiteral("{}")));
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer)
            == app.window.GetUniqueID());

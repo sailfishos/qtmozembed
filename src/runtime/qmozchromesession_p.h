@@ -11,6 +11,7 @@
 
 #include <QtGlobal>
 
+#include <QByteArray>
 #include <QString>
 #include <QVector>
 
@@ -75,6 +76,34 @@ struct QMozChromeInputContext final
     int focusChange;
 };
 
+enum class QMozChromeMouseType : quint8 {
+    Move,
+    Down,
+    Up
+};
+
+struct QMozChromeContentState final
+{
+    quint64 tabId;
+    quint64 persistentId;
+    quint64 locationRevision;
+    quint64 revision;
+    QString securityStatus;
+    quint32 securityState;
+    bool fullscreen;
+    bool firstPaint;
+    qint32 firstPaintX;
+    qint32 firstPaintY;
+    quint32 scrollWidth;
+    quint32 scrollHeight;
+    qint32 scrollX;
+    qint32 scrollY;
+    double viewportX;
+    double viewportY;
+    double viewportWidth;
+    double viewportHeight;
+};
+
 struct QMozChromeSessionCallbacks final
 {
     std::function<void(const char *, bool, bool)> locationChanged;
@@ -86,8 +115,14 @@ struct QMozChromeSessionCallbacks final
                        const QVector<QMozChromeTabSnapshot> &)> tabsChanged;
     std::function<void(const QMozChromeBeforeUnloadPrompt &)>
             beforeUnloadPrompt;
+    std::function<void(quint64, bool)> tabCloseResult;
     std::function<void(const QMozChromeInputContext &)>
             inputContextChanged;
+    std::function<void(const QMozChromeContentState &)>
+            contentStateChanged;
+    std::function<void(quint64, quint64, quint64,
+                       const QString &, const QString &)> asyncMessage;
+    std::function<void(quint64, quint64)> windowCloseRequested;
     std::function<void()> destroyed;
 };
 
@@ -116,6 +151,39 @@ public:
             int domKeyCode, int modifiers, int charCode) = 0;
     virtual bool sendKeyRelease(
             int domKeyCode, int modifiers, int charCode) = 0;
+    virtual bool loadFrameScript(const QString &uri) = 0;
+    virtual bool addMessageListener(const QByteArray &name) = 0;
+    virtual bool removeMessageListener(const QByteArray &name) = 0;
+    virtual bool sendAsyncMessage(
+            quint64 tabId, const QString &name, const QString &json) = 0;
+    virtual bool sendMouseEvent(
+            quint64 tabId, QMozChromeMouseType type, qint32 x, qint32 y,
+            quint64 time, quint32 button, quint32 buttons,
+            quint32 modifiers, quint32 clickCount) = 0;
+    virtual bool sendWheelEvent(
+            quint64 tabId, qint32 x, qint32 y, quint64 time,
+            double deltaX, double deltaY, quint32 deltaMode,
+            quint32 modifiers) = 0;
+    virtual bool scrollTo(quint64 tabId, qint32 x, qint32 y) = 0;
+    virtual bool scrollBy(quint64 tabId, qint32 x, qint32 y) = 0;
+    virtual bool zoomToRect(
+            quint64 tabId, float x, float y, float width, float height) = 0;
+    virtual bool setDesktopMode(quint64 tabId, bool desktopMode) = 0;
+    virtual bool setThrottlePainting(quint64 tabId, bool throttle) = 0;
+    virtual bool suspendTimeouts(quint64 tabId) = 0;
+    virtual bool resumeTimeouts(quint64 tabId) = 0;
+    virtual bool setHttpUserAgent(
+            quint64 tabId, const QString &httpUserAgent) = 0;
+    virtual bool setMargins(
+            quint64 tabId, qint32 top, qint32 right,
+            qint32 bottom, qint32 left) = 0;
+    virtual bool setSafeAreaInsets(
+            quint64 tabId, qint32 top, qint32 right,
+            qint32 bottom, qint32 left) = 0;
+    virtual bool setDynamicToolbarHeight(
+            quint64 tabId, qint32 height) = 0;
+    virtual bool setScreenProperties(
+            qint32 depth, float density, float dpi) = 0;
     virtual bool restoreTabs(
             const QVector<QMozChromeRestoredTab> &tabs,
             int selectedTabIndex) = 0;
@@ -158,6 +226,51 @@ Q_DECL_HIDDEN bool chromeSessionSendKeyPress(
 Q_DECL_HIDDEN bool chromeSessionSendKeyRelease(
         const void *consumer, int domKeyCode, int modifiers,
         int charCode);
+Q_DECL_HIDDEN bool chromeSessionLoadFrameScript(
+        const void *consumer, const QString &uri);
+Q_DECL_HIDDEN bool chromeSessionAddMessageListener(
+        const void *consumer, const QByteArray &name);
+Q_DECL_HIDDEN bool chromeSessionRemoveMessageListener(
+        const void *consumer, const QByteArray &name);
+Q_DECL_HIDDEN bool chromeSessionSendAsyncMessage(
+        const void *consumer, quint64 tabId,
+        const QString &name, const QString &json);
+Q_DECL_HIDDEN bool chromeSessionSendMouseEvent(
+        const void *consumer, quint64 tabId, QMozChromeMouseType type,
+        qint32 x, qint32 y, quint64 time, quint32 button,
+        quint32 buttons, quint32 modifiers, quint32 clickCount);
+Q_DECL_HIDDEN bool chromeSessionSendWheelEvent(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y,
+        quint64 time, double deltaX, double deltaY,
+        quint32 deltaMode, quint32 modifiers);
+Q_DECL_HIDDEN bool chromeSessionScrollTo(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y);
+Q_DECL_HIDDEN bool chromeSessionScrollBy(
+        const void *consumer, quint64 tabId, qint32 x, qint32 y);
+Q_DECL_HIDDEN bool chromeSessionZoomToRect(
+        const void *consumer, quint64 tabId, float x, float y,
+        float width, float height);
+Q_DECL_HIDDEN bool chromeSessionSetDesktopMode(
+        const void *consumer, quint64 tabId, bool desktopMode);
+Q_DECL_HIDDEN bool chromeSessionSetThrottlePainting(
+        const void *consumer, quint64 tabId, bool throttle);
+Q_DECL_HIDDEN bool chromeSessionSuspendTimeouts(
+        const void *consumer, quint64 tabId);
+Q_DECL_HIDDEN bool chromeSessionResumeTimeouts(
+        const void *consumer, quint64 tabId);
+Q_DECL_HIDDEN bool chromeSessionSetHttpUserAgent(
+        const void *consumer, quint64 tabId,
+        const QString &httpUserAgent);
+Q_DECL_HIDDEN bool chromeSessionSetMargins(
+        const void *consumer, quint64 tabId, qint32 top, qint32 right,
+        qint32 bottom, qint32 left);
+Q_DECL_HIDDEN bool chromeSessionSetSafeAreaInsets(
+        const void *consumer, quint64 tabId, qint32 top, qint32 right,
+        qint32 bottom, qint32 left);
+Q_DECL_HIDDEN bool chromeSessionSetDynamicToolbarHeight(
+        const void *consumer, quint64 tabId, qint32 height);
+Q_DECL_HIDDEN bool chromeSessionSetScreenProperties(
+        const void *consumer, qint32 depth, float density, float dpi);
 Q_DECL_HIDDEN bool chromeSessionRestoreTabs(
         const void *consumer,
         const QVector<QMozChromeRestoredTab> &tabs,

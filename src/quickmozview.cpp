@@ -657,21 +657,21 @@ void QuickMozView::updateMargins()
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMouseMove(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Move);
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mousePressEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMousePress(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Down);
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMouseRelease(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Up);
     e->setAccepted(accepted);
 }
 
@@ -1045,9 +1045,34 @@ QMozSecurity *QuickMozView::security()
     return &d->mSecurity;
 }
 
+bool QuickMozView::throttlePainting() const
+{
+    return d->mThrottlePainting;
+}
+
+void QuickMozView::setThrottlePainting(bool throttle)
+{
+    if (d->mThrottlePainting != throttle) {
+        d->setThrottlePainting(throttle);
+        Q_EMIT throttlePaintingChanged();
+    }
+}
+
+bool QuickMozView::fullscreen() const
+{
+    return d->fullscreen();
+}
+
 void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant)
 {
     d->sendAsyncMessage(name, variant);
+}
+
+bool QuickMozView::sendAsyncMessageToTab(
+        const QString &tabId, const QString &name,
+        const QVariant &variant)
+{
+    return d->sendAsyncMessageToTab(tabId, name, variant);
 }
 
 void QuickMozView::addMessageListener(const QString &name)
@@ -1154,6 +1179,10 @@ void QuickMozView::suspendView()
                     : static_cast<const QObject *>(this))) {
         if (d->mMozWindow) {
             setActive(false);
+            const quint64 tabId = d->selectedChromeTabId();
+            if (tabId) {
+                QtMoz::chromeSessionSuspendTimeouts(d, tabId);
+            }
             d->mMozWindow->suspendRendering();
         }
         return;
@@ -1175,6 +1204,10 @@ void QuickMozView::resumeView()
         if (d->mMozWindow) {
             const bool wasActive = d->mActive;
             setActive(true);
+            const quint64 tabId = d->selectedChromeTabId();
+            if (tabId) {
+                QtMoz::chromeSessionResumeTimeouts(d, tabId);
+            }
             if (wasActive) {
                 d->mMozWindow->resumeRendering();
             }
@@ -1190,6 +1223,9 @@ void QuickMozView::resumeView()
 
 void QuickMozView::touchEvent(QTouchEvent *event)
 {
+    if (event && event->type() == QEvent::TouchBegin) {
+        Q_EMIT touched();
+    }
     d->touchEvent(event);
 }
 

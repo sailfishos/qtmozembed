@@ -15,6 +15,7 @@ SOURCES += tst_qmozsurface.cpp \
            ../../src/backends/embedlite/embedlitesurface_p.cpp
 
 HEADERS += stubs/mozilla/embedlite/EmbedLiteApp.h \
+           stubs/mozilla/embedlite/EmbedLiteChromeContentSession.h \
            stubs/mozilla/embedlite/EmbedLiteChromeSession.h \
            stubs/mozilla/embedlite/EmbedLiteChromeInputSession.h \
            stubs/mozilla/embedlite/EmbedLiteChromeTabSession.h \
