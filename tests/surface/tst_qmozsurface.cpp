@@ -524,6 +524,8 @@ void testChromeSessionAdapter()
     int tabSnapshotCount = 0;
     QMozChromeBeforeUnloadPrompt beforeUnloadPrompt;
     int beforeUnloadPromptCount = 0;
+    QMozChromeInputContext inputContext;
+    int inputContextCount = 0;
     QMozChromeSessionCallbacks callbacks;
     callbacks.locationChanged = [&](const char *value, bool canGoBack,
                                     bool canGoForward) {
@@ -551,6 +553,11 @@ void testChromeSessionAdapter()
             const QMozChromeBeforeUnloadPrompt &prompt) {
         ++beforeUnloadPromptCount;
         beforeUnloadPrompt = prompt;
+    };
+    callbacks.inputContextChanged = [&inputContext, &inputContextCount](
+            const QMozChromeInputContext &context) {
+        ++inputContextCount;
+        inputContext = context;
     };
     callbacks.destroyed = [&]() { destroyed = true; };
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
@@ -592,6 +599,41 @@ void testChromeSessionAdapter()
             "Changes you made may not be saved."));
     VERIFY(beforeUnloadPrompt.leaveLabel == QStringLiteral("Leave"));
     VERIFY(beforeUnloadPrompt.stayLabel == QStringLiteral("Stay"));
+
+    std::u16string inputType = u"email";
+    std::u16string inputMode = u"latin";
+    std::u16string actionHint = u"send";
+    app.window.ChromeInputSession().NotifyInputContext(
+            inputType.c_str(), inputMode.c_str(), actionHint.c_str());
+    inputType[0] = u'x';
+    inputMode[0] = u'x';
+    actionHint[0] = u'x';
+    VERIFY(inputContextCount == 1);
+    VERIFY(inputContext.enabled == 2);
+    VERIFY(inputContext.open == 1);
+    VERIFY(inputContext.inputType == QStringLiteral("email"));
+    VERIFY(inputContext.inputMode == QStringLiteral("latin"));
+    VERIFY(inputContext.actionHint == QStringLiteral("send"));
+    VERIFY(inputContext.cause == 3);
+    VERIFY(inputContext.focusChange == 4);
+
+    VERIFY(QtMoz::chromeSessionSendTextEvent(
+            &consumer, QString::fromUtf8("committed \xc3\xa4"),
+            QString::fromUtf8("preedit \xe2\x82\xac"), -2, 5));
+    VERIFY(app.window.ChromeInputSession().lastCommit ==
+           "committed \xc3\xa4");
+    VERIFY(app.window.ChromeInputSession().lastPreedit ==
+           "preedit \xe2\x82\xac");
+    VERIFY(app.window.ChromeInputSession().lastReplacementStart == -2);
+    VERIFY(app.window.ChromeInputSession().lastReplacementLength == 5);
+    VERIFY(QtMoz::chromeSessionSendKeyPress(&consumer, 13, 2, 65));
+    VERIFY(app.window.ChromeInputSession().lastPressDomKeyCode == 13);
+    VERIFY(app.window.ChromeInputSession().lastPressModifiers == 2);
+    VERIFY(app.window.ChromeInputSession().lastPressCharCode == 65);
+    VERIFY(QtMoz::chromeSessionSendKeyRelease(&consumer, 27, 4, 66));
+    VERIFY(app.window.ChromeInputSession().lastReleaseDomKeyCode == 27);
+    VERIFY(app.window.ChromeInputSession().lastReleaseModifiers == 4);
+    VERIFY(app.window.ChromeInputSession().lastReleaseCharCode == 66);
 
     QMozChromeHistoryEntry historyEntry;
     historyEntry.location = QStringLiteral("https://example.com/restored");
@@ -660,10 +702,14 @@ void testChromeSessionAdapter()
     app.window.ChromeSession().NotifyDestroyed();
     VERIFY(!destroyed);
     app.window.ChromeTabSession().NotifyDestroyed();
+    VERIFY(!destroyed);
+    app.window.ChromeInputSession().NotifyDestroyed();
     VERIFY(destroyed);
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer) == 0);
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
     VERIFY(!QtMoz::chromeSessionReceiveInputEvent(&consumer, touch));
+    VERIFY(!QtMoz::chromeSessionSendTextEvent(
+            &consumer, QStringLiteral("text"), QString(), 0, 0));
     VERIFY(QtMoz::attachChromeSession(&consumer, window, callbacks));
     VERIFY(QtMoz::chromeSessionUniqueId(&consumer)
            == app.window.GetUniqueID());

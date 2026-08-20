@@ -17,6 +17,7 @@
 #include <QVector>
 
 #include <mozilla/embedlite/EmbedLiteChromeSession.h>
+#include <mozilla/embedlite/EmbedLiteChromeInputSession.h>
 #include <mozilla/embedlite/EmbedLiteChromeTabSession.h>
 #include <mozilla/embedlite/EmbedInputData.h>
 #include <mozilla/embedlite/EmbedLiteWindow.h>
@@ -28,15 +29,18 @@ namespace {
 class EmbedLiteChromeSessionAdapter final
     : public QMozChromeSession
     , public EmbedLiteChromeSessionListener
+    , public EmbedLiteChromeInputSessionListener
     , public EmbedLiteChromeTabSessionListener
     , public QEnableSharedFromThis<EmbedLiteChromeSessionAdapter>
 {
 public:
     explicit EmbedLiteChromeSessionAdapter(
             EmbedLiteChromeSession *legacySession,
-            EmbedLiteChromeTabSession *tabSession, quint32 uniqueId)
+            EmbedLiteChromeTabSession *tabSession,
+            EmbedLiteChromeInputSession *inputSession, quint32 uniqueId)
         : mLegacySession(legacySession)
         , mTabSession(tabSession)
+        , mInputSession(inputSession)
         , mUniqueId(uniqueId)
     {
     }
@@ -48,6 +52,9 @@ public:
         }
         if (mTabSession) {
             mTabSession->SetTabListener(nullptr);
+        }
+        if (mInputSession) {
+            mInputSession->SetInputListener(nullptr);
         }
     }
 
@@ -71,6 +78,9 @@ public:
         if (mTabSession) {
             mTabSession->SetTabListener(this);
         }
+        if (mInputSession) {
+            mInputSession->SetInputListener(this);
+        }
     }
 
     void clearCallbacks() override
@@ -85,6 +95,9 @@ public:
         }
         if (mTabSession) {
             mTabSession->SetTabListener(nullptr);
+        }
+        if (mInputSession) {
+            mInputSession->SetInputListener(nullptr);
         }
         mCallbacks = QMozChromeSessionCallbacks();
     }
@@ -129,6 +142,34 @@ public:
     bool receiveInputEvent(const EmbedTouchInput &event) override
     {
         return mLegacySession && mLegacySession->ReceiveInputEvent(event);
+    }
+
+    bool sendTextEvent(
+            const QString &commit, const QString &preedit,
+            int replacementStart, int replacementLength) override
+    {
+        const QByteArray encodedCommit = commit.toUtf8();
+        const QByteArray encodedPreedit = preedit.toUtf8();
+        return mInputSession
+                && mInputSession->SendTextEvent(
+                    encodedCommit.constData(), encodedPreedit.constData(),
+                    replacementStart, replacementLength);
+    }
+
+    bool sendKeyPress(
+            int domKeyCode, int modifiers, int charCode) override
+    {
+        return mInputSession
+                && mInputSession->SendKeyPress(
+                    domKeyCode, modifiers, charCode);
+    }
+
+    bool sendKeyRelease(
+            int domKeyCode, int modifiers, int charCode) override
+    {
+        return mInputSession
+                && mInputSession->SendKeyRelease(
+                    domKeyCode, modifiers, charCode);
     }
 
     bool restoreTabs(const QVector<QMozChromeRestoredTab> &tabs,
@@ -375,6 +416,42 @@ public:
         }
     }
 
+    void OnInputContextChanged(
+            int32_t enabled, int32_t open,
+            const char16_t *inputType, const char16_t *inputMode,
+            const char16_t *actionHint, int32_t cause,
+            int32_t focusChange) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull()) {
+            return;
+        }
+
+        QMozChromeInputContext context;
+        context.enabled = enabled;
+        context.open = open;
+        context.inputType = inputType
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(inputType))
+                : QString();
+        context.inputMode = inputMode
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(inputMode))
+                : QString();
+        context.actionHint = actionHint
+                ? QString::fromUtf16(
+                    reinterpret_cast<const ushort *>(actionHint))
+                : QString();
+        context.cause = cause;
+        context.focusChange = focusChange;
+
+        const auto callback = mCallbacks.inputContextChanged;
+        if (callback) {
+            callback(context);
+        }
+    }
+
     void ChromeSessionDestroyed() override
     {
         const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
@@ -397,10 +474,21 @@ public:
         notifyDestroyedIfComplete();
     }
 
+    void ChromeInputSessionDestroyed() override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull()) {
+            return;
+        }
+        mInputSession = nullptr;
+        notifyDestroyedIfComplete();
+    }
+
 private:
     void notifyDestroyedIfComplete()
     {
-        if (mLegacySession || mTabSession) {
+        if (mLegacySession || mTabSession || mInputSession) {
             return;
         }
         const auto callback = mCallbacks.destroyed;
@@ -412,6 +500,7 @@ private:
 
     EmbedLiteChromeSession *mLegacySession;
     EmbedLiteChromeTabSession *mTabSession;
+    EmbedLiteChromeInputSession *mInputSession;
     const quint32 mUniqueId;
     QMozChromeSessionCallbacks mCallbacks;
 };
@@ -425,18 +514,20 @@ QSharedPointer<QMozChromeSession> createEmbedLiteChromeSession(
 {
     EmbedLiteChromeSession *legacySession = nullptr;
     EmbedLiteChromeTabSession *tabSession = nullptr;
+    EmbedLiteChromeInputSession *inputSession = nullptr;
     quint32 uniqueId = 0;
     if (!withEmbedLiteWindow(surface, [&](EmbedLiteWindow *window) {
         legacySession = window->GetChromeSession();
         tabSession = window->GetChromeTabSession();
+        inputSession = window->GetChromeInputSession();
         uniqueId = window->GetUniqueID();
-    }) || !legacySession || !tabSession || uniqueId == 0) {
+    }) || !legacySession || !tabSession || !inputSession || uniqueId == 0) {
         return QSharedPointer<QMozChromeSession>();
     }
 
     const QSharedPointer<EmbedLiteChromeSessionAdapter> adapter(
             new EmbedLiteChromeSessionAdapter(
-                legacySession, tabSession, uniqueId));
+                legacySession, tabSession, inputSession, uniqueId));
     return adapter;
 }
 
