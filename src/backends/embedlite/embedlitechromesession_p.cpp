@@ -17,6 +17,7 @@
 #include <QVector>
 
 #include <mozilla/embedlite/EmbedLiteChromeSession.h>
+#include <mozilla/embedlite/EmbedLiteChromeContentSession.h>
 #include <mozilla/embedlite/EmbedLiteChromeInputSession.h>
 #include <mozilla/embedlite/EmbedLiteChromeTabSession.h>
 #include <mozilla/embedlite/EmbedInputData.h>
@@ -29,6 +30,7 @@ namespace {
 class EmbedLiteChromeSessionAdapter final
     : public QMozChromeSession
     , public EmbedLiteChromeSessionListener
+    , public EmbedLiteChromeContentSessionListener
     , public EmbedLiteChromeInputSessionListener
     , public EmbedLiteChromeTabSessionListener
     , public QEnableSharedFromThis<EmbedLiteChromeSessionAdapter>
@@ -37,10 +39,13 @@ public:
     explicit EmbedLiteChromeSessionAdapter(
             EmbedLiteChromeSession *legacySession,
             EmbedLiteChromeTabSession *tabSession,
-            EmbedLiteChromeInputSession *inputSession, quint32 uniqueId)
+            EmbedLiteChromeInputSession *inputSession,
+            EmbedLiteChromeContentSession *contentSession,
+            quint32 uniqueId)
         : mLegacySession(legacySession)
         , mTabSession(tabSession)
         , mInputSession(inputSession)
+        , mContentSession(contentSession)
         , mUniqueId(uniqueId)
     {
     }
@@ -55,6 +60,9 @@ public:
         }
         if (mInputSession) {
             mInputSession->SetInputListener(nullptr);
+        }
+        if (mContentSession) {
+            mContentSession->SetContentListener(nullptr);
         }
     }
 
@@ -81,6 +89,9 @@ public:
         if (mInputSession) {
             mInputSession->SetInputListener(this);
         }
+        if (mContentSession) {
+            mContentSession->SetContentListener(this);
+        }
     }
 
     void clearCallbacks() override
@@ -98,6 +109,9 @@ public:
         }
         if (mInputSession) {
             mInputSession->SetInputListener(nullptr);
+        }
+        if (mContentSession) {
+            mContentSession->SetContentListener(nullptr);
         }
         mCallbacks = QMozChromeSessionCallbacks();
     }
@@ -170,6 +184,140 @@ public:
         return mInputSession
                 && mInputSession->SendKeyRelease(
                     domKeyCode, modifiers, charCode);
+    }
+
+    bool loadFrameScript(const QString &uri) override
+    {
+        const QByteArray encoded = uri.toUtf8();
+        return mContentSession
+                && mContentSession->LoadFrameScript(encoded.constData());
+    }
+
+    bool addMessageListener(const QByteArray &name) override
+    {
+        return mContentSession
+                && mContentSession->AddMessageListener(name.constData());
+    }
+
+    bool removeMessageListener(const QByteArray &name) override
+    {
+        return mContentSession
+                && mContentSession->RemoveMessageListener(name.constData());
+    }
+
+    bool sendAsyncMessage(
+            quint64 tabId, const QString &name,
+            const QString &json) override
+    {
+        return mContentSession && mContentSession->SendAsyncMessage(
+                tabId,
+                reinterpret_cast<const char16_t *>(name.utf16()),
+                reinterpret_cast<const char16_t *>(json.utf16()));
+    }
+
+    bool sendMouseEvent(
+            quint64 tabId, QMozChromeMouseType type, qint32 x, qint32 y,
+            quint64 time, quint32 button, quint32 buttons,
+            quint32 modifiers, quint32 clickCount) override
+    {
+        const EmbedLiteChromeMouseType embedType = type
+                        == QMozChromeMouseType::Move
+                ? EmbedLiteChromeMouseType::Move
+                : type == QMozChromeMouseType::Down
+                ? EmbedLiteChromeMouseType::Down
+                : EmbedLiteChromeMouseType::Up;
+        return mContentSession && mContentSession->SendMouseEvent(
+                tabId, embedType, x, y, time, button, buttons,
+                modifiers, clickCount);
+    }
+
+    bool sendWheelEvent(
+            quint64 tabId, qint32 x, qint32 y, quint64 time,
+            double deltaX, double deltaY, quint32 deltaMode,
+            quint32 modifiers) override
+    {
+        return mContentSession && mContentSession->SendWheelEvent(
+                tabId, x, y, time, deltaX, deltaY,
+                deltaMode, modifiers);
+    }
+
+    bool scrollTo(quint64 tabId, qint32 x, qint32 y) override
+    {
+        return mContentSession && mContentSession->ScrollTo(tabId, x, y);
+    }
+
+    bool scrollBy(quint64 tabId, qint32 x, qint32 y) override
+    {
+        return mContentSession && mContentSession->ScrollBy(tabId, x, y);
+    }
+
+    bool zoomToRect(
+            quint64 tabId, float x, float y,
+            float width, float height) override
+    {
+        return mContentSession && mContentSession->ZoomToRect(
+                tabId, x, y, width, height);
+    }
+
+    bool setDesktopMode(quint64 tabId, bool desktopMode) override
+    {
+        return mContentSession
+                && mContentSession->SetDesktopMode(tabId, desktopMode);
+    }
+
+    bool setThrottlePainting(quint64 tabId, bool throttle) override
+    {
+        return mContentSession
+                && mContentSession->SetThrottlePainting(tabId, throttle);
+    }
+
+    bool suspendTimeouts(quint64 tabId) override
+    {
+        return mContentSession
+                && mContentSession->SuspendTimeouts(tabId);
+    }
+
+    bool resumeTimeouts(quint64 tabId) override
+    {
+        return mContentSession && mContentSession->ResumeTimeouts(tabId);
+    }
+
+    bool setHttpUserAgent(
+            quint64 tabId, const QString &httpUserAgent) override
+    {
+        return mContentSession && mContentSession->SetHttpUserAgent(
+                tabId, reinterpret_cast<const char16_t *>(
+                        httpUserAgent.utf16()));
+    }
+
+    bool setMargins(
+            quint64 tabId, qint32 top, qint32 right,
+            qint32 bottom, qint32 left) override
+    {
+        return mContentSession && mContentSession->SetMargins(
+                tabId, top, right, bottom, left);
+    }
+
+    bool setSafeAreaInsets(
+            quint64 tabId, qint32 top, qint32 right,
+            qint32 bottom, qint32 left) override
+    {
+        return mContentSession && mContentSession->SetSafeAreaInsets(
+                tabId, top, right, bottom, left);
+    }
+
+    bool setDynamicToolbarHeight(
+            quint64 tabId, qint32 height) override
+    {
+        return mContentSession
+                && mContentSession->SetDynamicToolbarHeight(tabId, height);
+    }
+
+    bool setScreenProperties(
+            qint32 depth, float density, float dpi) override
+    {
+        return mContentSession && mContentSession->SetScreenProperties(
+                depth, density, dpi);
     }
 
     bool restoreTabs(const QVector<QMozChromeRestoredTab> &tabs,
@@ -452,6 +600,90 @@ public:
         }
     }
 
+    void OnContentStateChanged(
+            const EmbedLiteChromeContentState &source) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull() || !source.tabId || !source.revision) {
+            return;
+        }
+
+        QMozChromeContentState state;
+        state.tabId = source.tabId;
+        state.persistentId = source.persistentId;
+        state.locationRevision = source.locationRevision;
+        state.revision = source.revision;
+        state.securityStatus = QString::fromUtf8(
+                source.securityStatus ? source.securityStatus : "");
+        state.securityState = source.securityState;
+        state.fullscreen = source.fullscreen;
+        state.firstPaint = source.firstPaint;
+        state.firstPaintX = source.firstPaintX;
+        state.firstPaintY = source.firstPaintY;
+        state.scrollWidth = source.scrollWidth;
+        state.scrollHeight = source.scrollHeight;
+        state.scrollX = source.scrollX;
+        state.scrollY = source.scrollY;
+        state.viewportX = source.viewportX;
+        state.viewportY = source.viewportY;
+        state.viewportWidth = source.viewportWidth;
+        state.viewportHeight = source.viewportHeight;
+
+        const auto callback = mCallbacks.contentStateChanged;
+        if (callback) {
+            callback(state);
+        }
+    }
+
+    void RecvAsyncMessage(
+            uint64_t tabId, uint64_t persistentId,
+            uint64_t locationRevision,
+            const char16_t *name, const char16_t *json) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull() || !tabId || !name || !json) {
+            return;
+        }
+        const auto callback = mCallbacks.asyncMessage;
+        if (callback) {
+            callback(
+                    tabId, persistentId, locationRevision,
+                    QString::fromUtf16(
+                            reinterpret_cast<const ushort *>(name)),
+                    QString::fromUtf16(
+                            reinterpret_cast<const ushort *>(json)));
+        }
+    }
+
+    void OnWindowCloseRequested(
+            uint64_t tabId, uint64_t persistentId) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull() || !tabId) {
+            return;
+        }
+        const auto callback = mCallbacks.windowCloseRequested;
+        if (callback) {
+            callback(tabId, persistentId);
+        }
+    }
+
+    void OnTabCloseResult(uint64_t tabId, bool closed) override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull() || !tabId) {
+            return;
+        }
+        const auto callback = mCallbacks.tabCloseResult;
+        if (callback) {
+            callback(tabId, closed);
+        }
+    }
+
     void ChromeSessionDestroyed() override
     {
         const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
@@ -485,10 +717,22 @@ public:
         notifyDestroyedIfComplete();
     }
 
+    void ChromeContentSessionDestroyed() override
+    {
+        const QSharedPointer<EmbedLiteChromeSessionAdapter> self =
+                sharedFromThis();
+        if (self.isNull()) {
+            return;
+        }
+        mContentSession = nullptr;
+        notifyDestroyedIfComplete();
+    }
+
 private:
     void notifyDestroyedIfComplete()
     {
-        if (mLegacySession || mTabSession || mInputSession) {
+        if (mLegacySession || mTabSession || mInputSession
+                || mContentSession) {
             return;
         }
         const auto callback = mCallbacks.destroyed;
@@ -501,6 +745,7 @@ private:
     EmbedLiteChromeSession *mLegacySession;
     EmbedLiteChromeTabSession *mTabSession;
     EmbedLiteChromeInputSession *mInputSession;
+    EmbedLiteChromeContentSession *mContentSession;
     const quint32 mUniqueId;
     QMozChromeSessionCallbacks mCallbacks;
 };
@@ -515,19 +760,23 @@ QSharedPointer<QMozChromeSession> createEmbedLiteChromeSession(
     EmbedLiteChromeSession *legacySession = nullptr;
     EmbedLiteChromeTabSession *tabSession = nullptr;
     EmbedLiteChromeInputSession *inputSession = nullptr;
+    EmbedLiteChromeContentSession *contentSession = nullptr;
     quint32 uniqueId = 0;
     if (!withEmbedLiteWindow(surface, [&](EmbedLiteWindow *window) {
         legacySession = window->GetChromeSession();
         tabSession = window->GetChromeTabSession();
         inputSession = window->GetChromeInputSession();
+        contentSession = window->GetChromeContentSession();
         uniqueId = window->GetUniqueID();
-    }) || !legacySession || !tabSession || !inputSession || uniqueId == 0) {
+    }) || !legacySession || !tabSession || !inputSession || !contentSession
+            || uniqueId == 0) {
         return QSharedPointer<QMozChromeSession>();
     }
 
     const QSharedPointer<EmbedLiteChromeSessionAdapter> adapter(
             new EmbedLiteChromeSessionAdapter(
-                legacySession, tabSession, inputSession, uniqueId));
+                legacySession, tabSession, inputSession, contentSession,
+                uniqueId));
     return adapter;
 }
 

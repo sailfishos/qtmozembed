@@ -30,10 +30,16 @@ public:
     virtual void loadedChanged() = 0;
     virtual void viewDestroyed() = 0;
     virtual void windowCloseRequested() = 0;
+    virtual void windowCloseRequestedFromTab(
+            const QString tabId, const QString persistentId) = 0;
     virtual void recvAsyncMessage(const QString message, const QVariant data) = 0;
+    virtual void recvAsyncMessageFromTab(
+            const QString tabId, const QString persistentId,
+            const QString message, const QVariant data) = 0;
     virtual bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response) = 0;
     virtual void loadRedirect() = 0;
     virtual void securityChanged(QString status, uint state) = 0;
+    virtual void fullscreenChanged() = 0;
     virtual void firstPaint(int offx, int offy) = 0;
     virtual void contentWidthChanged() = 0;
     virtual void contentHeightChanged() = 0;
@@ -67,6 +73,7 @@ public:
     virtual void parentIdChanged() = 0;
     virtual void uniqueIdChanged() = 0;
     virtual void locationChanged() = 0;
+    virtual void tabCloseResult(const QString tabId, bool closed) = 0;
 };
 
 template<class TMozQView>
@@ -126,9 +133,23 @@ public:
     {
         Q_EMIT view.windowCloseRequested();
     }
+
+    void windowCloseRequestedFromTab(
+            const QString tabId, const QString persistentId)
+    {
+        Q_EMIT view.windowCloseRequestedFromTab(tabId, persistentId);
+    }
     void recvAsyncMessage(const QString message, const QVariant data)
     {
         Q_EMIT view.recvAsyncMessage(message, data);
+    }
+
+    void recvAsyncMessageFromTab(
+            const QString tabId, const QString persistentId,
+            const QString message, const QVariant data)
+    {
+        Q_EMIT view.recvAsyncMessageFromTab(
+                tabId, persistentId, message, data);
     }
     bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response)
     {
@@ -141,6 +162,11 @@ public:
     void securityChanged(QString status, uint state)
     {
         Q_EMIT view.securityChanged(status, state);
+    }
+
+    void fullscreenChanged()
+    {
+        Q_EMIT view.fullscreenChanged();
     }
     void firstPaint(int offx, int offy)
     {
@@ -284,6 +310,11 @@ public:
     void locationChanged() override
     {
         Q_EMIT view.locationChanged();
+    }
+
+    void tabCloseResult(const QString tabId, bool closed) override
+    {
+        Q_EMIT view.tabCloseResult(tabId, closed);
     }
 
     TMozQView &view;
