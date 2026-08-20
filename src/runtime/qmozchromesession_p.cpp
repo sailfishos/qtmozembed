@@ -165,6 +165,34 @@ bool chromeSessionReceiveInputEvent(
     return session && session->receiveInputEvent(event);
 }
 
+bool chromeSessionSendTextEvent(
+        const void *consumer, const QString &commit,
+        const QString &preedit, int replacementStart,
+        int replacementLength)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->sendTextEvent(
+            commit, preedit, replacementStart, replacementLength);
+}
+
+bool chromeSessionSendKeyPress(
+        const void *consumer, int domKeyCode, int modifiers,
+        int charCode)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session
+            && session->sendKeyPress(domKeyCode, modifiers, charCode);
+}
+
+bool chromeSessionSendKeyRelease(
+        const void *consumer, int domKeyCode, int modifiers,
+        int charCode)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session
+            && session->sendKeyRelease(domKeyCode, modifiers, charCode);
+}
+
 bool chromeSessionRestoreTabs(
         const void *consumer,
         const QVector<QMozChromeRestoredTab> &tabs,

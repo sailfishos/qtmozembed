@@ -108,6 +108,19 @@ static QMozChromeSessionCallbacks chromeSessionCallbacks(
             guardedView->showChromeBeforeUnloadPrompt(prompt);
         }
     };
+    callbacks.inputContextChanged = [guardedView](
+            const QMozChromeInputContext &context) {
+        if (guardedView) {
+            Q_UNUSED(context.actionHint);
+            guardedView->IMENotification(
+                    context.enabled, context.open, context.cause,
+                    context.focusChange,
+                    reinterpret_cast<const char16_t *>(
+                        context.inputType.utf16()),
+                    reinterpret_cast<const char16_t *>(
+                        context.inputMode.utf16()));
+        }
+    };
     callbacks.destroyed = [guardedView]() {
         if (guardedView) {
             guardedView->ViewDestroyed();
@@ -1176,7 +1189,12 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
                             << ", replSt:" << event->replacementStart();
 #endif
 
-    if (mViewInitialized && mView) {
+    if (mViewInitialized) {
+        const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+        if (!chromeHosted && !mView) {
+            mPreedit = !event->preeditString().isEmpty();
+            return;
+        }
         uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
                           ? (int32_t)event->commitString()[0].unicode()
                           : 0;
@@ -1185,16 +1203,34 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
         if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
                    || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
             int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
-            mView->SendKeyPress(domKeyCode, 0, charCode);
-            mView->SendKeyRelease(domKeyCode, 0, charCode);
+            if (chromeHosted) {
+                QtMoz::chromeSessionSendKeyPress(
+                        this, domKeyCode, 0, charCode);
+                QtMoz::chromeSessionSendKeyRelease(
+                        this, domKeyCode, 0, charCode);
+            } else {
+                mView->SendKeyPress(domKeyCode, 0, charCode);
+                mView->SendKeyRelease(domKeyCode, 0, charCode);
+            }
             qGuiApp->inputMethod()->reset();
 
         } else {
             if (mPreedit || !event->commitString().isEmpty()
                     || !event->preeditString().isEmpty()
                     || event->replacementLength() > 0) {
-                mView->SendTextEvent(event->commitString().toUtf8().data(), event->preeditString().toUtf8().data(),
-                                     event->replacementStart(), event->replacementLength());
+                if (chromeHosted) {
+                    QtMoz::chromeSessionSendTextEvent(
+                            this, event->commitString(),
+                            event->preeditString(),
+                            event->replacementStart(),
+                            event->replacementLength());
+                } else {
+                    mView->SendTextEvent(
+                            event->commitString().toUtf8().data(),
+                            event->preeditString().toUtf8().data(),
+                            event->replacementStart(),
+                            event->replacementLength());
+                }
                 if (event->commitString().isEmpty() && !event->preeditString().isEmpty()) {
                     QInputMethod *inputContext = qGuiApp->inputMethod();
                     if (inputContext) {
@@ -1209,7 +1245,11 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 
 void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
 {
-    if (!mViewInitialized || !mView)
+    if (!mViewInitialized)
+        return;
+
+    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+    if (!chromeHosted && !mView)
         return;
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
@@ -1221,12 +1261,21 @@ void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
             return;
         }
     }
-    mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
+    if (chromeHosted) {
+        QtMoz::chromeSessionSendKeyPress(
+                this, domKeyCode, gmodifiers, charCode);
+    } else {
+        mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
+    }
 }
 
 void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
 {
-    if (!mViewInitialized || !mView)
+    if (!mViewInitialized)
+        return;
+
+    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
+    if (!chromeHosted && !mView)
         return;
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
@@ -1235,11 +1284,22 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     if (event->text().length() && event->text()[0].isPrint()) {
         charCode = (int32_t)event->text()[0].unicode();
         if (getenv("USE_TEXT_EVENTS")) {
-            mView->SendTextEvent(event->text().toUtf8().data(), "", 0, 0);
+            if (chromeHosted) {
+                QtMoz::chromeSessionSendTextEvent(
+                        this, event->text(), QString(), 0, 0);
+            } else {
+                mView->SendTextEvent(
+                        event->text().toUtf8().data(), "", 0, 0);
+            }
             return;
         }
     }
-    mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
+    if (chromeHosted) {
+        QtMoz::chromeSessionSendKeyRelease(
+                this, domKeyCode, gmodifiers, charCode);
+    } else {
+        mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
+    }
 }
 
 void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &value)
