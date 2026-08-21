@@ -103,8 +103,14 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
     Q_PROPERTY(bool domContentLoaded READ domContentLoaded NOTIFY domContentLoadedChanged FINAL) \
     Q_PROPERTY(int dynamicToolbarHeight READ dynamicToolbarHeight WRITE setDynamicToolbarHeight NOTIFY dynamicToolbarHeightChanged FINAL) \
-    Q_PROPERTY(QMargins margins READ margins WRITE setMargins NOTIFY marginsChanged FINAL) \
-    Q_PROPERTY(QMargins safeAreaInsets READ safeAreaInsets WRITE setSafeAreaInsets NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int marginTop READ marginTop WRITE setMarginTop NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginRight READ marginRight WRITE setMarginRight NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginBottom READ marginBottom WRITE setMarginBottom NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginLeft READ marginLeft WRITE setMarginLeft NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetTop READ safeAreaInsetTop WRITE setSafeAreaInsetTop NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetRight READ safeAreaInsetRight WRITE setSafeAreaInsetRight NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetBottom READ safeAreaInsetBottom WRITE setSafeAreaInsetBottom NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetLeft READ safeAreaInsetLeft WRITE setSafeAreaInsetLeft NOTIFY safeAreaInsetsChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -143,8 +149,24 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setDynamicToolbarHeight(int height); \
     QMargins margins() const; \
     void setMargins(QMargins); \
+    int marginTop() const; \
+    void setMarginTop(int margin); \
+    int marginRight() const; \
+    void setMarginRight(int margin); \
+    int marginBottom() const; \
+    void setMarginBottom(int margin); \
+    int marginLeft() const; \
+    void setMarginLeft(int margin); \
     QMargins safeAreaInsets() const; \
     void setSafeAreaInsets(QMargins); \
+    int safeAreaInsetTop() const; \
+    void setSafeAreaInsetTop(int inset); \
+    int safeAreaInsetRight() const; \
+    void setSafeAreaInsetRight(int inset); \
+    int safeAreaInsetBottom() const; \
+    void setSafeAreaInsetBottom(int inset); \
+    int safeAreaInsetLeft() const; \
+    void setSafeAreaInsetLeft(int inset); \
     Q_INVOKABLE void scrollTo(int x, int y); \
     Q_INVOKABLE void scrollBy(int x, int y); \
     QMozSecurity *security(); \

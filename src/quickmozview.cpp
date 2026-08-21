@@ -89,6 +89,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mExplicitOrientation(false)
     , mComposited(false)
     , mFollowItemGeometry(true)
+    , mPlatformFrameGeneration(0)
 {
     const quint64 textureConsumerId =
             QtMoz::registerTextureFrameConsumer(this);
@@ -266,6 +267,10 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
 
+        connect(texture, &QMozExtTexture::platformFrameAcquired,
+                this, &QuickMozView::platformFrameAcquired,
+                Qt::QueuedConnection);
+
         const bool attached = QtMoz::attachTextureFrameLease(
                 texture, d->mMozWindow.data(), this,
                 QtMoz::textureFrameConsumerId(this), window());
@@ -291,6 +296,12 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         node->setTexture(mTexture);
     }
 
+    if (chromeHosted) {
+        QMozExtTexture * const texture =
+                static_cast<QMozExtTexture *>(mTexture);
+        texture->requirePlatformFrame(
+                    d->mSize.toSize(), mPlatformFrameRequirement);
+    }
     node->setRect(boundingRect);
     node->setOrientation(mOrientation);
     node->setSurfaceOrientation(window() ? window()->contentOrientation() : Qt::PrimaryOrientation);
@@ -480,6 +491,10 @@ void QuickMozView::updateContentSize(const QSizeF &size)
     polish();
 
     d->setSize(size);
+
+    if (d->mSize != originalSize) {
+        requirePlatformFrame();
+    }
 
     if (d->mSize.width() != originalSize.width()) {
         Q_EMIT viewportWidthChanged();
@@ -892,6 +907,54 @@ QMargins QuickMozView::margins() const
     return d->mMargins;
 }
 
+int QuickMozView::marginTop() const
+{
+    return d->mMargins.top();
+}
+
+void QuickMozView::setMarginTop(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setTop(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginRight() const
+{
+    return d->mMargins.right();
+}
+
+void QuickMozView::setMarginRight(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setRight(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginBottom() const
+{
+    return d->mMargins.bottom();
+}
+
+void QuickMozView::setMarginBottom(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setBottom(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginLeft() const
+{
+    return d->mMargins.left();
+}
+
+void QuickMozView::setMarginLeft(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setLeft(margin);
+    d->setMargins(margins, true);
+}
+
 QMargins QuickMozView::safeAreaInsets() const
 {
     return d->mSafeAreaInsets;
@@ -899,6 +962,54 @@ QMargins QuickMozView::safeAreaInsets() const
 
 void QuickMozView::setSafeAreaInsets(QMargins insets)
 {
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QuickMozView::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QuickMozView::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QuickMozView::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QuickMozView::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
     d->setSafeAreaInsets(insets);
 }
 
@@ -914,6 +1025,7 @@ void QuickMozView::setOrientation(Qt::ScreenOrientation orientation)
         polish();
 
         mOrientation = orientation;
+        requirePlatformFrame();
 
         Q_EMIT orientationChanged();
     }
@@ -934,6 +1046,7 @@ void QuickMozView::updateOrientation(Qt::ScreenOrientation orientation)
 
         if (mOrientation != orientation) {
             mOrientation = orientation;
+            requirePlatformFrame();
 
             Q_EMIT orientationChanged();
         }
@@ -1049,6 +1162,26 @@ QMozSecurity *QuickMozView::security()
 bool QuickMozView::throttlePainting() const
 {
     return d->mThrottlePainting;
+}
+
+int QuickMozView::platformFrameGeneration() const
+{
+    return mPlatformFrameGeneration;
+}
+
+void QuickMozView::platformFrameAcquired()
+{
+    ++mPlatformFrameGeneration;
+    Q_EMIT platformFrameGenerationChanged();
+    update();
+}
+
+void QuickMozView::requirePlatformFrame()
+{
+    if (++mPlatformFrameRequirement == 0) {
+        ++mPlatformFrameRequirement;
+    }
+    update();
 }
 
 void QuickMozView::setThrottlePainting(bool throttle)
