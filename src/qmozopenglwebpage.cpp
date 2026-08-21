@@ -509,6 +509,54 @@ void QMozOpenGLWebPage::setMargins(QMargins margins)
     d->setMargins(margins, true);
 }
 
+int QMozOpenGLWebPage::marginTop() const
+{
+    return d->mMargins.top();
+}
+
+void QMozOpenGLWebPage::setMarginTop(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setTop(margin);
+    d->setMargins(margins, true);
+}
+
+int QMozOpenGLWebPage::marginRight() const
+{
+    return d->mMargins.right();
+}
+
+void QMozOpenGLWebPage::setMarginRight(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setRight(margin);
+    d->setMargins(margins, true);
+}
+
+int QMozOpenGLWebPage::marginBottom() const
+{
+    return d->mMargins.bottom();
+}
+
+void QMozOpenGLWebPage::setMarginBottom(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setBottom(margin);
+    d->setMargins(margins, true);
+}
+
+int QMozOpenGLWebPage::marginLeft() const
+{
+    return d->mMargins.left();
+}
+
+void QMozOpenGLWebPage::setMarginLeft(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setLeft(margin);
+    d->setMargins(margins, true);
+}
+
 QMargins QMozOpenGLWebPage::safeAreaInsets() const
 {
     return d->mSafeAreaInsets;
@@ -516,6 +564,54 @@ QMargins QMozOpenGLWebPage::safeAreaInsets() const
 
 void QMozOpenGLWebPage::setSafeAreaInsets(QMargins insets)
 {
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QMozOpenGLWebPage::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QMozOpenGLWebPage::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
     d->setSafeAreaInsets(insets);
 }
 
