@@ -88,6 +88,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mExplicitOrientation(false)
     , mComposited(false)
     , mFollowItemGeometry(true)
+    , mPlatformFrameGeneration(0)
 {
     const quint64 textureConsumerId =
             QtMoz::registerTextureFrameConsumer(this);
@@ -264,6 +265,10 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 #if defined(QT_OPENGL_ES_2)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
+
+        connect(texture, &QMozExtTexture::platformFrameAcquired,
+                this, &QuickMozView::platformFrameAcquired,
+                Qt::QueuedConnection);
 
         const bool attached = QtMoz::attachTextureFrameLease(
                 texture, d->mMozWindow.data(), this,
@@ -891,6 +896,54 @@ QMargins QuickMozView::margins() const
     return d->mMargins;
 }
 
+int QuickMozView::marginTop() const
+{
+    return d->mMargins.top();
+}
+
+void QuickMozView::setMarginTop(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setTop(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginRight() const
+{
+    return d->mMargins.right();
+}
+
+void QuickMozView::setMarginRight(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setRight(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginBottom() const
+{
+    return d->mMargins.bottom();
+}
+
+void QuickMozView::setMarginBottom(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setBottom(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginLeft() const
+{
+    return d->mMargins.left();
+}
+
+void QuickMozView::setMarginLeft(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setLeft(margin);
+    d->setMargins(margins, true);
+}
+
 QMargins QuickMozView::safeAreaInsets() const
 {
     return d->mSafeAreaInsets;
@@ -898,6 +951,54 @@ QMargins QuickMozView::safeAreaInsets() const
 
 void QuickMozView::setSafeAreaInsets(QMargins insets)
 {
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QuickMozView::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QuickMozView::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QuickMozView::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QuickMozView::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
     d->setSafeAreaInsets(insets);
 }
 
@@ -1048,6 +1149,17 @@ QMozSecurity *QuickMozView::security()
 bool QuickMozView::throttlePainting() const
 {
     return d->mThrottlePainting;
+}
+
+int QuickMozView::platformFrameGeneration() const
+{
+    return mPlatformFrameGeneration;
+}
+
+void QuickMozView::platformFrameAcquired()
+{
+    ++mPlatformFrameGeneration;
+    Q_EMIT platformFrameGenerationChanged();
 }
 
 void QuickMozView::setThrottlePainting(bool throttle)

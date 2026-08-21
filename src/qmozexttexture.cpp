@@ -155,6 +155,7 @@ bool QMozExtTexture::updateTexture()
         m_textureId = newTextureId;
         m_textureSize = newTextureSize;
         m_textureTarget = newTextureTarget;
+        Q_EMIT platformFrameAcquired();
         return true;
     }
 

@@ -40,6 +40,7 @@ class QuickMozView : public QQuickItem
     Q_PROPERTY(QString selectedTabId READ selectedTabId NOTIFY selectedTabChanged FINAL)
     Q_PROPERTY(int selectedTabIndex READ selectedTabIndex NOTIFY selectedTabChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
+    Q_PROPERTY(int platformFrameGeneration READ platformFrameGeneration NOTIFY platformFrameGenerationChanged FINAL)
 
     Q_MOZ_VIEW_PROPERTIES
 
@@ -65,6 +66,7 @@ public:
     int selectedTabIndex() const;
     bool throttlePainting() const;
     void setThrottlePainting(bool throttle);
+    int platformFrameGeneration() const;
     Q_INVOKABLE bool restoreTabs(const QVariantList &tabs,
                                  int selectedTabIndex);
     Q_INVOKABLE bool newTab(const QString &url,
@@ -105,6 +107,7 @@ Q_SIGNALS:
     void viewportHeightChanged();
     void selectedTabChanged();
     void throttlePaintingChanged();
+    void platformFrameGenerationChanged();
     void touched();
 
     Q_MOZ_VIEW_SIGNALS
@@ -114,6 +117,7 @@ private Q_SLOTS:
     void SetIsActive(bool aIsActive);
     void resumeRendering();
     void compositingFinished();
+    void platformFrameAcquired();
     void updateMargins();
 
 // INTERNAL
@@ -157,6 +161,7 @@ private:
     bool mExplicitOrientation;
     bool mComposited;
     bool mFollowItemGeometry;
+    int mPlatformFrameGeneration;
 };
 
 #endif // QuickMozView_H

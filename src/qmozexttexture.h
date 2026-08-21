@@ -34,6 +34,7 @@ public:
 
 Q_SIGNALS:
     void withPlatformImage(const QMozEGLImageCallback &callback);
+    void platformFrameAcquired();
 
 private:
     QRectF m_normalizedTextureSubRect;
