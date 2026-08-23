@@ -31,6 +31,34 @@ static void updateExternalTextureParameters()
     glTexParameteri(GL_TEXTURE_EXTERNAL_OES, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 }
 
+static bool matchesRequiredPlatformFrameSize(
+        const QSize &frameSize, const QSize &requiredSize)
+{
+    if (requiredSize.isEmpty()) {
+        return true;
+    }
+    if (frameSize.isEmpty()) {
+        return false;
+    }
+
+    // The platform image is in framebuffer pixels while the QQuickItem is in
+    // logical pixels. Require the same presentation shape rather than the
+    // same scale. The tolerance permits a single-pixel rounding difference
+    // on either side of the conversion without admitting a rotated or
+    // intermediate-sized frame.
+    const qint64 frameWidth = frameSize.width();
+    const qint64 frameHeight = frameSize.height();
+    const qint64 requiredWidth = requiredSize.width();
+    const qint64 requiredHeight = requiredSize.height();
+    const qint64 difference = qAbs(
+            frameWidth * requiredHeight
+            - requiredWidth * frameHeight);
+    const qint64 tolerance = qMax(
+            qMax(frameWidth, frameHeight),
+            qMax(requiredWidth, requiredHeight));
+    return difference <= tolerance;
+}
+
 QMozExtTexture::QMozExtTexture()
 {
 }
@@ -77,10 +105,20 @@ bool QMozExtTexture::usesExternalTexture() const
     return m_textureTarget == QMozTextureTarget::ExternalOES;
 }
 
+void QMozExtTexture::requirePlatformFrame(const QSize &size, quint64 revision)
+{
+    if (m_requiredPlatformFrameSize != size
+            || m_requiredPlatformFrameRevision != revision) {
+        m_requiredPlatformFrameSize = size;
+        m_requiredPlatformFrameRevision = revision;
+        m_platformFrameResetPending = true;
+    }
+}
+
 void QMozExtTexture::bind()
 {
+    glBindTexture(glTextureTarget(m_textureTarget), m_textureId);
     if (m_textureId != 0) {
-        glBindTexture(glTextureTarget(m_textureTarget), m_textureId);
         if (usesExternalTexture()) {
             updateExternalTextureParameters();
         } else {
@@ -99,11 +137,43 @@ bool QMozExtTexture::updateTexture()
     }
 
     if (QtMoz::textureUsesPlatformFrames(this)) {
+        if (m_platformFrameResetPending) {
+            // The old image must not be sampled with the new item geometry.
+            // Release it on its render context before deleting the GL binding,
+            // but keep this dynamic texture alive so preprocess() continues
+            // consuming frames while the replacement is pending.
+            if (!QtMoz::releaseTexturePlatformFrames(this)) {
+                return false;
+            }
+            if (m_textureId != 0) {
+                glDeleteTextures(1, &m_textureId);
+                m_textureId = 0;
+            }
+            m_textureSize = QSize();
+            m_platformFrameResetPending = false;
+        }
+
         uint newTextureId = 0;
         QSize newTextureSize;
         QMozTextureTarget newTextureTarget = QMozTextureTarget::Texture2D;
+        bool requiredSize = false;
         const bool acquired = QtMoz::acquireTexturePlatformFrame(
                 this, [&](const QMozSurfaceFrame &frame) {
+            newTextureSize = frame.image.size;
+            requiredSize = matchesRequiredPlatformFrameSize(
+                    newTextureSize, m_requiredPlatformFrameSize);
+            if (!requiredSize) {
+                // Successfully acquire the stale-sized token so it can be
+                // released below. Rejecting it from this callback would put
+                // the same token back into the pending slot indefinitely.
+                if (m_textureId != 0) {
+                    glDeleteTextures(1, &m_textureId);
+                    m_textureId = 0;
+                }
+                m_textureSize = QSize();
+                return true;
+            }
+
             switch (frame.image.textureTarget) {
             case QMozSurfaceTextureTarget::Texture2D:
                 newTextureTarget = QMozTextureTarget::Texture2D;
@@ -134,7 +204,6 @@ bool QMozExtTexture::updateTexture()
             } else {
                 updateBindOptions(true);
             }
-            newTextureSize = frame.image.size;
             return true;
         }, [&]() {
             if (newTextureId != 0) {
@@ -145,6 +214,19 @@ bool QMozExtTexture::updateTexture()
         if (!acquired) {
             if (newTextureId != 0) {
                 glDeleteTextures(1, &newTextureId);
+            }
+            return false;
+        }
+
+        if (!requiredSize) {
+            // This frame was deliberately never sampled. Completing its
+            // acquire/release cycle lets Gecko retire it and advertise the
+            // next coalesced frame instead of pinning a stale Ready token.
+            if (!QtMoz::releaseTexturePlatformFrames(this)) {
+                qCCritical(lcEmbedLiteExt)
+                        << "Failed to release rejected platform frame"
+                        << newTextureSize << "required"
+                        << m_requiredPlatformFrameSize;
             }
             return false;
         }

@@ -151,6 +151,7 @@ private Q_SLOTS:
 private:
     void updateContentSize(const QSizeF &size);
     void prepareMozWindow();
+    Q_DECL_HIDDEN void requirePlatformFrame();
 
     QMozViewPrivate *d;
     QSGTexture *mTexture;
@@ -162,6 +163,7 @@ private:
     bool mComposited;
     bool mFollowItemGeometry;
     int mPlatformFrameGeneration;
+    quint64 mPlatformFrameRequirement = 1;
 };
 
 #endif // QuickMozView_H

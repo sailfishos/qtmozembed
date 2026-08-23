@@ -295,6 +295,12 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         node->setTexture(mTexture);
     }
 
+    if (chromeHosted) {
+        QMozExtTexture * const texture =
+                static_cast<QMozExtTexture *>(mTexture);
+        texture->requirePlatformFrame(
+                    d->mSize.toSize(), mPlatformFrameRequirement);
+    }
     node->setRect(boundingRect);
     node->setOrientation(mOrientation);
     node->setSurfaceOrientation(window() ? window()->contentOrientation() : Qt::PrimaryOrientation);
@@ -484,6 +490,10 @@ void QuickMozView::updateContentSize(const QSizeF &size)
     polish();
 
     d->setSize(size);
+
+    if (d->mSize != originalSize) {
+        requirePlatformFrame();
+    }
 
     if (d->mSize.width() != originalSize.width()) {
         Q_EMIT viewportWidthChanged();
@@ -1014,6 +1024,7 @@ void QuickMozView::setOrientation(Qt::ScreenOrientation orientation)
         polish();
 
         mOrientation = orientation;
+        requirePlatformFrame();
 
         Q_EMIT orientationChanged();
     }
@@ -1034,6 +1045,7 @@ void QuickMozView::updateOrientation(Qt::ScreenOrientation orientation)
 
         if (mOrientation != orientation) {
             mOrientation = orientation;
+            requirePlatformFrame();
 
             Q_EMIT orientationChanged();
         }
@@ -1160,6 +1172,15 @@ void QuickMozView::platformFrameAcquired()
 {
     ++mPlatformFrameGeneration;
     Q_EMIT platformFrameGenerationChanged();
+    update();
+}
+
+void QuickMozView::requirePlatformFrame()
+{
+    if (++mPlatformFrameRequirement == 0) {
+        ++mPlatformFrameRequirement;
+    }
+    update();
 }
 
 void QuickMozView::setThrottlePainting(bool throttle)
