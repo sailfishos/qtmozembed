@@ -1966,7 +1966,7 @@ mozilla::embedlite::TouchPointF QMozViewPrivate::createEmbedTouchPoint(qreal pos
 
 QPointF QMozViewPrivate::renderingOffset() const
 {
-    qreal y = mScrollableOffset.y() * QMozEngineSettings::instance()->pixelRatio();
+    qreal y = mScrollableOffset.y() * screenDensity();
     qreal dy = mTopMargin - std::min(mTopMargin, y);
     return QPointF(0.0f, std::max(qreal(0.0f), dy));
 }
