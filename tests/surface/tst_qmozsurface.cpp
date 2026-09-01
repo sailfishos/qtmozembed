@@ -448,7 +448,7 @@ void testQueuedFrameSuppressedAfterStop()
     surface.clear();
 }
 
-void testChromeWindowSelection()
+void testPrivateChromeWindowSelection()
 {
     EmbedLiteApp app;
     EmbedLiteWindowListener listener;
@@ -461,6 +461,7 @@ void testChromeWindowSelection()
     VERIFY(window == &app.window);
     VERIFY(app.createCount == 0);
     VERIFY(app.chromeCreateCount == 1);
+    VERIFY(app.privateBrowsing);
     VERIFY(app.chromeInitialUrl == initialUrl.constData());
     VERIFY(eventIndex(app.events, "chrome-created") >= 0);
     VERIFY(eventIndex(app.events, "listener-set") >= 0);
@@ -473,7 +474,22 @@ void testChromeWindowSelection()
     surface.clear();
 }
 
-void testChromeTabWindowSelection()
+void testChromeInitialUrlDefault()
+{
+    QObject object;
+    const QByteArray defaultUrl("about:blank");
+
+    VERIFY(QtMoz::chromeInitialUrl(&object, defaultUrl) == defaultUrl);
+
+    QtMoz::setChromeInitialUrl(&object, QByteArray());
+    VERIFY(QtMoz::chromeInitialUrl(&object, defaultUrl).isEmpty());
+
+    const QByteArray explicitUrl("https://example.com/chrome-smoke");
+    QtMoz::setChromeInitialUrl(&object, explicitUrl);
+    VERIFY(QtMoz::chromeInitialUrl(&object, defaultUrl) == explicitUrl);
+}
+
+void testPrivateChromeTabWindowSelection()
 {
     EmbedLiteApp app;
     EmbedLiteWindowListener listener;
@@ -486,6 +502,7 @@ void testChromeTabWindowSelection()
     VERIFY(app.createCount == 0);
     VERIFY(app.chromeCreateCount == 0);
     VERIFY(app.chromeTabCreateCount == 1);
+    VERIFY(app.privateBrowsing);
     VERIFY(eventIndex(app.events, "chrome-tab-created") >= 0);
     VERIFY(eventIndex(app.events, "listener-set") >= 0);
 
@@ -616,6 +633,7 @@ void testChromeSessionAdapter()
     VERIFY(selectedTabId == 42);
     VERIFY(tabs.count() == 1);
     VERIFY(tabs.at(0).id == 42);
+    VERIFY(tabs.at(0).openerId == 21);
     VERIFY(tabs.at(0).persistentId == 77);
     VERIFY(tabs.at(0).location == QStringLiteral(
             "https://example.com/tab"));
@@ -711,6 +729,15 @@ void testChromeSessionAdapter()
            "preedit \xe2\x82\xac");
     VERIFY(app.window.ChromeInputSession().lastReplacementStart == -2);
     VERIFY(app.window.ChromeInputSession().lastReplacementLength == 5);
+    VERIFY(QtMoz::chromeSessionSendTextEventAtOffset(
+            &consumer, QString::fromUtf8("committed \xc3\xa4"),
+            QString::fromUtf8("preedit \xe2\x82\xac"), 3, 4));
+    VERIFY(app.window.ChromeInputSession().lastCommit ==
+           "committed \xc3\xa4");
+    VERIFY(app.window.ChromeInputSession().lastPreedit ==
+           "preedit \xe2\x82\xac");
+    VERIFY(app.window.ChromeInputSession().lastReplacementOffset == 3);
+    VERIFY(app.window.ChromeInputSession().lastReplacementLength == 4);
     VERIFY(QtMoz::chromeSessionSendKeyPress(&consumer, 13, 2, 65));
     VERIFY(app.window.ChromeInputSession().lastPressDomKeyCode == 13);
     VERIFY(app.window.ChromeInputSession().lastPressModifiers == 2);
@@ -781,6 +808,8 @@ void testChromeSessionAdapter()
     VERIFY(app.window.ChromeContentSession().lastZoomHeight == 400.0f);
     VERIFY(QtMoz::chromeSessionSetDesktopMode(&consumer, 42, true));
     VERIFY(app.window.ChromeContentSession().lastDesktopMode);
+    VERIFY(QtMoz::chromeSessionSetJavascriptEnabled(&consumer, false));
+    VERIFY(!app.window.ChromeContentSession().lastJavascriptEnabled);
     VERIFY(QtMoz::chromeSessionSetThrottlePainting(
             &consumer, 42, true));
     VERIFY(app.window.ChromeContentSession().lastThrottlePainting);
@@ -889,6 +918,8 @@ void testChromeSessionAdapter()
     VERIFY(!QtMoz::chromeSessionGoBack(&consumer));
     VERIFY(!QtMoz::chromeSessionReceiveInputEvent(&consumer, touch));
     VERIFY(!QtMoz::chromeSessionSendTextEvent(
+            &consumer, QStringLiteral("text"), QString(), 0, 0));
+    VERIFY(!QtMoz::chromeSessionSendTextEventAtOffset(
             &consumer, QStringLiteral("text"), QString(), 0, 0));
     VERIFY(!QtMoz::chromeSessionSendAsyncMessage(
             &consumer, 42, QStringLiteral("message"),
@@ -1098,7 +1129,7 @@ void testChromeWindowFailureMarshalledToOwnerThread()
     surface.clear();
 }
 
-void testLegacyWindowSelection()
+void testDefaultHostedWindowSelection()
 {
     EmbedLiteApp app;
     EmbedLiteWindowListener listener;
@@ -1108,9 +1139,11 @@ void testLegacyWindowSelection()
             surface, QSize(100, 200), false);
 
     VERIFY(window == &app.window);
-    VERIFY(app.createCount == 1);
+    VERIFY(app.createCount == 0);
     VERIFY(app.chromeCreateCount == 0);
-    VERIFY(eventIndex(app.events, "created") >= 0);
+    VERIFY(app.chromeTabCreateCount == 1);
+    VERIFY(!app.privateBrowsing);
+    VERIFY(eventIndex(app.events, "chrome-tab-created") >= 0);
     VERIFY(eventIndex(app.events, "listener-set") >= 0);
 
     surface->requestDestroy();
@@ -1286,15 +1319,16 @@ int main(int argc, char **argv)
     testPlatformFrameForwarding();
     testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
-    testChromeWindowSelection();
-    testChromeTabWindowSelection();
+    testPrivateChromeWindowSelection();
+    testChromeInitialUrlDefault();
+    testPrivateChromeTabWindowSelection();
     testChromeSessionAdapter();
     testChromeWindowShutdownBarrier();
     testChromeWindowShutdownSynchronousRelease();
     testChromeWindowDrainCompletionRetainsState();
     testChromeWindowDrainPrecedesNativeDestroy();
     testChromeWindowFailureMarshalledToOwnerThread();
-    testLegacyWindowSelection();
+    testDefaultHostedWindowSelection();
     testWindowListenerForwarding();
     testChromeWindowFrameGate();
     testDestroyWaitsForFrameReleaseAndStop();

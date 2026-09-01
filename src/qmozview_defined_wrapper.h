@@ -98,6 +98,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL) \
     Q_PROPERTY(bool fullscreen READ fullscreen NOTIFY fullscreenChanged FINAL) \
     Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
+    Q_PROPERTY(bool javascriptEnabled READ javascriptEnabled WRITE setJavascriptEnabled NOTIFY javascriptEnabledChanged FINAL) \
     Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
     Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
     Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
@@ -174,6 +175,8 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void addMessageListeners(const std::vector<std::string> &messageNamesList); \
     bool desktopMode() const; \
     void setDesktopMode(bool); \
+    bool javascriptEnabled() const; \
+    void setJavascriptEnabled(bool); \
     int parentId() const; \
     QString httpUserAgent() const; \
     void setHttpUserAgent(const QString &httpUserAgent); \
@@ -249,6 +252,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void marginsChanged(); \
     void safeAreaInsetsChanged(); \
     void desktopModeChanged(); \
+    void javascriptEnabledChanged(); \
     void parentIdChanged(); \
     void uniqueIdChanged(); \
     void httpUserAgentChanged(); \

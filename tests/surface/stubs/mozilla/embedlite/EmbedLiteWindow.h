@@ -309,7 +309,7 @@ public:
             return;
         }
         const EmbedLiteChromeTabSnapshot tab = {
-            42, 77, 9, "https://example.com/tab", u"Tab title",
+            42, 21, 77, 9, "https://example.com/tab", u"Tab title",
             true, false, false, true, false, 25, 1, 4
         };
         mListener->OnTabsChanged(3, tab.id, &tab, 1);
@@ -323,9 +323,9 @@ public:
         mListener->OnTabsChanged(4, 42, nullptr, 1);
 
         const EmbedLiteChromeTabSnapshot tabs[] = {
-            { 42, 77, 9, "https://example.com/one", u"One",
+            { 42, 0, 77, 9, "https://example.com/one", u"One",
               false, false, false, false, false, 100, 1, 1 },
-            { 42, 78, 10, "https://example.com/two", u"Two",
+            { 42, 0, 78, 10, "https://example.com/two", u"Two",
               false, false, false, false, false, 100, 1, 1 }
         };
         mListener->OnTabsChanged(5, 42, tabs, 2);
@@ -398,6 +398,17 @@ public:
         return true;
     }
 
+    bool SendTextEventAtOffset(
+            const char *commit, const char *preedit,
+            uint32_t replacementOffset, int32_t replacementLength) override
+    {
+        lastCommit = commit ? commit : "";
+        lastPreedit = preedit ? preedit : "";
+        lastReplacementOffset = replacementOffset;
+        lastReplacementLength = replacementLength;
+        return true;
+    }
+
     bool SendKeyPress(
             int32_t domKeyCode, int32_t modifiers,
             int32_t charCode) override
@@ -441,6 +452,7 @@ public:
     std::string lastCommit;
     std::string lastPreedit;
     int32_t lastReplacementStart = 0;
+    uint32_t lastReplacementOffset = 0;
     int32_t lastReplacementLength = 0;
     int32_t lastPressDomKeyCode = 0;
     int32_t lastPressModifiers = 0;
@@ -575,6 +587,12 @@ public:
     {
         lastTabId = tabId;
         lastDesktopMode = desktopMode;
+        return true;
+    }
+
+    bool SetJavascriptEnabled(bool enabled) override
+    {
+        lastJavascriptEnabled = enabled;
         return true;
     }
 
@@ -715,6 +733,7 @@ public:
     float lastZoomWidth = 0.0f;
     float lastZoomHeight = 0.0f;
     bool lastDesktopMode = false;
+    bool lastJavascriptEnabled = true;
     bool lastThrottlePainting = false;
     bool lastTimeoutsSuspended = false;
     std::u16string lastHttpUserAgent;

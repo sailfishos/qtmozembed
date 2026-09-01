@@ -175,6 +175,16 @@ bool chromeSessionSendTextEvent(
             commit, preedit, replacementStart, replacementLength);
 }
 
+bool chromeSessionSendTextEventAtOffset(
+        const void *consumer, const QString &commit,
+        const QString &preedit, quint32 replacementOffset,
+        int replacementLength)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->sendTextEventAtOffset(
+            commit, preedit, replacementOffset, replacementLength);
+}
+
 bool chromeSessionSendKeyPress(
         const void *consumer, int domKeyCode, int modifiers,
         int charCode)
@@ -269,6 +279,12 @@ bool chromeSessionSetDesktopMode(
 {
     const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
     return session && session->setDesktopMode(tabId, desktopMode);
+}
+
+bool chromeSessionSetJavascriptEnabled(const void *consumer, bool enabled)
+{
+    const QSharedPointer<QMozChromeSession> session = chromeSession(consumer);
+    return session && session->setJavascriptEnabled(enabled);
 }
 
 bool chromeSessionSetThrottlePainting(

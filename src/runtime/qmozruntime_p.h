@@ -28,15 +28,12 @@ class Q_DECL_HIDDEN QMozRuntime : public QObject
 public:
     explicit QMozRuntime(
             mozilla::embedlite::EmbedLiteAppListener *listener,
-            bool asyncContext,
             QObject *parent = 0);
     ~QMozRuntime();
 
     mozilla::embedlite::EmbedLiteApp *embedLiteApp() const;
     mozilla::embedlite::EmbedLiteMessagePump *embedLoop() const;
     bool hasApp() const;
-    bool isAsync() const;
-
     void start();
     void stop();
     void detachListener();
@@ -48,7 +45,6 @@ private:
     mozilla::embedlite::EmbedLiteApp *mApp;
     MessagePumpQt *mQtPump;
     bool mEmbedStarted;
-    bool mAsyncContext;
 };
 
 #endif // QMOZRUNTIME_P_H

@@ -40,6 +40,7 @@ struct QMozChromeRestoredTab final
 struct QMozChromeTabSnapshot final
 {
     quint64 id;
+    quint64 openerId;
     quint64 persistentId;
     quint64 locationRevision;
     QString location;
@@ -147,6 +148,9 @@ public:
     virtual bool sendTextEvent(
             const QString &commit, const QString &preedit,
             int replacementStart, int replacementLength) = 0;
+    virtual bool sendTextEventAtOffset(
+            const QString &commit, const QString &preedit,
+            quint32 replacementOffset, int replacementLength) = 0;
     virtual bool sendKeyPress(
             int domKeyCode, int modifiers, int charCode) = 0;
     virtual bool sendKeyRelease(
@@ -169,6 +173,7 @@ public:
     virtual bool zoomToRect(
             quint64 tabId, float x, float y, float width, float height) = 0;
     virtual bool setDesktopMode(quint64 tabId, bool desktopMode) = 0;
+    virtual bool setJavascriptEnabled(bool enabled) = 0;
     virtual bool setThrottlePainting(quint64 tabId, bool throttle) = 0;
     virtual bool suspendTimeouts(quint64 tabId) = 0;
     virtual bool resumeTimeouts(quint64 tabId) = 0;
@@ -220,6 +225,10 @@ Q_DECL_HIDDEN bool chromeSessionSendTextEvent(
         const void *consumer, const QString &commit,
         const QString &preedit, int replacementStart,
         int replacementLength);
+Q_DECL_HIDDEN bool chromeSessionSendTextEventAtOffset(
+        const void *consumer, const QString &commit,
+        const QString &preedit, quint32 replacementOffset,
+        int replacementLength);
 Q_DECL_HIDDEN bool chromeSessionSendKeyPress(
         const void *consumer, int domKeyCode, int modifiers,
         int charCode);
@@ -252,6 +261,8 @@ Q_DECL_HIDDEN bool chromeSessionZoomToRect(
         float width, float height);
 Q_DECL_HIDDEN bool chromeSessionSetDesktopMode(
         const void *consumer, quint64 tabId, bool desktopMode);
+Q_DECL_HIDDEN bool chromeSessionSetJavascriptEnabled(
+        const void *consumer, bool enabled);
 Q_DECL_HIDDEN bool chromeSessionSetThrottlePainting(
         const void *consumer, quint64 tabId, bool throttle);
 Q_DECL_HIDDEN bool chromeSessionSuspendTimeouts(

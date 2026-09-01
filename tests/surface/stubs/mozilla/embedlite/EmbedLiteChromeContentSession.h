@@ -79,6 +79,7 @@ public:
     virtual bool ZoomToRect(
             uint64_t, float, float, float, float) = 0;
     virtual bool SetDesktopMode(uint64_t, bool) = 0;
+    virtual bool SetJavascriptEnabled(bool) = 0;
     virtual bool SetThrottlePainting(uint64_t, bool) = 0;
     virtual bool SuspendTimeouts(uint64_t) = 0;
     virtual bool ResumeTimeouts(uint64_t) = 0;

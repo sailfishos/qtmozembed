@@ -24,6 +24,7 @@ public:
         , chromeTabCreateCount(0)
         , destroyCount(0)
         , windowListener(nullptr)
+        , privateBrowsing(false)
     {
     }
 
@@ -31,30 +32,35 @@ public:
             int, int, EmbedLiteWindowListener *listener)
     {
         ++createCount;
-        window.SetChromeHosted(false);
+        window.SetChromeHosted(true);
         windowListener = listener;
+        privateBrowsing = false;
         events.push_back("created");
         return &window;
     }
 
     EmbedLiteWindow *CreateChromeWindow(
             int, int, const char *initialUrl,
-            EmbedLiteWindowListener *listener)
+            EmbedLiteWindowListener *listener,
+            bool isPrivate = false)
     {
         ++chromeCreateCount;
         window.SetChromeHosted(true);
         windowListener = listener;
+        privateBrowsing = isPrivate;
         chromeInitialUrl = initialUrl ? initialUrl : "";
         events.push_back("chrome-created");
         return &window;
     }
 
     EmbedLiteWindow *CreateChromeTabWindow(
-            int, int, EmbedLiteWindowListener *listener)
+            int, int, EmbedLiteWindowListener *listener,
+            bool isPrivate = false)
     {
         ++chromeTabCreateCount;
         window.SetChromeHosted(true);
         windowListener = listener;
+        privateBrowsing = isPrivate;
         chromeInitialUrl.clear();
         events.push_back("chrome-tab-created");
         return &window;
@@ -85,6 +91,7 @@ public:
     int chromeTabCreateCount;
     int destroyCount;
     EmbedLiteWindowListener *windowListener;
+    bool privateBrowsing;
     std::string chromeInitialUrl;
 };
 
