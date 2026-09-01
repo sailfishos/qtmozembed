@@ -2,11 +2,9 @@ TEMPLATE = app
 TARGET = qmlmoztestrunner
 CONFIG += warn_on link_pkgconfig
 SOURCES += main.cpp \
-    testhelper.cpp \
-    testviewcreator.cpp
+    testhelper.cpp
 
-HEADERS += testhelper.h \
-    testviewcreator.h
+HEADERS += testhelper.h
 
 RELATIVE_PATH=../..
 VDEPTH_PATH=tests/qmlmoztestrunner

@@ -14,7 +14,6 @@
 #include <QJSEngine>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QTimer>
 #include <QTouchEvent>
 #include <QQuickWindow>
 #include <QScreen>
@@ -22,6 +21,7 @@
 #include <QQmlInfo>
 
 #include <iostream>
+#include <limits>
 #include <locale>
 #include <string>
 #include <codecvt>
@@ -178,13 +178,13 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , q(publicPtr)
     , mMozWindow(nullptr)
     , mContext(nullptr)
-    , mView(nullptr)
     , mViewInitialized(false)
     , mParentID(0)
     , mParentBrowsingContext(0)
     , mPrivateMode(false)
     , mHidden(false)
     , mDesktopMode(false)
+    , mJavascriptEnabled(true)
     , mThrottlePainting(false)
     , mActive(false)
     , mLoaded(false)
@@ -233,6 +233,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mInputMethodAttributes(0)
     , mIsInputFieldFocused(false)
     , mPreedit(false)
+    , mWaitingForBackspaceInputContext(false)
     , mViewIsFocused(false)
     , mPressed(false)
     , mDragging(false)
@@ -262,7 +263,6 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mPendingUrlLocationRevision(0)
     , mPendingUrlSnapshotRevision(0)
     , mPendingUrlSawLoading(false)
-    , mChromeRegistrationRetryScheduled(false)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
@@ -274,8 +274,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     addMessageListener(INPUTMETHOD_RESET_INPUT_ATTRIBUTES);
     connect(QMozEngineSettings::instance(), &QMozEngineSettings::pixelRatioChanged,
         this, [this]() {
-        if ((!mView && !QtMoz::isChromeHosted(mMozWindow.data()))
-                || mDepth <= 0 || mDpi <= 0.0) {
+        if (!mMozWindow || mDepth <= 0 || mDpi <= 0.0) {
             return;
         }
         if (!mHasCompositor) {
@@ -292,9 +291,6 @@ QMozViewPrivate::~QMozViewPrivate()
     delete mViewIface;
     mViewIface = nullptr;
     mViewInitialized = false;
-    // Destroyed by EmbedLiteApp::ViewDestroyed but
-    // cannot really be used after destroyed.
-    mView = nullptr;
 }
 
 static bool parseDecimalId(const QString &text, bool allowZero,
@@ -497,6 +493,16 @@ void QMozViewPrivate::updateChromeTabs(
         mContentStateLocationRevision = 0;
         mContentStateRevision = 0;
         reset();
+        if (QuickMozView *view = qobject_cast<QuickMozView *>(q.data())) {
+            // The reset and the new tab's first paint can reach the scene
+            // graph in one update. Explicitly retire the selected tab's old
+            // platform-frame lease so that it cannot remain visible until an
+            // unrelated orientation change requests another frame.
+            view->requirePlatformFrame();
+        }
+        if (mMozWindow) {
+            mMozWindow->scheduleUpdate();
+        }
         mSecurity.reset();
         if (mFullscreen) {
             mFullscreen = false;
@@ -1069,6 +1075,7 @@ void QMozViewPrivate::reset()
     mAtYBeginning = false;
     mAtYEnd = false;
     mContentResolution = 0.0f;
+    clearPendingInputMethodEvents();
 
     if (viewAreaChanged) mViewIface->viewAreaChanged();
     if (contentWidthChanged) mViewIface->contentWidthChanged();
@@ -1096,11 +1103,9 @@ void QMozViewPrivate::reset()
     if (mDynamicToolbarHeight > 0) {
         mDirtyState |= DirtyDynamicToolbarHeight;
     }
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        mDirtyState |= DirtyDesktopMode;
-        mDirtyState |= DirtyThrottlePainting;
-        mDirtyState |= DirtyHttpUserAgent;
-    }
+    mDirtyState |= DirtyDesktopMode;
+    mDirtyState |= DirtyThrottlePainting;
+    mDirtyState |= DirtyHttpUserAgent;
 }
 
 void QMozViewPrivate::setSize(const QSizeF &size)
@@ -1128,15 +1133,8 @@ qreal QMozViewPrivate::screenDensity() const
 
 void QMozViewPrivate::sendScreenProperties()
 {
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        if (QtMoz::chromeSessionSetScreenProperties(
-                this, mDepth, screenDensity(), mDpi)) {
-            mDirtyState &= ~DirtyScreenProperties;
-        } else {
-            mDirtyState |= DirtyScreenProperties;
-        }
-    } else if (mView) {
-        mView->SetScreenProperties(mDepth, screenDensity(), mDpi);
+    if (QtMoz::chromeSessionSetScreenProperties(
+            this, mDepth, screenDensity(), mDpi)) {
         mDirtyState &= ~DirtyScreenProperties;
     } else {
         mDirtyState |= DirtyScreenProperties;
@@ -1147,8 +1145,7 @@ void QMozViewPrivate::setScreenProperties(int depth, qreal dpi)
 {
     mDepth = depth;
     mDpi = dpi;
-    if ((!mView && !QtMoz::isChromeHosted(mMozWindow.data()))
-            || !mHasCompositor) {
+    if (!mMozWindow || !mHasCompositor) {
         mDirtyState |= DirtyScreenProperties;
     } else {
         sendScreenProperties();
@@ -1243,11 +1240,7 @@ void QMozViewPrivate::goBack()
     if (!mViewInitialized)
         return;
 
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QtMoz::chromeSessionGoBack(this);
-    } else {
-        mView->GoBack(false, true);
-    }
+    QtMoz::chromeSessionGoBack(this);
 }
 
 void QMozViewPrivate::goForward()
@@ -1255,22 +1248,14 @@ void QMozViewPrivate::goForward()
     if (!mViewInitialized)
         return;
 
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QtMoz::chromeSessionGoForward(this);
-    } else {
-        mView->GoForward(false, true);
-    }
+    QtMoz::chromeSessionGoForward(this);
 }
 
 void QMozViewPrivate::stop()
 {
     if (!mViewInitialized)
         return;
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QtMoz::chromeSessionStop(this);
-    } else {
-        mView->StopLoad();
-    }
+    QtMoz::chromeSessionStop(this);
 }
 
 void QMozViewPrivate::cancelPendingNavigation()
@@ -1295,11 +1280,7 @@ void QMozViewPrivate::reload()
     if (!mPendingUrl.isEmpty()) {
         load(mPendingUrl, mPendingFromExternal);
     } else {
-        if (QtMoz::isChromeHosted(mMozWindow.data())) {
-            QtMoz::chromeSessionReload(this, false);
-        } else {
-            mView->Reload(false);
-        }
+        QtMoz::chromeSessionReload(this, false);
     }
 }
 
@@ -1322,24 +1303,19 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
     qCDebug(lcEmbedLiteExt) << "url:" << url.toUtf8().data();
 #endif
     mProgress = 0;
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (chromeHosted) {
-        const QMozChromeTabSnapshot * const selected =
-                mTabModel->selectedTab();
-        const quint64 selectedId = selected ? selected->id : 0;
-        const quint64 selectedLocationRevision = selected
-                ? selected->locationRevision : 0;
-        const bool selectedLoading = selected && selected->loading;
-        if (!QtMoz::chromeSessionLoadURL(this, url, fromExternal)) {
-            return;
-        }
-        mPendingUrlTabId = selectedId;
-        mPendingUrlLocationRevision = selectedLocationRevision;
-        mPendingUrlSnapshotRevision = mTabSnapshotRevision;
-        mPendingUrlSawLoading = selectedLoading;
-    } else {
-        mView->LoadURL(url.toUtf8().data(), fromExternal);
+    const QMozChromeTabSnapshot * const selected =
+            mTabModel->selectedTab();
+    const quint64 selectedId = selected ? selected->id : 0;
+    const quint64 selectedLocationRevision = selected
+            ? selected->locationRevision : 0;
+    const bool selectedLoading = selected && selected->loading;
+    if (!QtMoz::chromeSessionLoadURL(this, url, fromExternal)) {
+        return;
     }
+    mPendingUrlTabId = selectedId;
+    mPendingUrlLocationRevision = selectedLocationRevision;
+    mPendingUrlSnapshotRevision = mTabSnapshotRevision;
+    mPendingUrlSawLoading = selectedLoading;
 
     const QUrl oldExposedUrl = this->url();
     if (mPendingUrl != url || mPendingFromExternal != fromExternal) {
@@ -1356,16 +1332,11 @@ void QMozViewPrivate::scrollTo(int x, int y)
     if (!mViewInitialized || qFuzzyIsNull(mContentResolution)) {
         return;
     }
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        const quint64 tabId = selectedChromeTabId();
-        if (tabId) {
-            QtMoz::chromeSessionScrollTo(
-                    this, tabId, x / mContentResolution,
-                    y / mContentResolution);
-        }
-    } else if (mView) {
-        // Map to CSS pixels.
-        mView->ScrollTo(x / mContentResolution, y / mContentResolution);
+    const quint64 tabId = selectedChromeTabId();
+    if (tabId) {
+        QtMoz::chromeSessionScrollTo(
+                this, tabId, x / mContentResolution,
+                y / mContentResolution);
     }
 }
 
@@ -1374,23 +1345,17 @@ void QMozViewPrivate::scrollBy(int x, int y)
     if (!mViewInitialized || qFuzzyIsNull(mContentResolution)) {
         return;
     }
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        const quint64 tabId = selectedChromeTabId();
-        if (tabId) {
-            QtMoz::chromeSessionScrollBy(
-                    this, tabId, x / mContentResolution,
-                    y / mContentResolution);
-        }
-    } else if (mView) {
-        // Map to CSS pixels.
-        mView->ScrollBy(x / mContentResolution, y / mContentResolution);
+    const quint64 tabId = selectedChromeTabId();
+    if (tabId) {
+        QtMoz::chromeSessionScrollBy(
+                this, tabId, x / mContentResolution,
+                y / mContentResolution);
     }
 }
 
 void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callback, const QJSValue &errorCallback)
 {
-    if (!mViewInitialized
-            || (!mView && !QtMoz::isChromeHosted(mMozWindow.data()))) {
+    if (!mViewInitialized || !mMozWindow) {
         const QString viewInitialzedError = !mViewInitialized
                 ? QStringLiteral("Error: run javascript can be called only after view is initialized.")
                 : QStringLiteral("Error: run javascript is not available for this view.");
@@ -1446,25 +1411,21 @@ void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callb
     data.insert(QString("script"), script);
     data.insert(QString("callbackId"), callbackId);
     PendingJSCall pending = { callback, errorCallback, 0, 0 };
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (chromeHosted) {
-        const QMozChromeTabSnapshot * const selected =
-                mTabModel->selectedTab();
-        if (!selected) {
-            if (errorCallback.isCallable()) {
-                QJSValue cb = errorCallback;
-                cb.call(QJSValueList() << QJSValue(
-                        QStringLiteral("Error: no selected tab.")));
-            }
-            return;
+    const QMozChromeTabSnapshot * const selected =
+            mTabModel->selectedTab();
+    if (!selected) {
+        if (errorCallback.isCallable()) {
+            QJSValue cb = errorCallback;
+            cb.call(QJSValueList() << QJSValue(
+                    QStringLiteral("Error: no selected tab.")));
         }
-        pending.tabId = selected->id;
-        pending.persistentId = selected->persistentId;
+        return;
     }
+    pending.tabId = selected->id;
+    pending.persistentId = selected->persistentId;
     mPendingJSCalls.insert(callbackId, pending);
 
-    if (chromeHosted
-            && !doSendAsyncMessageToTab(
+    if (!doSendAsyncMessageToTab(
                     pending.tabId, QLatin1String(RUN_JAVASCRIPT), data)) {
         mPendingJSCalls.remove(callbackId);
         if (errorCallback.isCallable()) {
@@ -1472,8 +1433,6 @@ void QMozViewPrivate::runJavaScript(const QString &script, const QJSValue &callb
             cb.call(QJSValueList() << QJSValue(
                     QStringLiteral("Error: failed to send script.")));
         }
-    } else if (!chromeHosted) {
-        doSendAsyncMessage(QLatin1String(RUN_JAVASCRIPT), QVariant(data));
     }
 }
 
@@ -1486,15 +1445,12 @@ void QMozViewPrivate::loadFrameScript(const QString &frameScript)
 {
     if (!mViewInitialized) {
         queuePendingFrameScript(frameScript);
-    } else if (QtMoz::isChromeHosted(mMozWindow.data())) {
+    } else {
         if (!QtMoz::chromeSessionLoadFrameScript(this, frameScript)) {
             queuePendingFrameScript(frameScript);
-            scheduleChromeRegistrationRetry();
         } else {
             mPendingFrameScripts.removeAll(frameScript);
         }
-    } else if (mView) {
-        mView->LoadFrameScript(frameScript.toUtf8().data());
     }
 }
 
@@ -1505,16 +1461,11 @@ void QMozViewPrivate::addMessageListener(const std::string &name)
         return;
     }
 
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        if (!QtMoz::chromeSessionAddMessageListener(
-                this, QByteArray::fromStdString(name))) {
-            queuePendingMessageListener(name);
-            scheduleChromeRegistrationRetry();
-        } else {
-            removePendingMessageListener(name);
-        }
-    } else if (mView) {
-        mView->AddMessageListener(name.c_str());
+    if (!QtMoz::chromeSessionAddMessageListener(
+            this, QByteArray::fromStdString(name))) {
+        queuePendingMessageListener(name);
+    } else {
+        removePendingMessageListener(name);
     }
 }
 
@@ -1527,12 +1478,8 @@ void QMozViewPrivate::addMessageListeners(const std::vector<std::string> &messag
         return;
     }
 
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        for (const std::string &name : messageNamesList) {
-            addMessageListener(name);
-        }
-    } else if (mView) {
-        mView->AddMessageListeners(messageNamesList);
+    for (const std::string &name : messageNamesList) {
+        addMessageListener(name);
     }
 }
 
@@ -1569,21 +1516,7 @@ void QMozViewPrivate::removePendingMessageListener(
     }
 }
 
-void QMozViewPrivate::scheduleChromeRegistrationRetry()
-{
-    if (mChromeRegistrationRetryScheduled || !mViewInitialized
-            || (mPendingFrameScripts.isEmpty()
-                && mPendingMessageListeners.empty())) {
-        return;
-    }
-    mChromeRegistrationRetryScheduled = true;
-    QTimer::singleShot(0, this, [this]() {
-        mChromeRegistrationRetryScheduled = false;
-        flushPendingChromeRegistrations(false);
-    });
-}
-
-void QMozViewPrivate::flushPendingChromeRegistrations(bool scheduleRetry)
+void QMozViewPrivate::flushPendingChromeRegistrations()
 {
     if (!QtMoz::isChromeHosted(mMozWindow.data())
             || !QtMoz::chromeSessionUniqueId(this)) {
@@ -1606,9 +1539,6 @@ void QMozViewPrivate::flushPendingChromeRegistrations(bool scheduleRetry)
                 this, QByteArray::fromStdString(name))) {
             queuePendingMessageListener(name);
         }
-    }
-    if (scheduleRetry) {
-        scheduleChromeRegistrationRetry();
     }
 }
 
@@ -1659,6 +1589,80 @@ QVariant QMozViewPrivate::inputMethodQuery(Qt::InputMethodQuery property) const
     }
 }
 
+void QMozViewPrivate::dispatchInputMethodEvent(
+        const PendingInputMethodEvent &event)
+{
+    if (mViewInitialized) {
+        uint16_t charCode = (event.commit.size() == 1 && event.commit[0].isPrint())
+                          ? (int32_t)event.commit[0].unicode()
+                          : 0;
+        bool ok;
+        int asciiNumber = event.commit.toInt(&ok) + Qt::Key_0;
+        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
+                   || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
+            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
+            QtMoz::chromeSessionSendKeyPress(
+                    this, domKeyCode, 0, charCode);
+            QtMoz::chromeSessionSendKeyRelease(
+                    this, domKeyCode, 0, charCode);
+            qGuiApp->inputMethod()->reset();
+
+        } else {
+            if (event.hadPreedit || !event.commit.isEmpty()
+                    || !event.preedit.isEmpty()
+                    || event.replacementLength > 0) {
+                if (event.replacementOffset >= 0) {
+                    QtMoz::chromeSessionSendTextEventAtOffset(
+                            this, event.commit, event.preedit,
+                            static_cast<quint32>(event.replacementOffset),
+                            event.replacementLength);
+                } else {
+                    QtMoz::chromeSessionSendTextEvent(
+                            this, event.commit, event.preedit,
+                            event.replacementStart,
+                            event.replacementLength);
+                }
+            }
+        }
+    }
+}
+
+void QMozViewPrivate::clearPendingInputMethodEvents()
+{
+    mWaitingForBackspaceInputContext = false;
+    mPendingInputMethodEvents.clear();
+}
+
+void QMozViewPrivate::flushPendingInputMethodEvents()
+{
+    bool ok = false;
+    const int cursorPosition = mCursorPosition.toInt(&ok);
+    QVector<PendingInputMethodEvent> pending = mPendingInputMethodEvents;
+    clearPendingInputMethodEvents();
+
+    if (!ok) {
+        return;
+    }
+    for (PendingInputMethodEvent &event : pending) {
+        if (event.replacementLength <= 0) {
+            continue;
+        }
+        const qint64 replacementOffset =
+                static_cast<qint64>(cursorPosition)
+                + event.replacementStart;
+        if (replacementOffset < 0
+                || replacementOffset > std::numeric_limits<quint32>::max()) {
+            return;
+        }
+        event.replacementOffset = replacementOffset;
+        break;
+    }
+
+    for (const PendingInputMethodEvent &event : pending) {
+        dispatchInputMethodEvent(event);
+    }
+}
+
 void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
 {
 #ifdef DEVELOPMENT_BUILD
@@ -1668,55 +1672,32 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
                             << ", replSt:" << event->replacementStart();
 #endif
 
-    if (mViewInitialized) {
-        const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-        if (!chromeHosted && !mView) {
-            mPreedit = !event->preeditString().isEmpty();
-            return;
-        }
-        uint16_t charCode = (event->commitString().size() == 1 && event->commitString()[0].isPrint())
-                          ? (int32_t)event->commitString()[0].unicode()
-                          : 0;
-        bool ok;
-        int asciiNumber = event->commitString().toInt(&ok) + Qt::Key_0;
-        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
-                   || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
-            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
-            if (chromeHosted) {
-                QtMoz::chromeSessionSendKeyPress(
-                        this, domKeyCode, 0, charCode);
-                QtMoz::chromeSessionSendKeyRelease(
-                        this, domKeyCode, 0, charCode);
-            } else {
-                mView->SendKeyPress(domKeyCode, 0, charCode);
-                mView->SendKeyRelease(domKeyCode, 0, charCode);
-            }
-            qGuiApp->inputMethod()->reset();
+    PendingInputMethodEvent pending;
+    pending.commit = event->commitString();
+    pending.preedit = event->preeditString();
+    pending.replacementStart = event->replacementStart();
+    pending.replacementLength = event->replacementLength();
+    pending.replacementOffset = -1;
+    pending.hadPreedit = mPreedit;
 
-        } else {
-            if (mPreedit || !event->commitString().isEmpty()
-                    || !event->preeditString().isEmpty()
-                    || event->replacementLength() > 0) {
-                if (chromeHosted) {
-                    QtMoz::chromeSessionSendTextEvent(
-                            this, event->commitString(),
-                            event->preeditString(),
-                            event->replacementStart(),
-                            event->replacementLength());
-                } else {
-                    mView->SendTextEvent(
-                            event->commitString().toUtf8().data(),
-                            event->preeditString().toUtf8().data(),
-                            event->replacementStart(),
-                            event->replacementLength());
-                }
-                if (event->commitString().isEmpty() && !event->preeditString().isEmpty()) {
-                    QInputMethod *inputContext = qGuiApp->inputMethod();
-                    if (inputContext) {
-                        QTimer::singleShot(0, inputContext, &QInputMethod::commit);
-                    }
-                }
-            }
+    const bool backspaceUpdate = mWaitingForBackspaceInputContext
+            && pending.commit.isEmpty()
+            && pending.replacementStart < 0
+            && pending.replacementLength > 0;
+    const bool completesDeferredPreedit =
+            !mPendingInputMethodEvents.isEmpty() && mPreedit;
+    if (backspaceUpdate || completesDeferredPreedit) {
+        mPendingInputMethodEvents.append(pending);
+    } else {
+        clearPendingInputMethodEvents();
+        dispatchInputMethodEvent(pending);
+    }
+
+    if (pending.commit.isEmpty() && !pending.preedit.isEmpty()) {
+        QInputMethod *inputContext = qGuiApp->inputMethod();
+        if (inputContext) {
+            QMetaObject::invokeMethod(
+                    inputContext, "commit", Qt::QueuedConnection);
         }
     }
     mPreedit = !event->preeditString().isEmpty();
@@ -1727,9 +1708,11 @@ void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
     if (!mViewInitialized)
         return;
 
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (!chromeHosted && !mView)
-        return;
+    if (event->key() == Qt::Key_Backspace && mIsInputFieldFocused
+            && mCursorPosition.isValid()) {
+        mPendingInputMethodEvents.clear();
+        mWaitingForBackspaceInputContext = true;
+    }
 
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
     int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
@@ -1740,12 +1723,8 @@ void QMozViewPrivate::keyPressEvent(QKeyEvent *event)
             return;
         }
     }
-    if (chromeHosted) {
-        QtMoz::chromeSessionSendKeyPress(
-                this, domKeyCode, gmodifiers, charCode);
-    } else {
-        mView->SendKeyPress(domKeyCode, gmodifiers, charCode);
-    }
+    QtMoz::chromeSessionSendKeyPress(
+            this, domKeyCode, gmodifiers, charCode);
 }
 
 void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
@@ -1753,32 +1732,19 @@ void QMozViewPrivate::keyReleaseEvent(QKeyEvent *event)
     if (!mViewInitialized)
         return;
 
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (!chromeHosted && !mView)
-        return;
-
     int32_t gmodifiers = MozKey::QtModifierToDOMModifier(event->modifiers());
     int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(event->key(), event->modifiers());
     int32_t charCode = 0;
     if (event->text().length() && event->text()[0].isPrint()) {
         charCode = (int32_t)event->text()[0].unicode();
         if (getenv("USE_TEXT_EVENTS")) {
-            if (chromeHosted) {
-                QtMoz::chromeSessionSendTextEvent(
-                        this, event->text(), QString(), 0, 0);
-            } else {
-                mView->SendTextEvent(
-                        event->text().toUtf8().data(), "", 0, 0);
-            }
+            QtMoz::chromeSessionSendTextEvent(
+                    this, event->text(), QString(), 0, 0);
             return;
         }
     }
-    if (chromeHosted) {
-        QtMoz::chromeSessionSendKeyRelease(
-                this, domKeyCode, gmodifiers, charCode);
-    } else {
-        mView->SendKeyRelease(domKeyCode, gmodifiers, charCode);
-    }
+    QtMoz::chromeSessionSendKeyRelease(
+            this, domKeyCode, gmodifiers, charCode);
 }
 
 void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &value)
@@ -1791,8 +1757,7 @@ void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &v
         return;
     }
 
-    if (message == QLatin1String(CONFIRM_RESPONSE)
-            && QtMoz::isChromeHosted(mMozWindow.data())) {
+    if (message == QLatin1String(CONFIRM_RESPONSE)) {
         QVariant responseValue = value;
         if (value.userType() == QMetaType::type("QJSValue")) {
             responseValue = qvariant_cast<QJSValue>(value).toVariant();
@@ -1816,26 +1781,24 @@ void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &v
         return;
     }
 
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QVariant routedValue = value;
-        if (value.userType() == QMetaType::type("QJSValue")) {
-            routedValue = qvariant_cast<QJSValue>(value).toVariant();
-        }
-        const QVariantMap routedMap = routedValue.toMap();
-        if (routedMap.contains(QStringLiteral("tabId"))) {
-            const QVariant tabValue = routedMap.value(
-                    QStringLiteral("tabId"));
-            quint64 tabId = 0;
-            if (tabValue.type() != QVariant::String
-                    || !parseDecimalId(
-                            tabValue.toString(), false, &tabId)) {
-                qCWarning(lcEmbedLiteExt)
-                        << "Invalid hosted message tabId";
-                return;
-            }
-            doSendAsyncMessageToTab(tabId, message, routedValue);
+    QVariant routedValue = value;
+    if (value.userType() == QMetaType::type("QJSValue")) {
+        routedValue = qvariant_cast<QJSValue>(value).toVariant();
+    }
+    const QVariantMap routedMap = routedValue.toMap();
+    if (routedMap.contains(QStringLiteral("tabId"))) {
+        const QVariant tabValue = routedMap.value(
+                QStringLiteral("tabId"));
+        quint64 tabId = 0;
+        if (tabValue.type() != QVariant::String
+                || !parseDecimalId(
+                        tabValue.toString(), false, &tabId)) {
+            qCWarning(lcEmbedLiteExt)
+                    << "Invalid hosted message tabId";
             return;
         }
+        doSendAsyncMessageToTab(tabId, message, routedValue);
+        return;
     }
 
     doSendAsyncMessage(message, value);
@@ -1847,7 +1810,6 @@ bool QMozViewPrivate::sendAsyncMessageToTab(
 {
     quint64 runtimeId = 0;
     if (!mViewInitialized
-            || !QtMoz::isChromeHosted(mMozWindow.data())
             || message == QLatin1String(RUN_JAVASCRIPT)
             || !parseDecimalId(tabId, false, &runtimeId)) {
         return false;
@@ -1859,6 +1821,8 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
+        QtMoz::setChromeHosted(mMozWindow.data(), true);
+        QtMoz::setChromePrivate(mMozWindow.data(), mPrivateMode);
         if (mSize.isEmpty() && !mMozWindow->size().isEmpty()) {
             mSize = mMozWindow->size();
             if (!mViewInitialized) {
@@ -1886,6 +1850,10 @@ bool QMozViewPrivate::attachChromeSession()
         // materialized tab. Install them before zero-tab restore so lazy and
         // later-created tabs inherit the baseline QMoz messaging contract.
         flushPendingChromeRegistrations();
+    }
+    if (attached) {
+        QtMoz::chromeSessionSetJavascriptEnabled(
+                this, mJavascriptEnabled);
     }
     if (attached && mRestorePending) {
         const bool accepted = QtMoz::chromeSessionRestoreTabs(
@@ -1977,8 +1945,7 @@ void QMozViewPrivate::onCompositorCreated()
     if (mMozWindow) {
         QtMoz::startWindowFrameStream(mMozWindow.data());
     }
-    if ((mView || QtMoz::isChromeHosted(mMozWindow.data()))
-            && (mDirtyState & DirtyScreenProperties)) {
+    if (mMozWindow && (mDirtyState & DirtyScreenProperties)) {
         sendScreenProperties();
         mDirtyState &= ~DirtyScreenProperties;
     }
@@ -2008,7 +1975,6 @@ void QMozViewPrivate::createView()
     if (!mContext->isInitialized()) {
         connect(mContext, &QMozContext::initialized, this, &QMozViewPrivate::createView);
     } else {
-        Q_ASSERT(!mView);
         QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
         if (mozView) {
             mozView->prepareMozWindow();
@@ -2017,52 +1983,28 @@ void QMozViewPrivate::createView()
         if (!mMozWindow) {
             return;
         }
-        if (QtMoz::isChromeHosted(mMozWindow.data())) {
-            // A normal Gecko chrome AppWindow owns its XUL browser and does
-            // not have a legacy EmbedLiteView. Its compositor and token frame
-            // stream are already connected by prepareMozWindow().
-            setScreenProperties(
-                    QGuiApplication::primaryScreen()->depth(),
-                    QGuiApplication::primaryScreen()
-                            ->physicalDotsPerInch());
-            const QPointer<QMozViewPrivate> guardedView(this);
-            connect(mMozWindow.data(), &QMozWindow::initialized,
-                    this, [guardedView]() {
-                if (guardedView && guardedView->mMozWindow
-                        && !guardedView->mViewInitialized) {
-                    const bool attached =
-                            guardedView->attachChromeSession();
-                    if (guardedView && attached) {
-                        guardedView->ViewInitialized();
-                    }
-                }
-            });
-            if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
-                    && attachChromeSession()) {
-                if (guardedView) {
+        setScreenProperties(
+                QGuiApplication::primaryScreen()->depth(),
+                QGuiApplication::primaryScreen()
+                        ->physicalDotsPerInch());
+        const QPointer<QMozViewPrivate> guardedView(this);
+        connect(mMozWindow.data(), &QMozWindow::initialized,
+                this, [guardedView]() {
+            if (guardedView && guardedView->mMozWindow
+                    && !guardedView->mViewInitialized) {
+                const bool attached =
+                        guardedView->attachChromeSession();
+                if (guardedView && attached) {
                     guardedView->ViewInitialized();
                 }
             }
-            return;
-        }
-
-        const QSharedPointer<QMozSurface> surface =
-                QtMoz::windowSurface(mMozWindow.data());
-        const bool hasWindow = QtMoz::withEmbedLiteWindow(
-                surface, [&](EmbedLiteWindow *window) {
-            mView = mContext->GetApp()->CreateView(
-                    window, mParentID, mParentBrowsingContext,
-                    mPrivateMode, mDesktopMode, mHidden);
         });
-        Q_ASSERT(hasWindow && mView);
-        if (!hasWindow || !mView) {
-            return;
+        if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
+                && attachChromeSession()) {
+            if (guardedView) {
+                guardedView->ViewInitialized();
+            }
         }
-        mView->SetListener(this);
-        setScreenProperties(QGuiApplication::primaryScreen()->depth(),
-                            QGuiApplication::primaryScreen()->physicalDotsPerInch());
-
-        mViewIface->uniqueIdChanged();
     }
 }
 
@@ -2070,79 +2012,30 @@ void QMozViewPrivate::ViewInitialized()
 {
     mViewInitialized = true;
 
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (chromeHosted) {
-        // Flush anything queued after attachment but before the public view
-        // initialization notification.
-        flushPendingChromeRegistrations();
+    flushPendingChromeRegistrations();
 
-        if (!mPendingUrl.isEmpty()
-                && mPendingUrl.toUtf8()
-                   != QtMoz::chromeInitialUrl(mMozWindow.data())) {
-            load(mPendingUrl, mPendingFromExternal);
-        }
-        if ((mDirtyState & DirtySize) && mMozWindow && !mSize.isEmpty()) {
-            mMozWindow->setSize(mSize.toSize());
-            mDirtyState &= ~DirtySize;
-        } else if (mMozWindow) {
-            mSize = mMozWindow->size();
-        }
-        QtMoz::chromeSessionSetFocused(this, mViewIsFocused);
-        sendScreenProperties();
-        applyChromePageSettings();
-        mViewIface->uniqueIdChanged();
-        mViewIface->viewInitialized();
-        mViewIface->canGoBackChanged();
-        mViewIface->canGoForwardChanged();
-        return;
-    }
-
-    // Load frame scripts first and then message listeners.
-    Q_FOREACH (const QString &frameScript, mPendingFrameScripts) {
-        loadFrameScript(frameScript);
-    }
-    mPendingFrameScripts.clear();
-
-    addMessageListeners(mPendingMessageListeners);
-    mPendingMessageListeners.clear();
-
-    if (!mPendingUrl.isEmpty()) {
+    if (!mPendingUrl.isEmpty()
+            && mPendingUrl.toUtf8()
+               != QtMoz::chromeInitialUrl(mMozWindow.data())) {
         load(mPendingUrl, mPendingFromExternal);
     }
-
-    if ((mDirtyState & DirtySize) && mSize.isEmpty() && mMozWindow && !mMozWindow->size().isEmpty()) {
-        mSize = mMozWindow->size();
-    }
-
-    if (mDirtyState & DirtySize) {
-        if (mMozWindow && !mSize.isEmpty()) {
-            mMozWindow->setSize(mSize.toSize());
-        }
-        setSize(mSize);
+    QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
+    if (mozView) {
+        // The hosted native window uses screen-native dimensions. Keep the
+        // initial callback on the same orientation-aware geometry path as
+        // later QML polish updates; assigning mSize directly here can undo
+        // the transposition performed while constructing the window.
+        mozView->applyMozWindowGeometry();
+    } else if ((mDirtyState & DirtySize) && mMozWindow && !mSize.isEmpty()) {
+        mMozWindow->setSize(mSize.toSize());
         mDirtyState &= ~DirtySize;
     } else if (mMozWindow) {
         mSize = mMozWindow->size();
     }
-
-    clearDirtyDynamicToolbarHeight();
-
-    if (mDirtyState & DirtyMargin) {
-        mView->SetMargins(mMargins.top(), mMargins.right(), mMargins.bottom(), mMargins.left());
-        mViewIface->marginsChanged();
-        mDirtyState &= ~DirtyMargin;
-    }
-
-    if (mDirtyState & DirtySafeAreaInsets) {
-        mView->SetSafeAreaInsets(mSafeAreaInsets.top(), mSafeAreaInsets.right(), mSafeAreaInsets.bottom(), mSafeAreaInsets.left());
-        mViewIface->safeAreaInsetsChanged();
-        mDirtyState &= ~DirtySafeAreaInsets;
-    }
-
-    if (!mHttpUserAgent.isEmpty()) {
-        mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
-    }
-
-    // This is currently part of official API, so let's subscribe to these messages by default
+    QtMoz::chromeSessionSetFocused(this, mViewIsFocused);
+    sendScreenProperties();
+    applyChromePageSettings();
+    mViewIface->uniqueIdChanged();
     mViewIface->viewInitialized();
     mViewIface->canGoBackChanged();
     mViewIface->canGoForwardChanged();
@@ -2158,8 +2051,7 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
 {
     if (height != mDynamicToolbarHeight) {
         mDynamicToolbarHeight = height;
-        if (mViewInitialized
-                && QtMoz::isChromeHosted(mMozWindow.data())) {
+        if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
             if (tabId && QtMoz::chromeSessionSetDynamicToolbarHeight(
                     this, tabId, height)) {
@@ -2168,8 +2060,6 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
             } else {
                 mDirtyState |= DirtyDynamicToolbarHeight;
             }
-        } else if (mViewInitialized && mView && mDOMContentLoaded) {
-            mView->SetDynamicToolbarHeight(height);
         } else {
             mDirtyState |= DirtyDynamicToolbarHeight;
         }
@@ -2186,8 +2076,7 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             mBottomMargin = mMargins.bottom();
         }
 
-        if (mViewInitialized
-                && QtMoz::isChromeHosted(mMozWindow.data())) {
+        if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
             if (tabId && QtMoz::chromeSessionSetMargins(
                     this, tabId, margins.top(), margins.right(),
@@ -2197,9 +2086,6 @@ void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
             } else {
                 mDirtyState |= DirtyMargin;
             }
-        } else if (mViewInitialized && mView) {
-            mView->SetMargins(margins.top(), margins.right(), margins.bottom(), margins.left());
-            mViewIface->marginsChanged();
         } else {
             mDirtyState |= DirtyMargin;
         }
@@ -2211,8 +2097,7 @@ void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
     if (insets != mSafeAreaInsets) {
         mSafeAreaInsets = insets;
 
-        if (mViewInitialized
-                && QtMoz::isChromeHosted(mMozWindow.data())) {
+        if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
             if (tabId && QtMoz::chromeSessionSetSafeAreaInsets(
                     this, tabId, insets.top(), insets.right(),
@@ -2222,9 +2107,6 @@ void QMozViewPrivate::setSafeAreaInsets(const QMargins &insets)
             } else {
                 mDirtyState |= DirtySafeAreaInsets;
             }
-        } else if (mViewInitialized && mView) {
-            mView->SetSafeAreaInsets(insets.top(), insets.right(), insets.bottom(), insets.left());
-            mViewIface->safeAreaInsetsChanged();
         } else {
             mDirtyState |= DirtySafeAreaInsets;
         }
@@ -2295,9 +2177,6 @@ void QMozViewPrivate::OnLoadFinished(void)
     }
 
     if (mMozWindow) {
-        if (mViewInitialized && mView) {
-            mView->ScheduleUpdate();
-        }
         mMozWindow->scheduleUpdate();
     }
 }
@@ -2307,90 +2186,20 @@ void QMozViewPrivate::OnWindowCloseRequested()
     mViewIface->windowCloseRequested();
 }
 
-// View finally destroyed and deleted
 void QMozViewPrivate::ViewDestroyed()
 {
-    // TODO : Can this be removed?
-    // Both ~QMozOpenGLWebPage and ~QuickMozView are
-    // setting listener to null. Hence, EmbedLiteView::Destroyed()
-    // will never be able to call this.
-
 #ifdef DEVELOPMENT_BUILD
     qCInfo(lcEmbedLiteExt);
 #endif
 
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (chromeHosted) {
-        QtMoz::detachChromeSession(this);
-        clearChromeTabs();
-    }
-
-    mView = nullptr;
+    QtMoz::detachChromeSession(this);
+    clearChromeTabs();
     mViewInitialized = false;
 
-    if (mViewIface)
+    if (mViewIface) {
         mViewIface->viewDestroyed();
-    if (chromeHosted && mViewIface) {
         mViewIface->uniqueIdChanged();
     }
-    if (!chromeHosted) {
-        mViewIface = nullptr;
-    }
-}
-
-void QMozViewPrivate::RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData)
-{
-    QString message = QString::fromUtf16(aMessage);
-    QString data = QString::fromUtf16(aData);
-
-    bool ok = false;
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
-    ok = error.error == QJsonParseError::NoError;
-    QVariant vdata = doc.toVariant();
-
-    if (ok) {
-#ifdef DEVELOPMENT_BUILD
-        qCDebug(lcEmbedLiteExt) << "mesg:" << message << ", data:" << data;
-#endif
-        if (!handleAsyncMessage(message, vdata))
-            mViewIface->recvAsyncMessage(message, vdata);
-    } else {
-        qCWarning(lcEmbedLiteExt) << "JSON parse error:" << error.errorString();
-#ifdef DEVELOPMENT_BUILD
-        qCDebug(lcEmbedLiteExt) << "parse: s:'" << data << "', errLine:" << error.offset;
-#endif
-    }
-}
-
-char *QMozViewPrivate::RecvSyncMessage(const char16_t *aMessage, const char16_t *aData)
-{
-    QMozReturnValue response;
-
-    QString message = QString::fromUtf16(aMessage);
-    QString data = QString::fromUtf16(aData);
-
-    QJsonParseError error;
-    QJsonDocument doc = QJsonDocument::fromJson(data.toUtf8(), &error);
-    Q_ASSERT(error.error == QJsonParseError::NoError);
-    QVariant vdata = doc.toVariant();
-
-    mViewIface->recvSyncMessage(message, vdata, &response);
-
-    QVariant responseMessage = response.getMessage();
-    QJsonDocument responseDocument;
-    if (!responseMessage.isValid()) {
-        // Default to an empty json
-        responseDocument = QJsonDocument::fromJson("{\"\":\"\"}");
-    } else if (responseMessage.userType() == QMetaType::type("QJSValue")) {
-        // Qt 5.6 likes to pass a QJSValue
-        QJSValue jsValue = qvariant_cast<QJSValue>(responseMessage);
-        responseDocument = QJsonDocument::fromVariant(jsValue.toVariant());
-    } else {
-        responseDocument = QJsonDocument::fromVariant(responseMessage);
-    }
-    QByteArray array = responseDocument.toJson();
-    return strdup(array.constData());
 }
 
 void QMozViewPrivate::OnLoadRedirect(void)
@@ -2417,9 +2226,6 @@ void QMozViewPrivate::OnFirstPaint(int32_t aX, int32_t aY)
     mIsPainted = true;
     mViewIface->firstPaint(aX, aY);
     if (mMozWindow) {
-        if (mViewInitialized && mView) {
-            mView->ScheduleUpdate();
-        }
         mMozWindow->scheduleUpdate();
     }
 }
@@ -2445,12 +2251,11 @@ void QMozViewPrivate::OnScrolledAreaChanged(unsigned int aWidth, unsigned int aH
 void QMozViewPrivate::setIsFocused(bool aIsFocused)
 {
     mViewIsFocused = aIsFocused;
+    if (!aIsFocused) {
+        clearPendingInputMethodEvents();
+    }
     if (mViewInitialized) {
-        if (QtMoz::isChromeHosted(mMozWindow.data())) {
-            QtMoz::chromeSessionSetFocused(this, aIsFocused);
-        } else {
-            mView->SetIsFocused(aIsFocused);
-        }
+        QtMoz::chromeSessionSetFocused(this, aIsFocused);
     }
 }
 
@@ -2459,8 +2264,7 @@ void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
     if (mDesktopMode != aDesktopMode) {
         mDesktopMode = aDesktopMode;
 
-        if (mViewInitialized
-                && QtMoz::isChromeHosted(mMozWindow.data())) {
+        if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
             if (!tabId || !QtMoz::chromeSessionSetDesktopMode(
                     this, tabId, aDesktopMode)) {
@@ -2468,18 +2272,28 @@ void QMozViewPrivate::setDesktopMode(bool aDesktopMode)
             } else {
                 mDirtyState &= ~DirtyDesktopMode;
             }
-        } else if (mViewInitialized && mView) {
-            mView->SetDesktopMode(aDesktopMode);
         }
 
         mViewIface->desktopModeChanged();
     }
 }
 
+void QMozViewPrivate::setJavascriptEnabled(bool aEnabled)
+{
+    if (mJavascriptEnabled == aEnabled) {
+        return;
+    }
+    mJavascriptEnabled = aEnabled;
+    if (mViewInitialized) {
+        QtMoz::chromeSessionSetJavascriptEnabled(this, aEnabled);
+    }
+    mViewIface->javascriptEnabledChanged();
+}
+
 void QMozViewPrivate::setThrottlePainting(bool aThrottle)
 {
     mThrottlePainting = aThrottle;
-    if (mViewInitialized && QtMoz::isChromeHosted(mMozWindow.data())) {
+    if (mViewInitialized) {
         const quint64 tabId = selectedChromeTabId();
         if (!tabId || !QtMoz::chromeSessionSetThrottlePainting(
                 this, tabId, aThrottle)) {
@@ -2487,8 +2301,6 @@ void QMozViewPrivate::setThrottlePainting(bool aThrottle)
         } else {
             mDirtyState &= ~DirtyThrottlePainting;
         }
-    } else if (mViewInitialized && mView) {
-        mView->SetThrottlePainting(aThrottle);
     }
 }
 
@@ -2521,6 +2333,9 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     mViewIface->setInputMethodHints(hints);
     if (aFocusChange || aIstate) {
         mIsInputFieldFocused = aIstate;
+        if (!mIsInputFieldFocused) {
+            clearPendingInputMethodEvents();
+        }
         if (mViewIsFocused) {
 #ifndef QT_NO_IM
             QInputMethod *inputContext = qGuiApp->inputMethod();
@@ -2541,73 +2356,10 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     mViewIface->imeNotification(aIstate, aOpen, aCause, aFocusChange, imType);
 }
 
-void QMozViewPrivate::GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen)
-{
-    QInputMethod *inputContext = qGuiApp->inputMethod();
-    if (aIMEOpen) {
-        *aIMEOpen = inputContext->isVisible();
-    }
-}
-
 void QMozViewPrivate::OnTitleChanged(const char16_t *aTitle)
 {
     mTitle = QString((QChar *)aTitle);
     mViewIface->titleChanged();
-}
-
-void QMozViewPrivate::OnDynamicToolbarHeightChanged()
-{
-    mViewIface->dynamicToolbarHeightChanged();
-}
-
-bool QMozViewPrivate::HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize)
-{
-    if (mContentRect.x() != aContentRect.x
-            || mContentRect.y() != aContentRect.y
-            || mContentRect.width() != aContentRect.width
-            || mContentRect.height() != aContentRect.height) {
-        mContentRect.setRect(aContentRect.x, aContentRect.y, aContentRect.width, aContentRect.height);
-        mViewIface->viewAreaChanged();
-    }
-
-    float contentResolution = contentWindowSize(mMozWindow).width() / aContentRect.width;
-    if (!qFuzzyIsNull(contentResolution)) {
-        if (mContentResolution != contentResolution) {
-            mContentResolution = contentResolution;
-            mViewIface->resolutionChanged();
-        }
-        updateScrollArea(
-                    aScrollableSize.width * mContentResolution,
-                    aScrollableSize.height * mContentResolution,
-                    aContentRect.x * mContentResolution,
-                    aContentRect.y * mContentResolution);
-    }
-
-    return false;
-}
-
-bool QMozViewPrivate::HandleLongTap(const nsIntPoint &aPoint)
-{
-    QMozReturnValue retval;
-    retval.setMessage(false);
-    mViewIface->handleLongTap(QPoint(aPoint.x, aPoint.y), &retval);
-    return retval.getMessage().toBool();
-}
-
-bool QMozViewPrivate::HandleSingleTap(const nsIntPoint &aPoint)
-{
-    QMozReturnValue retval;
-    retval.setMessage(false);
-    mViewIface->handleSingleTap(QPoint(aPoint.x, aPoint.y), &retval);
-    return retval.getMessage().toBool();
-}
-
-bool QMozViewPrivate::HandleDoubleTap(const nsIntPoint &aPoint)
-{
-    QMozReturnValue retval;
-    retval.setMessage(false);
-    mViewIface->handleDoubleTap(QPoint(aPoint.x, aPoint.y), &retval);
-    return retval.getMessage().toBool();
 }
 
 void QMozViewPrivate::touchEvent(QTouchEvent *event)
@@ -2813,11 +2565,7 @@ void QMozViewPrivate::receiveInputEvent(const EmbedTouchInput &event)
     if (!mViewInitialized) {
         return;
     }
-    if (QtMoz::isChromeHosted(mMozWindow.data())) {
-        QtMoz::chromeSessionReceiveInputEvent(this, event);
-    } else if (mView) {
-        mView->ReceiveInputEvent(event);
-    }
+    QtMoz::chromeSessionReceiveInputEvent(this, event);
 }
 
 void QMozViewPrivate::synthTouchBegin(const QVariant &touches)
@@ -2870,8 +2618,7 @@ void QMozViewPrivate::synthTouchEnd(const QVariant &touches)
 
 void QMozViewPrivate::recvMouseMove(int posX, int posY)
 {
-    if (mViewInitialized && QtMoz::isChromeHosted(mMozWindow.data())
-            && !mPendingTouchEvent) {
+    if (mViewInitialized && !mPendingTouchEvent) {
         const quint64 tabId = selectedChromeTabId();
         if (tabId) {
             QtMoz::chromeSessionSendMouseEvent(
@@ -2879,8 +2626,6 @@ void QMozViewPrivate::recvMouseMove(int posX, int posY)
                     posX, posY, QDateTime::currentMSecsSinceEpoch(),
                     0, 0, 0, 0);
         }
-    } else if (mViewInitialized && mView && !mPendingTouchEvent) {
-        mView->MouseMove(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
 }
 
@@ -2888,16 +2633,6 @@ void QMozViewPrivate::recvMouseEvent(
         QMouseEvent *event, QMozChromeMouseType type)
 {
     if (!event) {
-        return;
-    }
-    if (!QtMoz::isChromeHosted(mMozWindow.data())) {
-        if (type == QMozChromeMouseType::Move) {
-            recvMouseMove(event->pos().x(), event->pos().y());
-        } else if (type == QMozChromeMouseType::Down) {
-            recvMousePress(event->pos().x(), event->pos().y());
-        } else {
-            recvMouseRelease(event->pos().x(), event->pos().y());
-        }
         return;
     }
     if (!mViewInitialized || mPendingTouchEvent) {
@@ -2927,8 +2662,7 @@ void QMozViewPrivate::recvMouseEvent(
 void QMozViewPrivate::recvMousePress(int posX, int posY)
 {
     mViewIface->forceViewActiveFocus();
-    if (mViewInitialized && QtMoz::isChromeHosted(mMozWindow.data())
-            && !mPendingTouchEvent) {
+    if (mViewInitialized && !mPendingTouchEvent) {
         const quint64 tabId = selectedChromeTabId();
         if (tabId) {
             QtMoz::chromeSessionSendMouseEvent(
@@ -2936,15 +2670,12 @@ void QMozViewPrivate::recvMousePress(int posX, int posY)
                     posX, posY, QDateTime::currentMSecsSinceEpoch(),
                     0, 0, 0, 1);
         }
-    } else if (mViewInitialized && mView && !mPendingTouchEvent) {
-        mView->MousePress(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
 }
 
 void QMozViewPrivate::recvMouseRelease(int posX, int posY)
 {
-    if (mViewInitialized && QtMoz::isChromeHosted(mMozWindow.data())
-            && !mPendingTouchEvent) {
+    if (mViewInitialized && !mPendingTouchEvent) {
         const quint64 tabId = selectedChromeTabId();
         if (tabId) {
             QtMoz::chromeSessionSendMouseEvent(
@@ -2952,8 +2683,6 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
                     posX, posY, QDateTime::currentMSecsSinceEpoch(),
                     0, 0, 0, 1);
         }
-    } else if (mViewInitialized && mView && !mPendingTouchEvent) {
-        mView->MouseRelease(posX, posY, QDateTime::currentMSecsSinceEpoch(), 0, 0);
     }
 
     if (mPendingTouchEvent) {
@@ -2963,40 +2692,21 @@ void QMozViewPrivate::recvMouseRelease(int posX, int posY)
 
 void QMozViewPrivate::doSendAsyncMessage(const QString &message, const QVariant &value)
 {
-    const bool chromeHosted = QtMoz::isChromeHosted(mMozWindow.data());
-    if (!mViewInitialized || (!chromeHosted && !mView))
+    if (!mViewInitialized)
         return;
 
-    const quint64 tabId = chromeHosted ? selectedChromeTabId() : 0;
-    if (chromeHosted && !tabId) {
-        return;
-    }
-
-    if (chromeHosted) {
-        doSendAsyncMessageToTab(tabId, message, value);
+    const quint64 tabId = selectedChromeTabId();
+    if (!tabId) {
         return;
     }
 
-    QJsonDocument doc;
-    if (value.userType() == QMetaType::type("QJSValue")) {
-        // Qt 5.6 likes to pass a QJSValue
-        const QJSValue jsValue = qvariant_cast<QJSValue>(value);
-        doc = QJsonDocument::fromVariant(jsValue.toVariant());
-    } else {
-        doc = QJsonDocument::fromVariant(value);
-    }
-
-    const QByteArray array = doc.toJson(QJsonDocument::Compact);
-    const QString data(array);
-    mView->SendAsyncMessage((const char16_t *)message.utf16(),
-                            (const char16_t *)data.utf16());
+    doSendAsyncMessageToTab(tabId, message, value);
 }
 
 bool QMozViewPrivate::doSendAsyncMessageToTab(
         quint64 tabId, const QString &message, const QVariant &value)
 {
-    if (!mViewInitialized || !tabId
-            || !QtMoz::isChromeHosted(mMozWindow.data())) {
+    if (!mViewInitialized || !tabId) {
         return false;
     }
 
@@ -3149,8 +2859,12 @@ bool QMozViewPrivate::handleAsyncMessage(
         mAnchorPosition = map.value(QLatin1String("anchorPosition"));
         QInputMethod *inputContext = qGuiApp->inputMethod();
         inputContext->update(Qt::ImSurroundingText | Qt::ImCursorPosition | Qt::ImAnchorPosition);
+        if (mWaitingForBackspaceInputContext) {
+            flushPendingInputMethodEvents();
+        }
         return true;
     } else if (message == QLatin1String(INPUTMETHOD_RESET_INPUT_CONTEXT)) {
+        clearPendingInputMethodEvents();
         mSurroundingText = QVariant();
         mCursorPosition = QVariant();
         mAnchorPosition = QVariant();
@@ -3183,9 +2897,12 @@ bool QMozViewPrivate::handleAsyncMessage(
 void QMozViewPrivate::clearDirtyDynamicToolbarHeight()
 {
     if ((mDirtyState & DirtyDynamicToolbarHeight) && mViewInitialized
-            && mView && mDOMContentLoaded) {
-        mView->SetDynamicToolbarHeight(mDynamicToolbarHeight);
-        mDirtyState &= ~DirtyDynamicToolbarHeight;
+            && mDOMContentLoaded) {
+        const quint64 tabId = selectedChromeTabId();
+        if (tabId && QtMoz::chromeSessionSetDynamicToolbarHeight(
+                this, tabId, mDynamicToolbarHeight)) {
+            mDirtyState &= ~DirtyDynamicToolbarHeight;
+        }
     }
 }
 
@@ -3211,8 +2928,7 @@ void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)
 {
     if (mHttpUserAgent != httpUserAgent) {
         mHttpUserAgent = httpUserAgent;
-        if (mViewInitialized
-                && QtMoz::isChromeHosted(mMozWindow.data())) {
+        if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
             if (!tabId || !QtMoz::chromeSessionSetHttpUserAgent(
                     this, tabId, httpUserAgent)) {
@@ -3220,8 +2936,6 @@ void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)
             } else {
                 mDirtyState &= ~DirtyHttpUserAgent;
             }
-        } else if (mViewInitialized && mView) {
-            mView->SetHttpUserAgent((const char16_t *)mHttpUserAgent.utf16());
         }
         mViewIface->httpUserAgentChanged();
     }
@@ -3230,14 +2944,4 @@ void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)
 QString QMozViewPrivate::httpUserAgent() const
 {
     return mHttpUserAgent;
-}
-
-void QMozViewPrivate::OnHttpUserAgentUsed(const char16_t *aHttpUserAgent)
-{
-    QString httpUserAgent = QString::fromUtf16(aHttpUserAgent);
-    if (mHttpUserAgent != httpUserAgent) {
-        // Update the property, but don't send it back to the engine
-        mHttpUserAgent = httpUserAgent;
-        mViewIface->httpUserAgentChanged();
-    }
 }

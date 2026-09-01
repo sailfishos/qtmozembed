@@ -25,10 +25,7 @@
 #include <QVariantList>
 #include <QVector>
 
-#ifndef Q_MOC_RUN
-#include <mozilla/embedlite/EmbedLiteView.h>
-#endif
-
+#include <mozilla/embedlite/EmbedInputData.h>
 #include "qmozwindow.h"
 #include "qmozscrolldecorator.h"
 #include "qmozview_templated_wrapper.h"
@@ -44,17 +41,12 @@ class QMozWindow;
 
 namespace mozilla {
 namespace embedlite {
-class EmbedLiteView;
-class EmbedLiteViewListener;
 class EmbedTouchInput;
 class TouchPointF;
 }
 }
 
 class QMozViewPrivate : public QObject
-#ifndef Q_MOC_RUN
-    , public mozilla::embedlite::EmbedLiteViewListener
-#endif
 {
     Q_OBJECT
 public:
@@ -75,31 +67,21 @@ public:
     QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr);
     virtual ~QMozViewPrivate();
 
-    // EmbedLiteViewListener implementation:
-    void ViewInitialized() override;
-    void ViewDestroyed() override;
-    void SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a) override;
-    void OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward) override;
-    void OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal) override;
-    void OnLoadStarted(const char *aLocation) override;
-    void OnLoadFinished(void) override;
-    void OnWindowCloseRequested() override;
-    void RecvAsyncMessage(const char16_t *aMessage, const char16_t *aData) override;
-    char *RecvSyncMessage(const char16_t *aMessage, const char16_t *aData) override;
-    void OnLoadRedirect(void) override;
-    void OnSecurityChanged(const char *aStatus, unsigned int aState) override;
-    void OnFirstPaint(int32_t aX, int32_t aY) override;
-    void OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight) override;
-    void GetIMEStatus(int32_t *aIMEEnabled, int32_t *aIMEOpen) override;
+    void ViewInitialized();
+    void ViewDestroyed();
+    void SetBackgroundColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
+    void OnLocationChanged(const char *aLocation, bool aCanGoBack, bool aCanGoForward);
+    void OnLoadProgress(int32_t aProgress, int32_t aCurTotal, int32_t aMaxTotal);
+    void OnLoadStarted(const char *aLocation);
+    void OnLoadFinished();
+    void OnWindowCloseRequested();
+    void OnLoadRedirect();
+    void OnSecurityChanged(const char *aStatus, unsigned int aState);
+    void OnFirstPaint(int32_t aX, int32_t aY);
+    void OnScrolledAreaChanged(unsigned int aWidth, unsigned int aHeight);
     void IMENotification(int aIstate, bool aOpen, int aCause, int aFocusChange,
-                         const char16_t *inputType, const char16_t *inputMode) override;
-    void OnTitleChanged(const char16_t *aTitle) override;
-    void OnDynamicToolbarHeightChanged() override;
-    bool HandleLongTap(const nsIntPoint &aPoint) override;
-    bool HandleSingleTap(const nsIntPoint &aPoint) override;
-    bool HandleDoubleTap(const nsIntPoint &aPoint) override;
-    bool HandleScrollEvent(const gfxRect &aContentRect, const gfxSize &aScrollableSize) override;
-    void OnHttpUserAgentUsed(const char16_t *aHttpUserAgent) override;
+                         const char16_t *inputType, const char16_t *inputMode);
+    void OnTitleChanged(const char16_t *aTitle);
 
     // Starting from here these are QMozViewPrivate methods.
     void setDynamicToolbarHeight(const int height);
@@ -107,6 +89,7 @@ public:
     void setSafeAreaInsets(const QMargins &insets);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
+    void setJavascriptEnabled(bool aEnabled);
     void setThrottlePainting(bool aThrottle);
     void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
     void testFlickingMode(QTouchEvent *event);
@@ -224,24 +207,35 @@ protected:
     void queuePendingFrameScript(const QString &frameScript);
     void queuePendingMessageListener(const std::string &name);
     void removePendingMessageListener(const std::string &name);
-    void scheduleChromeRegistrationRetry();
-    void flushPendingChromeRegistrations(bool scheduleRetry = true);
+    void flushPendingChromeRegistrations();
     void clearDirtyDynamicToolbarHeight();
     qreal screenDensity() const;
     void sendScreenProperties();
     void applyChromePageSettings();
 
+    struct PendingInputMethodEvent {
+        QString commit;
+        QString preedit;
+        int replacementStart;
+        int replacementLength;
+        qint64 replacementOffset;
+        bool hadPreedit;
+    };
+    void dispatchInputMethodEvent(const PendingInputMethodEvent &event);
+    void clearPendingInputMethodEvents();
+    void flushPendingInputMethodEvents();
+
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
     QPointer<QMozWindow> mMozWindow;
     QMozContext *mContext;
-    mozilla::embedlite::EmbedLiteView *mView;
     bool mViewInitialized;
     unsigned mParentID;
     uintptr_t mParentBrowsingContext;
     bool mPrivateMode;
     bool mHidden;
     bool mDesktopMode;
+    bool mJavascriptEnabled;
     bool mThrottlePainting;
     bool mActive;
     bool mLoaded;
@@ -300,6 +294,8 @@ protected:
     QVariant mAnchorPosition;
     bool mIsInputFieldFocused;
     bool mPreedit;
+    bool mWaitingForBackspaceInputContext;
+    QVector<PendingInputMethodEvent> mPendingInputMethodEvents;
     bool mViewIsFocused;
     bool mPressed;
     bool mDragging;
@@ -344,7 +340,6 @@ protected:
     quint64 mPendingUrlLocationRevision;
     quint64 mPendingUrlSnapshotRevision;
     bool mPendingUrlSawLoading;
-    bool mChromeRegistrationRetryScheduled;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };

@@ -18,9 +18,6 @@ class EmbedLiteApp;
 }
 }
 
-class QMozViewCreator;
-class QMozWindow;
-
 class QMozContext : public QObject
 {
     Q_OBJECT
@@ -39,9 +36,6 @@ public:
     Q_INVOKABLE bool isInitialized() const;
     Q_INVOKABLE bool isAccelerated() const;
 
-    void registerWindow(QMozWindow *window);
-    QMozWindow *registeredWindow() const;
-
     TaskHandle PostUITask(TaskCallback, void *data, int timeout = 0);
     TaskHandle PostCompositorTask(TaskCallback, void *data, int timeout = 0);
     void CancelTask(TaskHandle);
@@ -49,13 +43,11 @@ public:
     void addObservers(const std::vector<std::string> &aObserversList);
     void removeObservers(const std::vector<std::string> &aObserversList);
 
-    int getNumberOfViews() const;
     int getNumberOfWindows() const;
 
 Q_SIGNALS:
     void initialized();
     void contextDestroyed();
-    void lastViewDestroyed();
     void lastWindowDestroyed();
     void recvObserve(const QString message, const QVariant data);
 
@@ -67,17 +59,14 @@ public Q_SLOTS:
 
     void notifyObservers(const QString &topic, const QString &value);
     void notifyObservers(const QString &topic, const QVariant &value);
+    void loadUserStyleSheet(const QString &uri, bool enable = true);
 
-    // running this without delay specified will execute Gecko/Qt nested main loop
-    // and block this call until stopEmbedding called
+    // Starts Gecko on the Qt application thread. The argument remains only
+    // for source compatibility and is ignored.
     void runEmbedding(int aDelay = -1);
     void stopEmbedding();
     void notifyFirstUIInitialized();
     void setProfile(const QString &);
-
-    void setViewCreator(QMozViewCreator *viewCreator);
-    quint32 createView(const quint32 &parentId = 0, const uintptr_t &parentBrowsingContext = 0,
-                       const bool hidden = false);
 
 private:
     QMozContextPrivate *d;

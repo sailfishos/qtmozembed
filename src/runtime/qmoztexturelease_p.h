@@ -63,6 +63,8 @@ Q_DECL_HIDDEN void scheduleTextureCleanupComplete(
 Q_DECL_HIDDEN bool waitForTextureFrameCleanup(
         quint64 consumerId,
         const QMozTextureCleanupComplete &complete);
+// Releases the currently imported frame while retaining the texture's lease.
+Q_DECL_HIDDEN bool releaseTexturePlatformFrame(QMozExtTexture *texture);
 // Returns false when the importing GL context cannot safely release the
 // frame. In that case the hidden lease is deliberately retained.
 Q_DECL_HIDDEN bool releaseTexturePlatformFrames(QMozExtTexture *texture);

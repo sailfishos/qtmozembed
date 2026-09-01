@@ -19,10 +19,13 @@ class Q_DECL_HIDDEN QMozTabModel final : public QAbstractListModel
     Q_OBJECT
     Q_PROPERTY(int count READ count NOTIFY countChanged FINAL)
     Q_PROPERTY(QString revision READ revision NOTIFY revisionChanged FINAL)
+    Q_PROPERTY(QString selectedTabOpenerId READ selectedTabOpenerId
+               NOTIFY selectedTabOpenerIdChanged FINAL)
 
 public:
     enum Role {
         IdRole = Qt::UserRole + 1,
+        OpenerIdRole,
         PersistentIdRole,
         LocationRevisionRole,
         LocationRole,
@@ -50,6 +53,7 @@ public:
     void clear();
 
     QString selectedTabId() const;
+    QString selectedTabOpenerId() const;
     int selectedTabIndex() const;
     const QMozChromeTabSnapshot *selectedTab() const;
     QString revision() const;
@@ -57,6 +61,7 @@ public:
 Q_SIGNALS:
     void countChanged();
     void revisionChanged();
+    void selectedTabOpenerIdChanged();
 
 private:
     QVariantMap rowData(const QMozChromeTabSnapshot &tab) const;

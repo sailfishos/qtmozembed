@@ -64,6 +64,7 @@ public:
     virtual void scrollableSizeChanged() = 0;
 
     virtual void desktopModeChanged() = 0;
+    virtual void javascriptEnabledChanged() = 0;
     virtual void httpUserAgentChanged() = 0;
     virtual void domContentLoadedChanged() = 0;
     virtual void chromeGestureEnabledChanged() = 0;
@@ -290,6 +291,11 @@ public:
     void desktopModeChanged() override
     {
         Q_EMIT view.desktopModeChanged();
+    }
+
+    void javascriptEnabledChanged() override
+    {
+        Q_EMIT view.javascriptEnabledChanged();
     }
 
     void httpUserAgentChanged()

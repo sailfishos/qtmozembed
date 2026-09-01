@@ -154,7 +154,7 @@ public:
         Q_ASSERT(mActiveCalls == 0);
     }
 
-    EmbedLiteWindow *reserve(const QSize &size, bool chromeHosted,
+    EmbedLiteWindow *reserve(const QSize &size, bool privateBrowsing,
                              const QByteArray &chromeInitialUrl)
     {
         {
@@ -164,14 +164,12 @@ public:
             Q_ASSERT(!mDestroyed);
         }
 
-        EmbedLiteWindow * const window = !chromeHosted
-                ? mApp->CreateWindow(size.width(), size.height(), this)
-                : chromeInitialUrl.isEmpty()
-                  ? mApp->CreateChromeTabWindow(
-                    size.width(), size.height(), this)
-                  : mApp->CreateChromeWindow(
+        EmbedLiteWindow * const window = chromeInitialUrl.isEmpty()
+                ? mApp->CreateChromeTabWindow(
+                    size.width(), size.height(), this, privateBrowsing)
+                : mApp->CreateChromeWindow(
                     size.width(), size.height(),
-                    chromeInitialUrl.constData(), this);
+                    chromeInitialUrl.constData(), this, privateBrowsing);
         if (window && !window->SetPlatformFrameListener(this)) {
             mApp->DestroyWindow(window);
             return nullptr;
@@ -905,11 +903,11 @@ QSharedPointer<QMozSurface> createEmbedLiteSurface(
 
 EmbedLiteWindow *reserveEmbedLiteSurface(
         const QSharedPointer<QMozSurface> &surface, const QSize &size,
-        bool chromeHosted, const QByteArray &chromeInitialUrl)
+        bool privateBrowsing, const QByteArray &chromeInitialUrl)
 {
     EmbedLiteSurface * const embedSurface = embedLiteSurface(surface);
     return embedSurface
-            ? embedSurface->reserve(size, chromeHosted, chromeInitialUrl)
+            ? embedSurface->reserve(size, privateBrowsing, chromeInitialUrl)
             : nullptr;
 }
 

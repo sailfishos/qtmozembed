@@ -29,7 +29,6 @@ SOURCES += qmozcontext.cpp \
            EmbedQtKeyUtils.cpp \
            qmozsecurity.cpp \
            qmozview_p.cpp \
-           geckoworker.cpp \
            qmozopenglwebpage.cpp \
            qmozwindow.cpp \
            qmozwindow_p.cpp \
@@ -50,12 +49,10 @@ HEADERS += qmozcontext.h \
            qmozenginesettings_p.h \
            qmozgrabresult.h \
            qmozsecurity.h \
-           qmozviewcreator.h \
            qmozscrolldecorator.h \
            qmessagepump.h \
            EmbedQtKeyUtils.h \
            qmozview_p.h \
-           geckoworker.h \
            qmozview_defined_wrapper.h \
            qmozview_templated_wrapper.h \
            qmozopenglwebpage.h \

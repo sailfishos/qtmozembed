@@ -46,21 +46,17 @@ void configureEGLDisplay(EmbedLiteApp *app)
 
 } // namespace
 
-QMozRuntime::QMozRuntime(EmbedLiteAppListener *listener, bool asyncContext,
-                         QObject *parent)
+QMozRuntime::QMozRuntime(EmbedLiteAppListener *listener, QObject *parent)
     : QObject(parent)
     , mApp(nullptr)
     , mQtPump(nullptr)
     , mEmbedStarted(false)
-    , mAsyncContext(asyncContext)
 {
     Q_ASSERT_X(LoadEmbedLite(), __PRETTY_FUNCTION__, "Failed load XPCOMGlue");
 
     mApp = XRE_GetEmbedLite();
     mApp->SetListener(listener);
-    if (mAsyncContext) {
-        mQtPump = new MessagePumpQt(mApp);
-    }
+    mQtPump = new MessagePumpQt(mApp);
 }
 
 QMozRuntime::~QMozRuntime()
@@ -82,11 +78,6 @@ bool QMozRuntime::hasApp() const
     return mApp != nullptr;
 }
 
-bool QMozRuntime::isAsync() const
-{
-    return mAsyncContext;
-}
-
 void QMozRuntime::start()
 {
     if (mEmbedStarted || !mApp) {
@@ -95,11 +86,7 @@ void QMozRuntime::start()
 
     configureEGLDisplay(mApp);
     mEmbedStarted = true;
-    if (mAsyncContext) {
-        mApp->StartWithCustomPump(EmbedLiteApp::EMBED_THREAD,
-                                  mQtPump->EmbedLoop());
-    } else {
-        mApp->Start(EmbedLiteApp::EMBED_THREAD);
+    if (!mApp->StartWithCustomPump(mQtPump->EmbedLoop())) {
         mEmbedStarted = false;
     }
 }

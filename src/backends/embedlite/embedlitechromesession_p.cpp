@@ -170,6 +170,18 @@ public:
                     replacementStart, replacementLength);
     }
 
+    bool sendTextEventAtOffset(
+            const QString &commit, const QString &preedit,
+            quint32 replacementOffset, int replacementLength) override
+    {
+        const QByteArray encodedCommit = commit.toUtf8();
+        const QByteArray encodedPreedit = preedit.toUtf8();
+        return mInputSession
+                && mInputSession->SendTextEventAtOffset(
+                    encodedCommit.constData(), encodedPreedit.constData(),
+                    replacementOffset, replacementLength);
+    }
+
     bool sendKeyPress(
             int domKeyCode, int modifiers, int charCode) override
     {
@@ -263,6 +275,12 @@ public:
     {
         return mContentSession
                 && mContentSession->SetDesktopMode(tabId, desktopMode);
+    }
+
+    bool setJavascriptEnabled(bool enabled) override
+    {
+        return mContentSession
+                && mContentSession->SetJavascriptEnabled(enabled);
     }
 
     bool setThrottlePainting(quint64 tabId, bool throttle) override
@@ -499,6 +517,7 @@ public:
 
             QMozChromeTabSnapshot target;
             target.id = source.id;
+            target.openerId = source.openerId;
             target.persistentId = source.persistentId;
             target.locationRevision = source.locationRevision;
             target.location = QString::fromUtf8(
