@@ -37,6 +37,8 @@ TestWindow {
             verify(MyScript.wrtWait(function() { return mozView === undefined }))
             verify(MyScript.wrtWait(function() { return mozViewInitialized !== true }))
             verify(mozView !== undefined)
+            verify(MyScript.wrtWait(function() { return mozView.selectedTabIndex < 0 }))
+            compare(mozView.selectedTabIndex, 0)
             MyScript.dumpTs("test_2viewInit end")
         }
 

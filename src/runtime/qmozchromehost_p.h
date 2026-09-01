@@ -23,18 +23,31 @@ static const char ChromeInitialUrlProperty[] =
         "_qmozChromeInitialUrl";
 static const char ChromeHostedProperty[] =
         "_qmozChromeHosted";
+static const char ChromePrivateProperty[] =
+        "_qmozChromePrivate";
 static const char ChromeInitializationFailedProperty[] =
         "_qmozChromeInitializationFailed";
 static const char ChromeInitializedProperty[] =
         "_qmozChromeInitialized";
 static const char ChromeQuickOwnedProperty[] =
         "_qmozChromeQuickOwned";
+static const char ChromeOpenGLOwnedProperty[] =
+        "_qmozChromeOpenGLOwned";
+
+inline QByteArray chromeInitialUrl(
+        const QObject *object, const QByteArray &defaultUrl)
+{
+    if (!object) {
+        return defaultUrl;
+    }
+
+    const QVariant value = object->property(ChromeInitialUrlProperty);
+    return value.isValid() ? value.toByteArray() : defaultUrl;
+}
 
 inline QByteArray chromeInitialUrl(const QObject *object)
 {
-    return object
-            ? object->property(ChromeInitialUrlProperty).toByteArray()
-            : QByteArray();
+    return chromeInitialUrl(object, QByteArray());
 }
 
 inline bool isChromeHosted(const QObject *object)
@@ -46,6 +59,18 @@ inline void setChromeHosted(QObject *object, bool hosted)
 {
     if (object) {
         object->setProperty(ChromeHostedProperty, hosted);
+    }
+}
+
+inline bool isChromePrivate(const QObject *object)
+{
+    return object && object->property(ChromePrivateProperty).toBool();
+}
+
+inline void setChromePrivate(QObject *object, bool privateBrowsing)
+{
+    if (object) {
+        object->setProperty(ChromePrivateProperty, privateBrowsing);
     }
 }
 
@@ -101,6 +126,18 @@ inline void setChromeQuickOwned(QObject *object)
 {
     if (object) {
         object->setProperty(ChromeQuickOwnedProperty, true);
+    }
+}
+
+inline bool isChromeOpenGLOwned(const QObject *object)
+{
+    return object && object->property(ChromeOpenGLOwnedProperty).toBool();
+}
+
+inline void setChromeOpenGLOwned(QObject *object)
+{
+    if (object) {
+        object->setProperty(ChromeOpenGLOwnedProperty, true);
     }
 }
 

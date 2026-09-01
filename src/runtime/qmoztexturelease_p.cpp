@@ -957,6 +957,21 @@ bool hasTextureFrameLease(quint64 consumerId)
     return !registry->consumerLeases.value(consumerId).isNull();
 }
 
+bool releaseTexturePlatformFrame(QMozExtTexture *texture)
+{
+    TextureLeaseRegistry * const registry = textureLeaseRegistry();
+    if (!registry || !texture) {
+        return true;
+    }
+
+    QSharedPointer<TextureFrameLease> lease;
+    {
+        QMutexLocker lock(&registry->mutex);
+        lease = registry->leases.value(texture);
+    }
+    return !lease || lease->releaseAll();
+}
+
 bool releaseTexturePlatformFrames(QMozExtTexture *texture)
 {
     TextureLeaseRegistry * const registry = textureLeaseRegistry();

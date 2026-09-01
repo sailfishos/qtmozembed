@@ -36,6 +36,8 @@ QVariant QMozTabModel::data(const QModelIndex &index, int role) const
     switch (role) {
     case IdRole:
         return QString::number(tab.id);
+    case OpenerIdRole:
+        return tab.openerId ? QString::number(tab.openerId) : QString();
     case PersistentIdRole:
         return QString::number(tab.persistentId);
     case LocationRevisionRole:
@@ -69,6 +71,7 @@ QHash<int, QByteArray> QMozTabModel::roleNames() const
 {
     QHash<int, QByteArray> roles;
     roles.insert(IdRole, "tabId");
+    roles.insert(OpenerIdRole, "openerId");
     roles.insert(PersistentIdRole, "persistentId");
     roles.insert(LocationRevisionRole, "locationRevision");
     roles.insert(LocationRole, "location");
@@ -89,6 +92,8 @@ QVariantMap QMozTabModel::rowData(
 {
     QVariantMap row;
     row.insert(QStringLiteral("tabId"), QString::number(tab.id));
+    row.insert(QStringLiteral("openerId"),
+               tab.openerId ? QString::number(tab.openerId) : QString());
     row.insert(QStringLiteral("persistentId"),
                QString::number(tab.persistentId));
     row.insert(QStringLiteral("locationRevision"),
@@ -122,6 +127,7 @@ void QMozTabModel::setSnapshot(
 {
     const int oldCount = mTabs.count();
     const quint64 oldRevision = mRevision;
+    const QString oldSelectedTabOpenerId = selectedTabOpenerId();
     beginResetModel();
     mTabs = tabs;
     mSelectedTabId = selectedTabId;
@@ -140,6 +146,9 @@ void QMozTabModel::setSnapshot(
     if (oldRevision != mRevision) {
         Q_EMIT revisionChanged();
     }
+    if (oldSelectedTabOpenerId != selectedTabOpenerId()) {
+        Q_EMIT selectedTabOpenerIdChanged();
+    }
 }
 
 void QMozTabModel::clear()
@@ -153,6 +162,12 @@ void QMozTabModel::clear()
 QString QMozTabModel::selectedTabId() const
 {
     return mSelectedTabId ? QString::number(mSelectedTabId) : QString();
+}
+
+QString QMozTabModel::selectedTabOpenerId() const
+{
+    const QMozChromeTabSnapshot * const tab = selectedTab();
+    return tab && tab->openerId ? QString::number(tab->openerId) : QString();
 }
 
 int QMozTabModel::selectedTabIndex() const

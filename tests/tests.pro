@@ -10,7 +10,6 @@ test.files = auto/desktop-qt5/basicinput/tst_inputtest.qml \
     auto/desktop-qt5/favicons/tst_favicon.qml \
     auto/desktop-qt5/linksactivation/tst_activatelinks.qml \
     auto/desktop-qt5/multitouch/tst_multitouch.qml \
-    auto/desktop-qt5/newviewrequest/tst_newviewrequest.qml \
     auto/desktop-qt5/passwordmgr/tst_passwordmgr.qml \
     auto/desktop-qt5/promptbasic/tst_prompt.qml \
     auto/desktop-qt5/runjavascript/* \
@@ -25,7 +24,6 @@ shared.files = auto/shared/componentCreation.js \
     auto/shared/downloadmgr/tt.bin \
     auto/shared/favicons/favicon.html \
     auto/shared/multitouch/touch.html \
-    auto/shared/newviewrequest/*.html \
     auto/shared/passwordmgr/subtst_notifications_1.html \
     auto/shared/promptbasic/prompt.html \
     auto/shared/searchengine/test.xml

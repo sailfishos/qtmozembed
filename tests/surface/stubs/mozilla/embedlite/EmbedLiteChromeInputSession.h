@@ -36,6 +36,9 @@ public:
     virtual bool SendTextEvent(
             const char *commit, const char *preedit,
             int32_t replacementStart, int32_t replacementLength) = 0;
+    virtual bool SendTextEventAtOffset(
+            const char *commit, const char *preedit,
+            uint32_t replacementOffset, int32_t replacementLength) = 0;
     virtual bool SendKeyPress(
             int32_t domKeyCode, int32_t modifiers,
             int32_t charCode) = 0;

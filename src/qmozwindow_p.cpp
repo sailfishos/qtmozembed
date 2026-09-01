@@ -19,7 +19,9 @@
 #include <QScreen>
 
 #ifndef MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT
-#define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 500
+// Coalesce updates posted in the same event-loop turn without delaying a
+// settled Silica orientation change.
+#define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 0
 #endif
 
 namespace {

@@ -10,8 +10,6 @@
 #define LOG_COMPONENT "QMozContext"
 
 #include <QVariant>
-#include <QThread>
-#include <QTimer>
 #include <QJsonDocument>
 #include <QJsonParseError>
 #include <QtQml/qqml.h>
@@ -24,13 +22,9 @@
 #include "qmozcontext.h"
 #include "qmozcontext_p.h"
 #include "qmozenginesettings.h"
-#include "qmozviewcreator.h"
-#include "geckoworker.h"
 #include "qmozwindow.h"
 #include "runtime/qmozchromewindowregistry_p.h"
 #include "runtime/qmozruntime_p.h"
-
-#include "mozilla/embedlite/EmbedLiteView.h"
 
 Q_LOGGING_CATEGORY(lcEmbedLiteExt, "org.sailfishos.embedliteext", QtWarningMsg)
 
@@ -95,12 +89,6 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     : QObject(parent)
     , mRuntime(nullptr)
     , mInitialized(false)
-    , mThread(new QThread())
-    , mEmbedStarted(false)
-    , mQtPump(nullptr)
-    , mAsyncContext(!getenv("DISABLE_ASYNC"))
-    , mViewCreator(nullptr)
-    , mMozWindow(nullptr)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this
                             << ", parent:" << (void *)parent << getenv("GRE_HOME");
@@ -117,31 +105,12 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     // application and working directories must not influence library loading.
     setenv("GRE_HOME", BUILD_GRE_HOME, 1);
 
-    mRuntime = new QMozRuntime(this, mAsyncContext, this);
+    mRuntime = new QMozRuntime(this, this);
 }
 
 QMozContextPrivate::~QMozContextPrivate()
 {
-    destroyWindow();
-
     platform_egl_workaround_close();
-}
-
-bool QMozContextPrivate::ExecuteChildThread()
-{
-    return false;
-}
-
-// Native thread must be stopped here
-bool QMozContextPrivate::StopChildThread()
-{
-    if (mThread && !mThread->isFinished()) {
-        qCDebug(lcEmbedLiteExt) << "Stop Native thread:" << (void *)mThread;
-        mThread->exit(0);
-        mThread->wait();
-        return true;
-    }
-    return false;
 }
 
 // App Initialized and ready to API call
@@ -173,12 +142,6 @@ void QMozContextPrivate::Destroyed()
 #endif
     mRuntime->detachListener();
 
-    if (mThread && !mThread->isFinished()) {
-        mThread->exit(0);
-        mThread->wait();
-        mThread = nullptr;
-    }
-
     mRuntime->backendDestroyed();
     Q_EMIT contextDestroyed();
 }
@@ -208,25 +171,6 @@ void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
     }
 }
 
-void QMozContextPrivate::destroyWindow()
-{
-    if (!mMozWindow) return;
-
-    if (mMozWindow->isReserved()) {
-        connect(mMozWindow.data(), &QMozWindow::released,
-                mMozWindow.data(), &QObject::deleteLater);
-        mMozWindow->release();
-    } else {
-        delete mMozWindow;
-    }
-    mMozWindow = nullptr;
-}
-
-void QMozContextPrivate::LastViewDestroyed()
-{
-    Q_EMIT lastViewDestroyed();
-}
-
 void QMozContextPrivate::LastWindowDestroyed()
 {
     Q_EMIT lastWindowDestroyed();
@@ -235,17 +179,6 @@ void QMozContextPrivate::LastWindowDestroyed()
 bool QMozContextPrivate::IsInitialized()
 {
     return mRuntime->hasApp() && mInitialized;
-}
-
-uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags, const bool &hidden,
-                                                      EmbedLiteView *aParentView, const uintptr_t &parentBrowsingContext)
-{
-    Q_UNUSED(chromeFlags)
-
-    uint32_t parentId = aParentView ? aParentView->GetUniqueID() : 0;
-    qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView << parentId;
-    uint32_t viewId = QMozContext::instance()->createView(parentId, parentBrowsingContext, hidden);
-    return viewId;
 }
 
 EmbedLiteMessagePump *QMozContextPrivate::EmbedLoop()
@@ -264,7 +197,6 @@ QMozContext::QMozContext(QObject *parent)
 {
     connect(d, &QMozContextPrivate::initialized, this, &QMozContext::initialized);
     connect(d, &QMozContextPrivate::contextDestroyed, this, &QMozContext::contextDestroyed);
-    connect(d, &QMozContextPrivate::lastViewDestroyed, this, &QMozContext::lastViewDestroyed);
     connect(d, &QMozContextPrivate::lastWindowDestroyed, this, &QMozContext::lastWindowDestroyed);
     connect(d, &QMozContextPrivate::recvObserve, this, &QMozContext::recvObserve);
 }
@@ -393,10 +325,13 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
             (const char16_t*)QString(array).constData());
 }
 
-int QMozContext::getNumberOfViews() const
+void QMozContext::loadUserStyleSheet(const QString &uri, bool enable)
 {
-    EmbedLiteApp * const app = d->mRuntime->embedLiteApp();
-    return app ? app->GetNumberOfViews() : 0;
+    if (!d->IsInitialized() || uri.isEmpty()) {
+        return;
+    }
+    d->mRuntime->embedLiteApp()->LoadUserStyleSheet(
+            uri.toUtf8().constData(), enable);
 }
 
 int QMozContext::getNumberOfWindows() const
@@ -426,7 +361,7 @@ void QMozContext::CancelTask(QMozContext::TaskHandle handle)
     d->mRuntime->embedLiteApp()->CancelTask(handle);
 }
 
-void QMozContext::runEmbedding(int aDelay)
+void QMozContext::runEmbedding(int)
 {
     d->mRuntime->start();
 }
@@ -458,17 +393,12 @@ void QMozContext::stopEmbedding()
     coordinator->setProperty(stopActiveProperty, true);
 
     bool waitingForWindows = false;
-    const bool hasLegacyWindow = registeredWindow();
     const bool hasChromeWindows =
             QtMoz::hasTrackedChromeWindows(coordinator);
-    if (hasLegacyWindow || hasChromeWindows) {
+    if (hasChromeWindows) {
         connect(coordinator, &QMozContext::lastWindowDestroyed,
                 coordinator, &QMozContext::stopEmbedding,
                 Qt::UniqueConnection);
-    }
-    if (hasLegacyWindow) {
-        d->destroyWindow();
-        waitingForWindows = true;
     }
     if (hasChromeWindows
             && QtMoz::releaseTrackedChromeWindows(coordinator)) {
@@ -483,15 +413,10 @@ void QMozContext::stopEmbedding()
     if (coordinator->property(stopAgainProperty).toBool()) {
         coordinator->setProperty(stopAgainProperty, false);
         if (waitingForWindows) {
-            QTimer::singleShot(
-                    0, coordinator, &QMozContext::stopEmbedding);
+            QMetaObject::invokeMethod(
+                    coordinator, "stopEmbedding", Qt::QueuedConnection);
         }
     }
-}
-
-quint32 QMozContext::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext, const bool hidden)
-{
-    return d->mViewCreator ? d->mViewCreator->createView(parentId, parentBrowsingContext, hidden) : 0;
 }
 
 void QMozContext::setIsAccelerated(bool aIsAccelerated)
@@ -509,19 +434,6 @@ bool QMozContext::isAccelerated() const
     return d->mRuntime->embedLiteApp()->IsAccelerated();
 }
 
-void QMozContext::registerWindow(QMozWindow *window)
-{
-    if (window != d->mMozWindow) {
-        d->destroyWindow();
-    }
-    d->mMozWindow = window;
-}
-
-QMozWindow *QMozContext::registeredWindow() const
-{
-    return d->mMozWindow.data();
-}
-
 void QMozContext::notifyFirstUIInitialized()
 {
     static bool sCalledOnce = false;
@@ -529,9 +441,4 @@ void QMozContext::notifyFirstUIInitialized()
         d->mRuntime->embedLiteApp()->SendObserve("final-ui-startup", nullptr);
         sCalledOnce = true;
     }
-}
-
-void QMozContext::setViewCreator(QMozViewCreator *viewCreator)
-{
-    d->mViewCreator = viewCreator;
 }

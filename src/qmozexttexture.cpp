@@ -142,7 +142,7 @@ bool QMozExtTexture::updateTexture()
             // Release it on its render context before deleting the GL binding,
             // but keep this dynamic texture alive so preprocess() continues
             // consuming frames while the replacement is pending.
-            if (!QtMoz::releaseTexturePlatformFrames(this)) {
+            if (!QtMoz::releaseTexturePlatformFrame(this)) {
                 return false;
             }
             if (m_textureId != 0) {
@@ -222,7 +222,7 @@ bool QMozExtTexture::updateTexture()
             // This frame was deliberately never sampled. Completing its
             // acquire/release cycle lets Gecko retire it and advertise the
             // next coalesced frame instead of pinning a stale Ready token.
-            if (!QtMoz::releaseTexturePlatformFrames(this)) {
+            if (!QtMoz::releaseTexturePlatformFrame(this)) {
                 qCCritical(lcEmbedLiteExt)
                         << "Failed to release rejected platform frame"
                         << newTextureSize << "required"
