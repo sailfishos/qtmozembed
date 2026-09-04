@@ -98,9 +98,9 @@ QMAKE_PKGCONFIG_INCDIR = $$target.path
 QMAKE_PKGCONFIG_DESTDIR = pkgconfig
 QMAKE_PKGCONFIG_REQUIRES = libxul
 
-# install forwarding headers
-# match only the camel case forwarding headers here
+# install public headers
 FORWARDING_HEADERS = $$system( find q*.h )
+FORWARDING_HEADERS -= $$system( find q*_p.h )
 
 forwarding_headers.path = $$PREFIX/include
 forwarding_headers.files = $$FORWARDING_HEADERS
