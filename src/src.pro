@@ -23,13 +23,11 @@ isEmpty(VERSION) {
 
 SOURCES += qmozcontext.cpp \
            qmozenginesettings.cpp \
-           qmozgrabresult.cpp \
            qmozscrolldecorator.cpp \
            qmessagepump.cpp \
            EmbedQtKeyUtils.cpp \
            qmozsecurity.cpp \
            qmozview_p.cpp \
-           qmozopenglwebpage.cpp \
            qmozwindow.cpp \
            qmozwindow_p.cpp \
            runtime/backendapi_p.cpp \
@@ -49,7 +47,6 @@ HEADERS += qmozcontext.h \
            qmozcontext_p.h \
            qmozenginesettings.h \
            qmozenginesettings_p.h \
-           qmozgrabresult.h \
            qmozsecurity.h \
            qmozscrolldecorator.h \
            qmessagepump.h \
@@ -57,7 +54,6 @@ HEADERS += qmozcontext.h \
            qmozview_p.h \
            qmozview_defined_wrapper.h \
            qmozview_templated_wrapper.h \
-           qmozopenglwebpage.h \
            qmozwindow.h \
            qmozwindow_p.h \
            runtime/backendabi.h \
