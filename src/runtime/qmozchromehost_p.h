@@ -31,8 +31,6 @@ static const char ChromeInitializedProperty[] =
         "_qmozChromeInitialized";
 static const char ChromeQuickOwnedProperty[] =
         "_qmozChromeQuickOwned";
-static const char ChromeOpenGLOwnedProperty[] =
-        "_qmozChromeOpenGLOwned";
 
 inline QByteArray chromeInitialUrl(
         const QObject *object, const QByteArray &defaultUrl)
@@ -126,18 +124,6 @@ inline void setChromeQuickOwned(QObject *object)
 {
     if (object) {
         object->setProperty(ChromeQuickOwnedProperty, true);
-    }
-}
-
-inline bool isChromeOpenGLOwned(const QObject *object)
-{
-    return object && object->property(ChromeOpenGLOwnedProperty).toBool();
-}
-
-inline void setChromeOpenGLOwned(QObject *object)
-{
-    if (object) {
-        object->setProperty(ChromeOpenGLOwnedProperty, true);
     }
 }
 
