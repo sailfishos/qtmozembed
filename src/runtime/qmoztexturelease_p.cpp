@@ -24,7 +24,7 @@
 #include <QSet>
 #include <QSharedPointer>
 #include <QThread>
-#include <QTimer>
+#include <QEvent>
 #include <QVector>
 
 #include <EGL/egl.h>
@@ -262,6 +262,34 @@ private:
     QVector<HeldFrame> mDeferredFrames;
 
     Q_DISABLE_COPY(TextureFrameLease)
+};
+
+// Qt 5.6's cross-thread singleShot timer deletes itself on aboutToQuit.
+// A posted event must survive that signal so shutdown can finish draining.
+class TextureCleanupCompletion final : public QObject
+{
+public:
+    explicit TextureCleanupCompletion(const QMozTextureCleanupComplete &complete)
+        : mComplete(complete)
+    {
+    }
+
+protected:
+    bool event(QEvent *event) override
+    {
+        if (event->type() != QEvent::User) {
+            return QObject::event(event);
+        }
+        const QMozTextureCleanupComplete complete = mComplete;
+        mComplete = QMozTextureCleanupComplete();
+        setParent(QCoreApplication::instance());
+        deleteLater();
+        complete();
+        return true;
+    }
+
+private:
+    QMozTextureCleanupComplete mComplete;
 };
 
 class PendingTextureCleanup final
@@ -1058,7 +1086,9 @@ void scheduleTextureCleanupComplete(
     }
     QObject * const dispatcher = QCoreApplication::instance();
     if (dispatcher && QThread::currentThread() != dispatcher->thread()) {
-        QTimer::singleShot(0, dispatcher, complete);
+        auto *completion = new TextureCleanupCompletion(complete);
+        completion->moveToThread(dispatcher->thread());
+        QCoreApplication::postEvent(completion, new QEvent(QEvent::User));
     } else {
         complete();
     }
