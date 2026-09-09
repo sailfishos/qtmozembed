@@ -28,7 +28,6 @@ QMozWindow::QMozWindow(const QSize &size, QObject *parent)
     Q_ASSERT_X(!size.isEmpty(),
                "QMozWindow::QMozWindow",
                QString("Window size is empty, width = %1 and height = %2").arg(size.width()).arg(size.height()).toUtf8().constData());
-    QtMoz::setChromeHosted(this, true);
 }
 
 QMozWindow::~QMozWindow()

@@ -140,9 +140,7 @@ bool QMozWindowPrivate::setReadyToPaint(bool ready)
 
 void QMozWindowPrivate::WindowInitialized()
 {
-    if (QtMoz::isChromeHosted(&q)) {
-        QtMoz::markChromeInitialized(&q);
-    }
+    QtMoz::markChromeInitialized(&q);
     q.initialized();
 }
 
