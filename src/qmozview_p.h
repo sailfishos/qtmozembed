@@ -55,7 +55,6 @@ public:
         DirtyMargin = 0x0002,
         DirtyDynamicToolbarHeight = 0x0004,
         DirtyScreenProperties = 0x0008,
-        DirtyActive = 0x0010,
         DirtySafeAreaInsets = 0x0020,
         DirtyDesktopMode = 0x0040,
         DirtyThrottlePainting = 0x0080,

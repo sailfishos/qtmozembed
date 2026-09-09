@@ -15,14 +15,11 @@
 
 namespace QtMoz {
 
-// Private opt-in for the normal Gecko chrome-window backend. Keeping hosted
-// selection separate from the optional initial URL permits a genuine
-// zero-tab window, while QObject properties avoid changing installed class
-// layout.
+// Private state for the Gecko chrome-window backend. An explicitly empty
+// initial URL permits a genuine zero-tab window. QObject properties avoid
+// changing installed class layout.
 static const char ChromeInitialUrlProperty[] =
         "_qmozChromeInitialUrl";
-static const char ChromeHostedProperty[] =
-        "_qmozChromeHosted";
 static const char ChromePrivateProperty[] =
         "_qmozChromePrivate";
 static const char ChromeInitializationFailedProperty[] =
@@ -48,18 +45,6 @@ inline QByteArray chromeInitialUrl(const QObject *object)
     return chromeInitialUrl(object, QByteArray());
 }
 
-inline bool isChromeHosted(const QObject *object)
-{
-    return object && object->property(ChromeHostedProperty).toBool();
-}
-
-inline void setChromeHosted(QObject *object, bool hosted)
-{
-    if (object) {
-        object->setProperty(ChromeHostedProperty, hosted);
-    }
-}
-
 inline bool isChromePrivate(const QObject *object)
 {
     return object && object->property(ChromePrivateProperty).toBool();
@@ -76,9 +61,6 @@ inline void setChromeInitialUrl(QObject *object, const QByteArray &url)
 {
     if (object) {
         object->setProperty(ChromeInitialUrlProperty, url);
-        if (!url.isEmpty()) {
-            setChromeHosted(object, true);
-        }
     }
 }
 
@@ -134,14 +116,11 @@ inline bool chromeQuickWindowShouldDelete(bool quickOwned,
     return quickOwned && initializationFailed && !reserved;
 }
 
-inline bool windowFrameIsValid(bool chromeHosted, bool composited,
-                               bool painted, bool viewInitialized,
+inline bool windowFrameIsValid(bool composited,
                                bool hasCompositor, bool hasRegisteredWindow,
                                bool hasViewWindow)
 {
     return composited
-            && (chromeHosted || painted)
-            && (chromeHosted || viewInitialized)
             && hasCompositor
             && hasRegisteredWindow
             && hasViewWindow;
