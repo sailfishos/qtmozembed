@@ -1183,20 +1183,11 @@ void testWindowListenerForwarding()
 
 void testChromeWindowFrameGate()
 {
-    VERIFY(QtMoz::windowFrameIsValid(
-            true, true, false, false, true, true, true));
-    VERIFY(!QtMoz::windowFrameIsValid(
-            false, true, false, false, true, true, true));
-    VERIFY(!QtMoz::windowFrameIsValid(
-            true, false, false, false, true, true, true));
-    VERIFY(!QtMoz::windowFrameIsValid(
-            true, true, false, false, false, true, true));
-    VERIFY(!QtMoz::windowFrameIsValid(
-            true, true, false, false, true, false, true));
-    VERIFY(!QtMoz::windowFrameIsValid(
-            true, true, false, false, true, true, false));
-    VERIFY(QtMoz::windowFrameIsValid(
-            false, true, true, true, true, true, true));
+    VERIFY(QtMoz::windowFrameIsValid(true, true, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(false, true, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(true, false, true, true));
+    VERIFY(!QtMoz::windowFrameIsValid(true, true, false, true));
+    VERIFY(!QtMoz::windowFrameIsValid(true, true, true, false));
 
     VERIFY(!QtMoz::chromeQuickWindowShouldDelete(
             true, false, false));

@@ -1518,8 +1518,7 @@ void QMozViewPrivate::removePendingMessageListener(
 
 void QMozViewPrivate::flushPendingChromeRegistrations()
 {
-    if (!QtMoz::isChromeHosted(mMozWindow.data())
-            || !QtMoz::chromeSessionUniqueId(this)) {
+    if (!mMozWindow || !QtMoz::chromeSessionUniqueId(this)) {
         return;
     }
 
@@ -1821,7 +1820,6 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 {
     mMozWindow = window;
     if (mMozWindow) {
-        QtMoz::setChromeHosted(mMozWindow.data(), true);
         QtMoz::setChromePrivate(mMozWindow.data(), mPrivateMode);
         if (mSize.isEmpty() && !mMozWindow->size().isEmpty()) {
             mSize = mMozWindow->size();
@@ -1841,7 +1839,6 @@ void QMozViewPrivate::setMozWindow(QMozWindow *window)
 bool QMozViewPrivate::attachChromeSession()
 {
     const bool attached = mMozWindow
-            && QtMoz::isChromeHosted(mMozWindow.data())
             && (QtMoz::chromeSessionUniqueId(this) != 0
                 || QtMoz::attachChromeSession(
                     this, mMozWindow.data(), chromeSessionCallbacks(this)));
@@ -2545,7 +2542,7 @@ void QMozViewPrivate::wheelEvent(QWheelEvent *event)
         return;
     }
 
-    if (mViewInitialized && QtMoz::isChromeHosted(mMozWindow.data())) {
+    if (mViewInitialized && mMozWindow) {
         const quint64 tabId = selectedChromeTabId();
         if (tabId) {
             QtMoz::chromeSessionSendWheelEvent(

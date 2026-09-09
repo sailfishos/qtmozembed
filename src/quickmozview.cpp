@@ -147,14 +147,7 @@ void QuickMozView::processViewInitialization()
     // This is connected to view initialization. View must be initialized
     // over here.
     Q_ASSERT(d->mViewInitialized);
-    if (d->mDirtyState & QMozViewPrivate::DirtyActive) {
-        bool expectedActive = d->mActive;
-        d->mActive = !expectedActive;
-        setActive(expectedActive);
-        d->mDirtyState &= ~QMozViewPrivate::DirtyActive;
-    } else {
-        SetIsActive(d->mActive);
-    }
+    SetIsActive(d->mActive);
 }
 
 void QuickMozView::updateEnabled()
@@ -209,13 +202,8 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 
     // A reset clears the producer image and painted state while the previous
     // composite flag may still be set. Do not retain that imported texture.
-    const bool chromeHosted = QtMoz::isChromeHosted(
-            d->mMozWindow
-                    ? static_cast<const QObject *>(d->mMozWindow.data())
-                    : static_cast<const QObject *>(this));
     const bool invalidTexture = !QtMoz::windowFrameIsValid(
-            chromeHosted, mComposited, d->mIsPainted,
-            d->mViewInitialized, d->mHasCompositor,
+            mComposited, d->mHasCompositor,
             d->mMozWindow && d->mMozWindow->isReserved()
                 && QtMoz::chromeInitialized(d->mMozWindow.data()),
             d->mMozWindow);
@@ -260,7 +248,7 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         const bool attached = QtMoz::attachTextureFrameLease(
                 texture, d->mMozWindow.data(), this,
                 QtMoz::textureFrameConsumerId(this), window());
-        if (chromeHosted && !attached) {
+        if (!attached) {
             qCCritical(lcEmbedLiteExt)
                     << "Failed to attach chrome platform-frame texture";
             delete texture;
@@ -282,12 +270,10 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         node->setTexture(mTexture);
     }
 
-    if (chromeHosted) {
-        QMozExtTexture * const texture =
-                static_cast<QMozExtTexture *>(mTexture);
-        texture->requirePlatformFrame(
-                    d->mSize.toSize(), mPlatformFrameRequirement);
-    }
+    QMozExtTexture * const texture =
+            static_cast<QMozExtTexture *>(mTexture);
+    texture->requirePlatformFrame(
+                d->mSize.toSize(), mPlatformFrameRequirement);
     node->setRect(boundingRect);
     node->setOrientation(mOrientation);
     node->setSurfaceOrientation(window() ? window()->contentOrientation() : Qt::PrimaryOrientation);
@@ -352,63 +338,27 @@ bool QuickMozView::active() const
 
 void QuickMozView::setActive(bool active)
 {
-    if (QtMoz::isChromeHosted(
-            d->mMozWindow
-                    ? static_cast<const QObject *>(d->mMozWindow.data())
-                    : static_cast<const QObject *>(this))) {
-        if (d->mActive != active) {
-            d->mActive = active;
-            if (d->mMozWindow) {
-                if (active) {
-                    QtMoz::setWindowFrameConsumer(
-                            d->mMozWindow.data(), this, [this]() {
-                        update();
-                    });
-                    resumeRendering();
-                    polish();
-                } else {
-                    QtMoz::clearWindowFrameConsumer(
-                            d->mMozWindow.data(), this);
-                }
-            }
-            SetIsActive(active);
-            if (!active) {
-                mComposited = false;
-                update();
-            }
-            Q_EMIT activeChanged();
-        }
-        return;
-    }
-
-    if (d->mViewInitialized) {
-        if (d->mActive != active) {
-            d->mActive = active;
-            // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
-            if (!active && d->mMozWindow) {
-                QtMoz::clearWindowFrameConsumer(
-                        d->mMozWindow.data(), this);
-            }
-            SetIsActive(active);
+    if (d->mActive != active) {
+        d->mActive = active;
+        if (d->mMozWindow) {
             if (active) {
-                if (d->mMozWindow) {
-                    QtMoz::setWindowFrameConsumer(
-                            d->mMozWindow.data(), this, [this]() {
-                        update();
-                    });
-                }
+                QtMoz::setWindowFrameConsumer(
+                        d->mMozWindow.data(), this, [this]() {
+                    update();
+                });
                 resumeRendering();
                 polish();
             } else {
-                mComposited = false;
-                update();
+                QtMoz::clearWindowFrameConsumer(
+                        d->mMozWindow.data(), this);
             }
-            Q_EMIT activeChanged();
         }
-    } else {
-        // Will be processed once view is initialized.
-        d->mActive = active;
-        d->mDirtyState |= QMozViewPrivate::DirtyActive;
+        SetIsActive(active);
+        if (!active) {
+            mComposited = false;
+            update();
+        }
+        Q_EMIT activeChanged();
     }
 }
 
@@ -508,7 +458,6 @@ void QuickMozView::prepareMozWindow()
     // explicitly requested a zero-tab chrome window.
     const QByteArray chromeInitialUrl = QtMoz::chromeInitialUrl(
             this, QByteArrayLiteral("about:blank"));
-    QtMoz::setChromeHosted(this, true);
     QMozWindow *mozWindow = nullptr;
     if (d->mMozWindow) {
         mozWindow = d->mMozWindow.data();
