@@ -122,6 +122,8 @@ private Q_SLOTS:
 
 // INTERNAL
 protected:
+    void requestPresentationUpdate();
+    bool releasePresentation();
     void itemChange(ItemChange change, const ItemChangeData &) override;
     void geometryChanged(const QRectF &newGeometry, const QRectF &oldGeometry) override;
     QSGNode *updatePaintNode(QSGNode *node, UpdatePaintNodeData *data) override;
@@ -157,6 +159,7 @@ private:
     QMozViewPrivate *d;
     QSGTexture *mTexture;
     friend class QMozViewPrivate;
+    friend class QMozNativeView;
     Qt::ScreenOrientation mOrientation;
     bool mExplicitViewportWidth;
     bool mExplicitViewportHeight;

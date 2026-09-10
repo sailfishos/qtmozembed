@@ -8,6 +8,7 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "quickmozview.h"
+#include "qmoznativeview.h"
 
 #include "mozilla-config.h"
 #include "qmozcontext.h"
@@ -107,7 +108,7 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::loadingChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
-    connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
+    connect(this, &QuickMozView::firstPaint, this, &QuickMozView::requestPresentationUpdate);
     updateEnabled();
 }
 
@@ -344,7 +345,7 @@ void QuickMozView::setActive(bool active)
             if (active) {
                 QtMoz::setWindowFrameConsumer(
                         d->mMozWindow.data(), this, [this]() {
-                    update();
+                    requestPresentationUpdate();
                 });
                 resumeRendering();
                 polish();
@@ -356,7 +357,7 @@ void QuickMozView::setActive(bool active)
         SetIsActive(active);
         if (!active) {
             mComposited = false;
-            update();
+            requestPresentationUpdate();
         }
         Q_EMIT activeChanged();
     }
@@ -444,7 +445,7 @@ void QuickMozView::compositingFinished()
 {
     if (d->mActive) {
         mComposited = true;
-        update();
+        requestPresentationUpdate();
     }
 }
 
@@ -501,6 +502,9 @@ void QuickMozView::prepareMozWindow()
                 }
 
                 QuickMozView * const view = guardedView.data();
+                if (!view->releasePresentation()) {
+                    return;
+                }
                 if (view->d->mViewInitialized
                         || QtMoz::chromeSessionUniqueId(view->d) != 0) {
                     view->d->ViewDestroyed();
@@ -514,7 +518,7 @@ void QuickMozView::prepareMozWindow()
                 }
                 view->mComposited = false;
                 view->d->mHasCompositor = false;
-                view->update();
+                view->requestPresentationUpdate();
 
                 if (QtMoz::drainTextureFramesForConsumer(
                         textureConsumerId, done)) {
@@ -559,7 +563,7 @@ void QuickMozView::prepareMozWindow()
                 view->d->mHasCompositor = false;
                 view->d->mViewInitialized = false;
                 view->d->mMozWindow = nullptr;
-                view->update();
+                view->requestPresentationUpdate();
             }
     }, Qt::UniqueConnection);
     connect(mozWindow, &QMozWindow::compositingFinished,
@@ -568,7 +572,7 @@ void QuickMozView::prepareMozWindow()
     if (d->mActive) {
         QtMoz::setWindowFrameConsumer(
                 mozWindow, this, [this]() {
-            update();
+            requestPresentationUpdate();
         });
     }
 }
@@ -1109,7 +1113,7 @@ void QuickMozView::platformFrameAcquired()
 {
     ++mPlatformFrameGeneration;
     Q_EMIT platformFrameGenerationChanged();
-    update();
+    requestPresentationUpdate();
 }
 
 void QuickMozView::requirePlatformFrame()
@@ -1117,7 +1121,7 @@ void QuickMozView::requirePlatformFrame()
     if (++mPlatformFrameRequirement == 0) {
         ++mPlatformFrameRequirement;
     }
-    update();
+    requestPresentationUpdate();
 }
 
 void QuickMozView::setThrottlePainting(bool throttle)
@@ -1324,4 +1328,21 @@ void QuickMozView::setHttpUserAgent(const QString &httpUserAgent)
 bool QuickMozView::domContentLoaded() const
 {
     return d->domContentLoaded();
+}
+
+void QuickMozView::requestPresentationUpdate()
+{
+    if (QMozNativeView *native = qobject_cast<QMozNativeView *>(this)) {
+        native->requestPresentationUpdate();
+        return;
+    }
+    update();
+}
+
+bool QuickMozView::releasePresentation()
+{
+    if (QMozNativeView *native = qobject_cast<QMozNativeView *>(this)) {
+        return native->releasePresentation();
+    }
+    return true;
 }
