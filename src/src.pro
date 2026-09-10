@@ -70,8 +70,8 @@ HEADERS += qmozcontext.h \
            backends/embedlite/embedlitechromesession_p.h \
            backends/embedlite/embedlitesurface_p.h
 
-SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
-HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
+SOURCES += qmoznativeview.cpp quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
+HEADERS += qmoznativeview.h quickmozview.h qmozexttexture.h qmozextmaterialnode.h
 
 include(qmozembed.pri)
 

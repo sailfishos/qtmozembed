@@ -186,6 +186,7 @@ public Q_SLOTS:
 
 protected:
     friend class QuickMozView;
+    friend class QMozNativeView;
 
     void synthTouchBegin(const QVariant &touches);
     void synthTouchMove(const QVariant &touches);
