@@ -1,4 +1,6 @@
-CONFIG += qt thread debug ordered create_pc create_prl no_install_prl c++1z
+# Gecko 153 headers require C++20, which Qt 5.6 qmake cannot select by name.
+QMAKE_CXXFLAGS += -std=gnu++20
+CONFIG += qt thread debug ordered create_pc create_prl no_install_prl
 QT += openglextensions
 TARGET = qt5embedwidget
 TEMPLATE = lib
@@ -21,37 +23,55 @@ isEmpty(VERSION) {
 
 SOURCES += qmozcontext.cpp \
            qmozenginesettings.cpp \
-           qmozgrabresult.cpp \
            qmozscrolldecorator.cpp \
            qmessagepump.cpp \
            EmbedQtKeyUtils.cpp \
            qmozsecurity.cpp \
            qmozview_p.cpp \
-           geckoworker.cpp \
-           qmozopenglwebpage.cpp \
            qmozwindow.cpp \
-           qmozwindow_p.cpp
+           qmozwindow_p.cpp \
+           runtime/backendapi_p.cpp \
+           runtime/qmozchromesession_p.cpp \
+           runtime/qmozchromewindowregistry_p.cpp \
+           runtime/qmozchromewindowshutdown_p.cpp \
+           runtime/qmozframestream_p.cpp \
+           runtime/qmozruntime_p.cpp \
+           runtime/qmozsurface_p.cpp \
+           runtime/qmoztabmodel_p.cpp \
+           runtime/qmoztexturelease_p.cpp \
+           backends/embedlite/embedlitebackendentry_p.cpp \
+           backends/embedlite/embedlitechromesession_p.cpp \
+           backends/embedlite/embedlitesurface_p.cpp
 
 HEADERS += qmozcontext.h \
            qmozcontext_p.h \
            qmozenginesettings.h \
            qmozenginesettings_p.h \
-           qmozgrabresult.h \
            qmozsecurity.h \
-           qmozviewcreator.h \
            qmozscrolldecorator.h \
            qmessagepump.h \
            EmbedQtKeyUtils.h \
            qmozview_p.h \
-           geckoworker.h \
            qmozview_defined_wrapper.h \
            qmozview_templated_wrapper.h \
-           qmozopenglwebpage.h \
            qmozwindow.h \
-           qmozwindow_p.h
+           qmozwindow_p.h \
+           runtime/backendabi.h \
+           runtime/backendapi_p.h \
+           runtime/qmozchromesession_p.h \
+           runtime/qmozchromewindowregistry_p.h \
+           runtime/qmozchromewindowshutdown_p.h \
+           runtime/qmozchromehost_p.h \
+           runtime/qmozframestream_p.h \
+           runtime/qmozruntime_p.h \
+           runtime/qmozsurface_p.h \
+           runtime/qmoztabmodel_p.h \
+           runtime/qmoztexturelease_p.h \
+           backends/embedlite/embedlitechromesession_p.h \
+           backends/embedlite/embedlitesurface_p.h
 
-SOURCES += quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
-HEADERS += quickmozview.h qmozexttexture.h qmozextmaterialnode.h
+SOURCES += qmoznativeview.cpp quickmozview.cpp qmozexttexture.cpp qmozextmaterialnode.cpp
+HEADERS += qmoznativeview.h quickmozview.h qmozexttexture.h qmozextmaterialnode.h
 
 include(qmozembed.pri)
 
@@ -61,7 +81,7 @@ include($$RELATIVE_PATH/relative-objdir.pri)
 
 PREFIX = /usr
 
-QT += quick qml
+QT += quick qml gui-private
 
 #DEFINES += Q_DEBUG_LOG
 
@@ -74,9 +94,9 @@ QMAKE_PKGCONFIG_INCDIR = $$target.path
 QMAKE_PKGCONFIG_DESTDIR = pkgconfig
 QMAKE_PKGCONFIG_REQUIRES = libxul
 
-# install forwarding headers
-# match only the camel case forwarding headers here
+# install public headers
 FORWARDING_HEADERS = $$system( find q*.h )
+FORWARDING_HEADERS -= $$system( find q*_p.h )
 
 forwarding_headers.path = $$PREFIX/include
 forwarding_headers.files = $$FORWARDING_HEADERS

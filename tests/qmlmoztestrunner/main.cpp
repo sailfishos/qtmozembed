@@ -34,7 +34,6 @@
 
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
-#include "testviewcreator.h"
 #include "testhelper.h"
 
 #include <stdio.h>
@@ -43,7 +42,9 @@
 #include <QGuiApplication>
 #include <QtCore/qstring.h>
 #include <QTimer>
-#include <QtQml>
+#include <QtQml/qqml.h>
+#include <QQmlEngine>
+#include <QJSEngine>
 #include <QQuickView>
 #include <QtQuickTest/quicktest.h>
 
@@ -56,7 +57,6 @@ int main(int argc, char **argv)
 {
     QGuiApplication app(argc, argv);
 
-    qmlRegisterType<TestViewCreator>("QtMozEmbed.Tests", 1, 0, "WebViewCreator");
     qmlRegisterSingletonType<TestHelper>("QtMozEmbed.Tests", 1, 0, "TestHelper",
                                                     testHelperFactory);
 
@@ -75,7 +75,7 @@ int main(int argc, char **argv)
 
     bool contextDestroyed = false;
 
-    QObject::connect(QMozContext::instance(), &QMozContext::lastViewDestroyed,
+    QObject::connect(QMozContext::instance(), &QMozContext::lastWindowDestroyed,
                      QMozContext::instance(), &QMozContext::stopEmbedding);
     QObject::connect(QMozContext::instance(), &QMozContext::contextDestroyed,
                      [&] {

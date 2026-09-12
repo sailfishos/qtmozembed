@@ -8,23 +8,25 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "quickmozview.h"
+#include "qmoznativeview.h"
 
 #include "mozilla-config.h"
 #include "qmozcontext.h"
 #include "qmozembedlog.h"
-#include "mozilla/embedlite/EmbedLiteView.h"
 #include "mozilla/embedlite/EmbedLiteApp.h"
 #include "mozilla/TimeStamp.h"
 
 #include <QGuiApplication>
+#include <QPointer>
 #include <QThread>
 #include <QMutexLocker>
 #include <QtQuick/qquickwindow.h>
 #include <QtGui/QOpenGLShaderProgram>
 #include <QtGui/QOpenGLContext>
+#include <QRunnable>
+#include <QScreen>
 #include <QSGSimpleRectNode>
 #include <QSGSimpleTextureNode>
-#include <QtOpenGLExtensions>
 #include <QQmlInfo>
 
 #include "qmozview_p.h"
@@ -33,11 +35,19 @@
 #include "qmozexttexture.h"
 #include "qmozwindow.h"
 #include "qmozwindow_p.h"
+#include "runtime/qmozchromesession_p.h"
+#include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozchromewindowregistry_p.h"
+#include "runtime/qmozframestream_p.h"
+#include "runtime/qmoztexturelease_p.h"
 
 using namespace mozilla;
 using namespace mozilla::embedlite;
 
 namespace {
+
+const char ChromeViewDestroyingProperty[] =
+        "_qmozChromeViewDestroying";
 
 class ObjectCleanup : public QRunnable
 {
@@ -79,7 +89,12 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     , mExplicitOrientation(false)
     , mComposited(false)
     , mFollowItemGeometry(true)
+    , mPlatformFrameGeneration(0)
 {
+    const quint64 textureConsumerId =
+            QtMoz::registerTextureFrameConsumer(this);
+    Q_ASSERT(textureConsumerId != 0);
+    Q_UNUSED(textureConsumerId);
     setFlag(ItemHasContents, true);
     setAcceptedMouseButtons(Qt::LeftButton | Qt::RightButton | Qt::MiddleButton);
     setFlag(ItemIsFocusScope, true);
@@ -93,27 +108,36 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     connect(this, &QuickMozView::loadProgressChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::loadingChanged, d, &QMozViewPrivate::updateLoaded);
     connect(this, &QuickMozView::scrollableOffsetChanged, this, &QuickMozView::updateMargins);
-    connect(this, &QuickMozView::firstPaint, this, &QQuickItem::update);
+    connect(this, &QuickMozView::firstPaint, this, &QuickMozView::requestPresentationUpdate);
     updateEnabled();
 }
 
 QuickMozView::~QuickMozView()
 {
-    releaseResources();
-
-    if (d->mView) {
-        d->mView->SetIsActive(false);
-        d->mView->SetListener(nullptr);
-        d->mContext->GetApp()->DestroyView(d->mView);
+    setProperty(ChromeViewDestroyingProperty, true);
+    const quint64 textureConsumerId =
+            QtMoz::textureFrameConsumerId(this);
+    QtMoz::detachChromeSession(d);
+    QMozWindow * const chromeWindow = d->mMozWindow
+            && QtMoz::isChromeQuickOwned(d->mMozWindow.data())
+            ? d->mMozWindow.data() : nullptr;
+    if (d->mMozWindow && !chromeWindow) {
+        QtMoz::clearWindowFrameConsumer(d->mMozWindow.data(), this);
+        releaseResources();
     }
+
+    if (chromeWindow) {
+        QtMoz::drainTrackedChromeWindow(d->mContext, chromeWindow);
+    }
+    QtMoz::unregisterTextureFrameConsumer(this, textureConsumerId);
     delete d;
     d = nullptr;
 }
 
 void QuickMozView::SetIsActive(bool aIsActive)
 {
-    if (QThread::currentThread() == thread() && d->mView) {
-        d->mView->SetIsActive(aIsActive);
+    if (QThread::currentThread() == thread()) {
+        QtMoz::chromeSessionSetActive(d, aIsActive);
     } else {
         Q_EMIT setIsActive(aIsActive);
     }
@@ -124,14 +148,7 @@ void QuickMozView::processViewInitialization()
     // This is connected to view initialization. View must be initialized
     // over here.
     Q_ASSERT(d->mViewInitialized);
-    if (d->mDirtyState & QMozViewPrivate::DirtyActive) {
-        bool expectedActive = d->mActive;
-        d->mActive = !expectedActive;
-        setActive(expectedActive);
-        d->mDirtyState &= ~QMozViewPrivate::DirtyActive;
-    } else {
-        SetIsActive(d->mActive);
-    }
+    SetIsActive(d->mActive);
 }
 
 void QuickMozView::updateEnabled()
@@ -167,6 +184,13 @@ void QuickMozView::geometryChanged(const QRectF &newGeometry, const QRectF &oldG
 
 QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 {
+    if (QtMoz::takeTextureFrameInvalidation(
+            QtMoz::textureFrameConsumerId(this))) {
+        mTexture = nullptr;
+        delete oldNode;
+        oldNode = nullptr;
+    }
+
     // If the dimensions are entirely invalid return no node.
     if (width() <= 0 || height() <= 0) {
         delete oldNode;
@@ -177,11 +201,13 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         return nullptr;
     }
 
-    const bool invalidTexture = (!mComposited && !d->mIsPainted)
-            || !d->mViewInitialized
-            || !d->mHasCompositor
-            || !d->mContext->registeredWindow()
-            || !d->mMozWindow;
+    // A reset clears the producer image and painted state while the previous
+    // composite flag may still be set. Do not retain that imported texture.
+    const bool invalidTexture = !QtMoz::windowFrameIsValid(
+            mComposited, d->mHasCompositor,
+            d->mMozWindow && d->mMozWindow->isReserved()
+                && QtMoz::chromeInitialized(d->mMozWindow.data()),
+            d->mMozWindow);
 
     if (mTexture && invalidTexture) {
         delete oldNode;
@@ -216,18 +242,39 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
         QMozExtTexture * const texture = new QMozExtTexture;
         mTexture = texture;
 
-        connect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage, Qt::DirectConnection);
+        connect(texture, &QMozExtTexture::platformFrameAcquired,
+                this, &QuickMozView::platformFrameAcquired,
+                Qt::QueuedConnection);
 
-        node = new MozExtMaterialNode;
+        const bool attached = QtMoz::attachTextureFrameLease(
+                texture, d->mMozWindow.data(), this,
+                QtMoz::textureFrameConsumerId(this), window());
+        if (!attached) {
+            qCCritical(lcEmbedLiteExt)
+                    << "Failed to attach chrome platform-frame texture";
+            delete texture;
+            mTexture = nullptr;
+            return nullptr;
+        }
+
+        connect(texture, &QMozExtTexture::withPlatformImage,
+                d->mMozWindow, &QMozWindow::withPlatformImage,
+                Qt::DirectConnection);
+
+        node = new MozMaterialNode;
 #else
 #warning "Implement me for non ES2 platform"
-//        node = new MozRgbMaterialNode;
+//        node = new MozMaterialNode;
         return nullptr;
 #endif
 
         node->setTexture(mTexture);
     }
 
+    QMozExtTexture * const texture =
+            static_cast<QMozExtTexture *>(mTexture);
+    texture->requirePlatformFrame(
+                d->mSize.toSize(), mPlatformFrameRequirement);
     node->setRect(boundingRect);
     node->setOrientation(mOrientation);
     node->setSurfaceOrientation(window() ? window()->contentOrientation() : Qt::PrimaryOrientation);
@@ -238,14 +285,39 @@ QSGNode * QuickMozView::updatePaintNode(QSGNode *oldNode, UpdatePaintNodeData *)
 
 void QuickMozView::releaseResources()
 {
+    const quint64 consumerId = QtMoz::textureFrameConsumerId(this);
+    if (QtMoz::hasTextureFrameLease(consumerId)) {
+        QtMoz::scheduleTextureFrameCleanupForConsumer(consumerId);
+        mTexture = nullptr;
+        return;
+    }
+    if (QtMoz::takeTextureFrameInvalidation(consumerId)) {
+        mTexture = nullptr;
+        return;
+    }
+
 #if defined(QT_OPENGL_ES_2)
     if (QMozExtTexture * const texture = d->mMozWindow ? qobject_cast<QMozExtTexture *>(mTexture) : nullptr) {
-        disconnect(texture, &QMozExtTexture::getPlatformImage, d->mMozWindow, &QMozWindow::getPlatformImage);
+        disconnect(texture, &QMozExtTexture::withPlatformImage,
+                   d->mMozWindow, &QMozWindow::withPlatformImage);
     }
 #endif
 
-    if (QQuickWindow * const window = mTexture ? QQuickItem::window() : nullptr) {
-        window->scheduleRenderJob(new ObjectCleanup(mTexture), QQuickWindow::AfterSynchronizingStage);
+    if (QMozExtTexture * const texture =
+            qobject_cast<QMozExtTexture *>(mTexture)) {
+        if (QtMoz::scheduleTextureFrameCleanup(texture)) {
+            mTexture = nullptr;
+            return;
+        }
+    }
+
+    if (QQuickWindow * const window = mTexture
+            ? QQuickItem::window() : nullptr) {
+        // The texture may still be sampled by the frame being rendered.
+        // Delete it only after that draw, with the QSG GL context current, so
+        // its consumer fence truthfully covers every use of the EGLImage.
+        window->scheduleRenderJob(new ObjectCleanup(mTexture),
+                                  QQuickWindow::AfterRenderingStage);
         mTexture = nullptr;
     }
 }
@@ -267,30 +339,77 @@ bool QuickMozView::active() const
 
 void QuickMozView::setActive(bool active)
 {
-    if (d->mViewInitialized) {
-        if (d->mActive != active) {
-            d->mActive = active;
-            // Process pending paint request before final suspend (unblock possible content Compositor waiters Bug 1020350)
-            SetIsActive(active);
+    if (d->mActive != active) {
+        d->mActive = active;
+        if (d->mMozWindow) {
             if (active) {
+                QtMoz::setWindowFrameConsumer(
+                        d->mMozWindow.data(), this, [this]() {
+                    requestPresentationUpdate();
+                });
                 resumeRendering();
                 polish();
             } else {
-                mComposited = false;
-                update();
+                QtMoz::clearWindowFrameConsumer(
+                        d->mMozWindow.data(), this);
             }
-            Q_EMIT activeChanged();
         }
-    } else {
-        // Will be processed once view is initialized.
-        d->mActive = active;
-        d->mDirtyState |= QMozViewPrivate::DirtyActive;
+        SetIsActive(active);
+        if (!active) {
+            mComposited = false;
+            requestPresentationUpdate();
+        }
+        Q_EMIT activeChanged();
     }
 }
 
 bool QuickMozView::loaded() const
 {
     return d->mLoaded;
+}
+
+QAbstractItemModel *QuickMozView::tabModel() const
+{
+    return d->tabModel();
+}
+
+QString QuickMozView::selectedTabId() const
+{
+    return d->selectedTabId();
+}
+
+int QuickMozView::selectedTabIndex() const
+{
+    return d->selectedTabIndex();
+}
+
+bool QuickMozView::restoreTabs(const QVariantList &tabs,
+                               int selectedTabIndex)
+{
+    return d->restoreTabs(tabs, selectedTabIndex);
+}
+
+bool QuickMozView::newTab(const QString &url,
+                          const QString &persistentId,
+                          bool fromExternal, bool inBackground)
+{
+    return d->newTab(url, persistentId, fromExternal, inBackground);
+}
+
+bool QuickMozView::associateTab(const QString &tabId,
+                                const QString &persistentId)
+{
+    return d->associateTab(tabId, persistentId);
+}
+
+bool QuickMozView::selectTab(const QString &tabId)
+{
+    return d->selectTab(tabId);
+}
+
+bool QuickMozView::closeTab(const QString &tabId)
+{
+    return d->closeTab(tabId);
 }
 
 /*!
@@ -310,6 +429,10 @@ void QuickMozView::updateContentSize(const QSizeF &size)
 
     d->setSize(size);
 
+    if (d->mSize != originalSize) {
+        requirePlatformFrame();
+    }
+
     if (d->mSize.width() != originalSize.width()) {
         Q_EMIT viewportWidthChanged();
     }
@@ -322,7 +445,7 @@ void QuickMozView::compositingFinished()
 {
     if (d->mActive) {
         mComposited = true;
-        update();
+        requestPresentationUpdate();
     }
 }
 
@@ -332,12 +455,85 @@ void QuickMozView::prepareMozWindow()
         d->mSize = window()->size();
     }
 
-    QMozWindow *mozWindow = d->mContext->registeredWindow();
-    if (!mozWindow) {
-        mozWindow = new QMozWindow(webContentWindowSize(mOrientation, d->mSize).toSize());
+    // Preserve the traditional single-view behaviour unless the embedder has
+    // explicitly requested a zero-tab chrome window.
+    const QByteArray chromeInitialUrl = QtMoz::chromeInitialUrl(
+            this, QByteArrayLiteral("about:blank"));
+    QMozWindow *mozWindow = nullptr;
+    if (d->mMozWindow) {
+        mozWindow = d->mMozWindow.data();
+    } else {
+        mozWindow = new QMozWindow(
+                webContentWindowSize(mOrientation, d->mSize).toSize());
+        QtMoz::setChromeInitialUrl(mozWindow, chromeInitialUrl);
+        QtMoz::setChromePrivate(mozWindow, d->mPrivateMode);
+        QtMoz::setChromeQuickOwned(mozWindow);
         mozWindow->reserve();
-        d->mContext->registerWindow(mozWindow);
-    } else if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
+        if (!mozWindow->isReserved()) {
+            delete mozWindow;
+            return;
+        }
+        const QPointer<QuickMozView> guardedView(this);
+        const QPointer<QMozWindow> guardedWindow(mozWindow);
+        const void * const consumer = this;
+        const quint64 textureConsumerId =
+                QtMoz::textureFrameConsumerId(this);
+        if (!QtMoz::trackChromeWindow(
+                d->mContext, mozWindow,
+                [guardedView, guardedWindow, consumer,
+                 textureConsumerId](
+                        const QtMoz::QMozChromeWindowDrainComplete &done) {
+                if (!guardedWindow) {
+                    done();
+                    return;
+                }
+
+                QMozWindow * const window = guardedWindow.data();
+                QtMoz::clearWindowFrameConsumer(window, consumer);
+                QtMoz::clearWindowPendingFrame(window);
+                if (!guardedView
+                        || guardedView->property(
+                            ChromeViewDestroyingProperty).toBool()) {
+                    if (!QtMoz::drainTextureFramesForConsumer(
+                            textureConsumerId, done)) {
+                        QtMoz::scheduleTextureCleanupComplete(done);
+                    }
+                    return;
+                }
+
+                QuickMozView * const view = guardedView.data();
+                if (!view->releasePresentation()) {
+                    return;
+                }
+                if (view->d->mViewInitialized
+                        || QtMoz::chromeSessionUniqueId(view->d) != 0) {
+                    view->d->ViewDestroyed();
+                    if (!guardedView) {
+                        if (!QtMoz::drainTextureFramesForConsumer(
+                                textureConsumerId, done)) {
+                            QtMoz::scheduleTextureCleanupComplete(done);
+                        }
+                        return;
+                    }
+                }
+                view->mComposited = false;
+                view->d->mHasCompositor = false;
+                view->requestPresentationUpdate();
+
+                if (QtMoz::drainTextureFramesForConsumer(
+                        textureConsumerId, done)) {
+                    return;
+                }
+                QtMoz::scheduleTextureCleanupComplete(done);
+        })) {
+            connect(mozWindow, &QMozWindow::released,
+                    mozWindow, &QObject::deleteLater);
+            mozWindow->release();
+            return;
+        }
+    }
+
+    if (d->mDirtyState & QMozViewPrivate::DirtySize && d->mActive) {
         mozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
     }
 
@@ -346,6 +542,51 @@ void QuickMozView::prepareMozWindow()
     }
 
     d->setMozWindow(mozWindow);
+    d->attachChromeSession();
+    const QPointer<QuickMozView> guardedView(this);
+    const QPointer<QMozWindow> guardedWindow(mozWindow);
+    const quint64 releaseConsumerId =
+            QtMoz::textureFrameConsumerId(this);
+    connect(mozWindow, &QMozWindow::released, this,
+            [guardedView, guardedWindow, releaseConsumerId]() {
+            QtMoz::finishTextureFrameConsumerDrain(releaseConsumerId);
+            if (!guardedView) {
+                return;
+            }
+            QuickMozView * const view = guardedView.data();
+            if (view->d->mMozWindow.data() == guardedWindow.data()) {
+                QtMoz::clearWindowFrameConsumer(
+                        guardedWindow.data(), view);
+                QtMoz::detachChromeSession(view->d);
+                view->d->clearChromeTabs();
+                view->mComposited = false;
+                view->d->mHasCompositor = false;
+                view->d->mViewInitialized = false;
+                view->d->mMozWindow = nullptr;
+                view->requestPresentationUpdate();
+            }
+    }, Qt::UniqueConnection);
+    connect(mozWindow, &QMozWindow::compositingFinished,
+            this, &QuickMozView::compositingFinished,
+            Qt::UniqueConnection);
+    if (d->mActive) {
+        QtMoz::setWindowFrameConsumer(
+                mozWindow, this, [this]() {
+            requestPresentationUpdate();
+        });
+    }
+}
+
+void QuickMozView::applyMozWindowGeometry()
+{
+    if (!d->mMozWindow || d->mSize.isEmpty()) {
+        return;
+    }
+
+    d->mMozWindow->setSize(
+            webContentWindowSize(mOrientation, d->mSize).toSize());
+    d->mMozWindow->setContentOrientation(mOrientation);
+    d->mDirtyState &= ~QMozViewPrivate::DirtySize;
 }
 
 void QuickMozView::updateMargins()
@@ -372,21 +613,21 @@ void QuickMozView::updateMargins()
 void QuickMozView::mouseMoveEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMouseMove(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Move);
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mousePressEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMousePress(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Down);
     e->setAccepted(accepted);
 }
 
 void QuickMozView::mouseReleaseEvent(QMouseEvent *e)
 {
     const bool accepted = e->isAccepted();
-    d->recvMouseRelease(e->pos().x(), e->pos().y());
+    d->recvMouseEvent(e, QMozChromeMouseType::Up);
     e->setAccepted(accepted);
 }
 
@@ -432,7 +673,7 @@ void QuickMozView::forceViewActiveFocus()
     forceActiveFocus();
     if (d->mViewInitialized) {
         setActive(true);
-        d->mView->SetIsFocused(true);
+        d->setIsFocused(true);
     }
 }
 
@@ -606,6 +847,54 @@ QMargins QuickMozView::margins() const
     return d->mMargins;
 }
 
+int QuickMozView::marginTop() const
+{
+    return d->mMargins.top();
+}
+
+void QuickMozView::setMarginTop(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setTop(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginRight() const
+{
+    return d->mMargins.right();
+}
+
+void QuickMozView::setMarginRight(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setRight(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginBottom() const
+{
+    return d->mMargins.bottom();
+}
+
+void QuickMozView::setMarginBottom(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setBottom(margin);
+    d->setMargins(margins, true);
+}
+
+int QuickMozView::marginLeft() const
+{
+    return d->mMargins.left();
+}
+
+void QuickMozView::setMarginLeft(int margin)
+{
+    QMargins margins = d->mMargins;
+    margins.setLeft(margin);
+    d->setMargins(margins, true);
+}
+
 QMargins QuickMozView::safeAreaInsets() const
 {
     return d->mSafeAreaInsets;
@@ -613,6 +902,54 @@ QMargins QuickMozView::safeAreaInsets() const
 
 void QuickMozView::setSafeAreaInsets(QMargins insets)
 {
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetTop() const
+{
+    return d->mSafeAreaInsets.top();
+}
+
+void QuickMozView::setSafeAreaInsetTop(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setTop(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetRight() const
+{
+    return d->mSafeAreaInsets.right();
+}
+
+void QuickMozView::setSafeAreaInsetRight(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setRight(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetBottom() const
+{
+    return d->mSafeAreaInsets.bottom();
+}
+
+void QuickMozView::setSafeAreaInsetBottom(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setBottom(inset);
+    d->setSafeAreaInsets(insets);
+}
+
+int QuickMozView::safeAreaInsetLeft() const
+{
+    return d->mSafeAreaInsets.left();
+}
+
+void QuickMozView::setSafeAreaInsetLeft(int inset)
+{
+    QMargins insets = d->mSafeAreaInsets;
+    insets.setLeft(inset);
     d->setSafeAreaInsets(insets);
 }
 
@@ -628,6 +965,7 @@ void QuickMozView::setOrientation(Qt::ScreenOrientation orientation)
         polish();
 
         mOrientation = orientation;
+        requirePlatformFrame();
 
         Q_EMIT orientationChanged();
     }
@@ -648,6 +986,7 @@ void QuickMozView::updateOrientation(Qt::ScreenOrientation orientation)
 
         if (mOrientation != orientation) {
             mOrientation = orientation;
+            requirePlatformFrame();
 
             Q_EMIT orientationChanged();
         }
@@ -760,9 +1099,54 @@ QMozSecurity *QuickMozView::security()
     return &d->mSecurity;
 }
 
+bool QuickMozView::throttlePainting() const
+{
+    return d->mThrottlePainting;
+}
+
+int QuickMozView::platformFrameGeneration() const
+{
+    return mPlatformFrameGeneration;
+}
+
+void QuickMozView::platformFrameAcquired()
+{
+    ++mPlatformFrameGeneration;
+    Q_EMIT platformFrameGenerationChanged();
+    requestPresentationUpdate();
+}
+
+void QuickMozView::requirePlatformFrame()
+{
+    if (++mPlatformFrameRequirement == 0) {
+        ++mPlatformFrameRequirement;
+    }
+    requestPresentationUpdate();
+}
+
+void QuickMozView::setThrottlePainting(bool throttle)
+{
+    if (d->mThrottlePainting != throttle) {
+        d->setThrottlePainting(throttle);
+        Q_EMIT throttlePaintingChanged();
+    }
+}
+
+bool QuickMozView::fullscreen() const
+{
+    return d->fullscreen();
+}
+
 void QuickMozView::sendAsyncMessage(const QString &name, const QVariant &variant)
 {
     d->sendAsyncMessage(name, variant);
+}
+
+bool QuickMozView::sendAsyncMessageToTab(
+        const QString &tabId, const QString &name,
+        const QVariant &variant)
+{
+    return d->sendAsyncMessageToTab(tabId, name, variant);
 }
 
 void QuickMozView::addMessageListener(const QString &name)
@@ -789,7 +1173,7 @@ void QuickMozView::newWindow(const QString &url)
 
 quint32 QuickMozView::uniqueId() const
 {
-    return d->mView ? d->mView->GetUniqueID() : 0;
+    return QtMoz::chromeSessionUniqueId(d);
 }
 
 void QuickMozView::setParentId(unsigned parentId)
@@ -845,6 +1229,16 @@ void QuickMozView::setDesktopMode(bool desktopMode)
     d->setDesktopMode(desktopMode);
 }
 
+bool QuickMozView::javascriptEnabled() const
+{
+    return d->mJavascriptEnabled;
+}
+
+void QuickMozView::setJavascriptEnabled(bool enabled)
+{
+    d->setJavascriptEnabled(enabled);
+}
+
 void QuickMozView::synthTouchBegin(const QVariant &touches)
 {
     d->synthTouchBegin(touches);
@@ -862,25 +1256,36 @@ void QuickMozView::synthTouchEnd(const QVariant &touches)
 
 void QuickMozView::suspendView()
 {
-    if (!d->mViewInitialized) {
-        return;
+    if (d->mMozWindow) {
+        setActive(false);
+        const quint64 tabId = d->selectedChromeTabId();
+        if (tabId) {
+            QtMoz::chromeSessionSuspendTimeouts(d, tabId);
+        }
+        d->mMozWindow->suspendRendering();
     }
-    setActive(false);
-    d->mView->SuspendTimeouts();
-    d->mMozWindow->suspendRendering();
 }
 
 void QuickMozView::resumeView()
 {
-    if (!d->mViewInitialized) {
-        return;
+    if (d->mMozWindow) {
+        const bool wasActive = d->mActive;
+        setActive(true);
+        const quint64 tabId = d->selectedChromeTabId();
+        if (tabId) {
+            QtMoz::chromeSessionResumeTimeouts(d, tabId);
+        }
+        if (wasActive) {
+            d->mMozWindow->resumeRendering();
+        }
     }
-    setActive(true);
-    d->mView->ResumeTimeouts();
 }
 
 void QuickMozView::touchEvent(QTouchEvent *event)
 {
+    if (event && event->type() == QEvent::TouchBegin) {
+        Q_EMIT touched();
+    }
     d->touchEvent(event);
 }
 
@@ -906,8 +1311,7 @@ void QuickMozView::resumeRendering()
 void QuickMozView::updatePolish()
 {
     if (d->mMozWindow && d->mActive) {
-        d->mMozWindow->setContentOrientation(mOrientation);
-        d->mMozWindow->setSize(webContentWindowSize(mOrientation, d->mSize).toSize());
+        applyMozWindowGeometry();
     }
 }
 
@@ -924,4 +1328,21 @@ void QuickMozView::setHttpUserAgent(const QString &httpUserAgent)
 bool QuickMozView::domContentLoaded() const
 {
     return d->domContentLoaded();
+}
+
+void QuickMozView::requestPresentationUpdate()
+{
+    if (QMozNativeView *native = qobject_cast<QMozNativeView *>(this)) {
+        native->requestPresentationUpdate();
+        return;
+    }
+    update();
+}
+
+bool QuickMozView::releasePresentation()
+{
+    if (QMozNativeView *native = qobject_cast<QMozNativeView *>(this)) {
+        return native->releasePresentation();
+    }
+    return true;
 }

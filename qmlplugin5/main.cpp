@@ -11,6 +11,7 @@
 #include <QtQml/qqml.h>
 #include <QtQml/QQmlEngine>
 #include "quickmozview.h"
+#include "qmoznativeview.h"
 #include "qmozcontext.h"
 #include "qmozenginesettings.h"
 #include "qmozscrolldecorator.h"
@@ -30,6 +31,7 @@ public:
     void registerTypes(const char *uri)
     {
         Q_ASSERT(uri == QLatin1String("Qt5Mozilla"));
+        qmlRegisterType<QMozNativeView>("Qt5Mozilla", 1, 0, "QmlMozNativeView");
         qmlRegisterType<QuickMozView>("Qt5Mozilla", 1, 0, "QmlMozView");
         qmlRegisterSingletonType<QMozContext>("Qt5Mozilla", 1, 0, "QmlMozContext",
                                               singletonApiFactory<QMozContext>);

@@ -10,28 +10,21 @@
 #define LOG_COMPONENT "QMozContext"
 
 #include <QVariant>
-#include <QThread>
-#include <QGuiApplication>
 #include <QJsonDocument>
 #include <QJsonParseError>
-#include <QtQml/QtQml>
+#include <QtQml/qqml.h>
+#include <QJSValue>
 
 #include <dlfcn.h>
 #include <link.h>
 
-#include "qmessagepump.h"
 #include "qmozembedlog.h"
 #include "qmozcontext.h"
 #include "qmozcontext_p.h"
 #include "qmozenginesettings.h"
-#include "qmozviewcreator.h"
-#include "geckoworker.h"
 #include "qmozwindow.h"
-
-#include "nsDebug.h"
-#include "mozilla/embedlite/EmbedLiteMessagePump.h"
-#include "mozilla/embedlite/EmbedLiteView.h"
-#include "mozilla/embedlite/EmbedInitGlue.h"
+#include "runtime/qmozchromewindowregistry_p.h"
+#include "runtime/qmozruntime_p.h"
 
 Q_LOGGING_CATEGORY(lcEmbedLiteExt, "org.sailfishos.embedliteext", QtWarningMsg)
 
@@ -94,14 +87,8 @@ QMozContextPrivate *QMozContextPrivate::instance()
 
 QMozContextPrivate::QMozContextPrivate(QObject *parent)
     : QObject(parent)
-    , mApp(nullptr)
+    , mRuntime(nullptr)
     , mInitialized(false)
-    , mThread(new QThread())
-    , mEmbedStarted(false)
-    , mQtPump(nullptr)
-    , mAsyncContext(!getenv("DISABLE_ASYNC"))
-    , mViewCreator(nullptr)
-    , mMozWindow(nullptr)
 {
     qCDebug(lcEmbedLiteExt) << "Create new Context:" << (void *)this
                             << ", parent:" << (void *)parent << getenv("GRE_HOME");
@@ -114,54 +101,24 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     setenv("LC_NUMERIC", "C", 1);
     setlocale(LC_NUMERIC, "C");
 
-    // GRE_HOME must be set before QMozContext is initialized. With invoker PWD is empty.
-    QByteArray binaryPath = QCoreApplication::applicationDirPath().toLocal8Bit();
-    setenv("GRE_HOME", binaryPath.constData(), 1);
+    // Use the packaged GRE path before initializing the runtime. The
+    // application and working directories must not influence library loading.
+    setenv("GRE_HOME", BUILD_GRE_HOME, 1);
 
-    Q_ASSERT_X(LoadEmbedLite(), __PRETTY_FUNCTION__, "Failed load XPCOMGlue");
-
-    mApp = XRE_GetEmbedLite();
-    mApp->SetListener(this);
-    mApp->SetIsAccelerated(true);
-    if (mAsyncContext) {
-        mQtPump = new MessagePumpQt(mApp);
-    }
+    mRuntime = new QMozRuntime(this, this);
 }
 
 QMozContextPrivate::~QMozContextPrivate()
 {
-    destroyWindow();
-
     platform_egl_workaround_close();
-}
-
-bool QMozContextPrivate::ExecuteChildThread()
-{
-    return false;
-}
-
-// Native thread must be stopped here
-bool QMozContextPrivate::StopChildThread()
-{
-    if (mThread && !mThread->isFinished()) {
-        qCDebug(lcEmbedLiteExt) << "Stop Native thread:" << (void *)mThread;
-        mThread->exit(0);
-        mThread->wait();
-        return true;
-    }
-    return false;
 }
 
 // App Initialized and ready to API call
 void QMozContextPrivate::Initialized()
 {
     mInitialized = true;
-#if defined(GL_PROVIDER_EGL) || defined(GL_PROVIDER_GLX)
-    if (mApp->GetRenderType() == EmbedLiteApp::RENDER_AUTO) {
-        mApp->SetIsAccelerated(true);
-    }
-#endif
-    mApp->LoadGlobalStyleSheet("chrome://global/content/embedScrollStyles.css", true);
+    mRuntime->embedLiteApp()->LoadGlobalStyleSheet(
+            "chrome://global/content/embedScrollStyles.css", true);
 
     std::vector<std::string> observersList;
     observersList.reserve(mObservers.size());
@@ -171,7 +128,7 @@ void QMozContextPrivate::Initialized()
         }
     }
     if (observersList.size() > 0) {
-        mApp->AddObservers(observersList);
+        mRuntime->embedLiteApp()->AddObservers(observersList);
     }
 
     Q_EMIT initialized();
@@ -183,18 +140,9 @@ void QMozContextPrivate::Destroyed()
 #ifdef DEVELOPMENT_BUILD
     qCInfo(lcEmbedLiteExt);
 #endif
-    mApp->SetListener(nullptr);
+    mRuntime->detachListener();
 
-    if (mThread && !mThread->isFinished()) {
-        mThread->exit(0);
-        mThread->wait();
-        mThread = nullptr;
-    }
-
-    if (mQtPump) {
-        mQtPump->deleteLater();
-        mQtPump = nullptr;
-    }
+    mRuntime->backendDestroyed();
     Q_EMIT contextDestroyed();
 }
 
@@ -223,25 +171,6 @@ void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
     }
 }
 
-void QMozContextPrivate::destroyWindow()
-{
-    if (!mMozWindow) return;
-
-    if (mMozWindow->isReserved()) {
-        connect(mMozWindow.data(), &QMozWindow::released,
-                mMozWindow.data(), &QObject::deleteLater);
-        mMozWindow->release();
-    } else {
-        delete mMozWindow;
-    }
-    mMozWindow = nullptr;
-}
-
-void QMozContextPrivate::LastViewDestroyed()
-{
-    Q_EMIT lastViewDestroyed();
-}
-
 void QMozContextPrivate::LastWindowDestroyed()
 {
     Q_EMIT lastWindowDestroyed();
@@ -249,23 +178,12 @@ void QMozContextPrivate::LastWindowDestroyed()
 
 bool QMozContextPrivate::IsInitialized()
 {
-    return mApp && mInitialized;
-}
-
-uint32_t QMozContextPrivate::CreateNewWindowRequested(const uint32_t &chromeFlags, const bool &hidden,
-                                                      EmbedLiteView *aParentView, const uintptr_t &parentBrowsingContext)
-{
-    Q_UNUSED(chromeFlags)
-
-    uint32_t parentId = aParentView ? aParentView->GetUniqueID() : 0;
-    qCDebug(lcEmbedLiteExt) << "QtMozEmbedContext new Window requested: parent:" << (void *)aParentView << parentId;
-    uint32_t viewId = QMozContext::instance()->createView(parentId, parentBrowsingContext, hidden);
-    return viewId;
+    return mRuntime->hasApp() && mInitialized;
 }
 
 EmbedLiteMessagePump *QMozContextPrivate::EmbedLoop()
 {
-    return mQtPump->EmbedLoop();
+    return mRuntime->embedLoop();
 }
 
 QMozContext *QMozContext::instance()
@@ -279,14 +197,14 @@ QMozContext::QMozContext(QObject *parent)
 {
     connect(d, &QMozContextPrivate::initialized, this, &QMozContext::initialized);
     connect(d, &QMozContextPrivate::contextDestroyed, this, &QMozContext::contextDestroyed);
-    connect(d, &QMozContextPrivate::lastViewDestroyed, this, &QMozContext::lastViewDestroyed);
     connect(d, &QMozContextPrivate::lastWindowDestroyed, this, &QMozContext::lastWindowDestroyed);
     connect(d, &QMozContextPrivate::recvObserve, this, &QMozContext::recvObserve);
 }
 
 void QMozContext::setProfile(const QString &profilePath)
 {
-    d->mApp->SetProfilePath(!profilePath.isEmpty() ? profilePath.toUtf8().data() : nullptr);
+    d->mRuntime->embedLiteApp()->SetProfilePath(
+            !profilePath.isEmpty() ? profilePath.toUtf8().data() : nullptr);
 }
 
 QMozContext::~QMozContext()
@@ -295,9 +213,10 @@ QMozContext::~QMozContext()
 
 void QMozContext::addComponentManifest(const QString &manifestPath)
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return;
-    d->mApp->AddManifestLocation(manifestPath.toUtf8().data());
+    d->mRuntime->embedLiteApp()->AddManifestLocation(
+            manifestPath.toUtf8().data());
 }
 
 void QMozContext::addObserver(const QString &aTopic)
@@ -309,7 +228,7 @@ void QMozContext::addObserver(const QString &aTopic)
     ++count;
     // Don't add observers that were already added
     if ((count == 1) && d->IsInitialized()) {
-        d->mApp->AddObserver(topic.c_str());
+        d->mRuntime->embedLiteApp()->AddObserver(topic.c_str());
     }
 }
 
@@ -324,7 +243,7 @@ void QMozContext::removeObserver(const QString &aTopic)
         if (count == 0) {
             d->mObservers.erase(topic);
             if (d->IsInitialized()) {
-                d->mApp->RemoveObserver(topic.c_str());
+                d->mRuntime->embedLiteApp()->RemoveObserver(topic.c_str());
             }
         }
     } else {
@@ -346,7 +265,7 @@ void QMozContext::addObservers(const std::vector<std::string> &aObserversList)
     }
 
     if (d->IsInitialized()) {
-        d->mApp->AddObservers(observersList);
+        d->mRuntime->embedLiteApp()->AddObservers(observersList);
     }
 }
 
@@ -369,7 +288,7 @@ void QMozContext::removeObservers(const std::vector<std::string> &aObserversList
     }
 
     if (d->IsInitialized()) {
-        d->mApp->RemoveObservers(observersList);
+        d->mRuntime->embedLiteApp()->RemoveObservers(observersList);
     }
 }
 
@@ -380,7 +299,8 @@ void QMozContext::notifyObservers(const QString &topic, const QString &value)
         return;
     }
 
-    d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)value.constData());
+    d->mRuntime->embedLiteApp()->SendObserve(
+            topic.toUtf8().data(), (const char16_t*)value.constData());
 }
 
 void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
@@ -400,51 +320,50 @@ void QMozContext::notifyObservers(const QString &topic, const QVariant &value)
     }
 
     QByteArray array = doc.toJson();
-    d->mApp->SendObserve(topic.toUtf8().data(), (const char16_t*)QString(array).constData());
+    d->mRuntime->embedLiteApp()->SendObserve(
+            topic.toUtf8().data(),
+            (const char16_t*)QString(array).constData());
 }
 
-int QMozContext::getNumberOfViews() const
+void QMozContext::loadUserStyleSheet(const QString &uri, bool enable)
 {
-    return d->mApp ? d->mApp->GetNumberOfViews() : 0;
+    if (!d->IsInitialized() || uri.isEmpty()) {
+        return;
+    }
+    d->mRuntime->embedLiteApp()->LoadUserStyleSheet(
+            uri.toUtf8().constData(), enable);
 }
 
 int QMozContext::getNumberOfWindows() const
 {
-    return d->mApp ? d->mApp->GetNumberOfWindows() : 0;
+    EmbedLiteApp * const app = d->mRuntime->embedLiteApp();
+    return app ? app->GetNumberOfWindows() : 0;
 }
 
 QMozContext::TaskHandle QMozContext::PostUITask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return nullptr;
-    return d->mApp->PostTask(cb, data, timeout);
+    return d->mRuntime->embedLiteApp()->PostTask(cb, data, timeout);
 }
 
 QMozContext::TaskHandle QMozContext::PostCompositorTask(QMozContext::TaskCallback cb, void *data, int timeout)
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return nullptr;
-    return d->mApp->PostCompositorTask(cb, data, timeout);
+    return d->mRuntime->embedLiteApp()->PostCompositorTask(cb, data, timeout);
 }
 
 void QMozContext::CancelTask(QMozContext::TaskHandle handle)
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return;
-    d->mApp->CancelTask(handle);
+    d->mRuntime->embedLiteApp()->CancelTask(handle);
 }
 
-void QMozContext::runEmbedding(int aDelay)
+void QMozContext::runEmbedding(int)
 {
-    if (!d->mEmbedStarted) {
-        d->mEmbedStarted = true;
-        if (d->mAsyncContext) {
-            d->mApp->StartWithCustomPump(EmbedLiteApp::EMBED_THREAD, d->EmbedLoop());
-        } else {
-            d->mApp->Start(EmbedLiteApp::EMBED_THREAD);
-            d->mEmbedStarted = false;
-        }
-    }
+    d->mRuntime->start();
 }
 
 bool QMozContext::isInitialized() const
@@ -454,62 +373,72 @@ bool QMozContext::isInitialized() const
 
 EmbedLiteApp *QMozContext::GetApp()
 {
-    return d->mApp;
+    return d->mRuntime->embedLiteApp();
 }
 
 void QMozContext::stopEmbedding()
 {
-    if (registeredWindow()) {
-        connect(this, &QMozContext::lastWindowDestroyed, this, &QMozContext::stopEmbedding);
-        d->destroyWindow();
-    } else {
-        GetApp()->Stop();
+    static const char stopActiveProperty[] =
+            "_qmozStopEmbeddingActive";
+    static const char stopAgainProperty[] =
+            "_qmozStopEmbeddingAgain";
+    // Public QMozContext wrappers share QMozContextPrivate and its runtime.
+    // Coordinate chrome ownership and re-entrant stops through the canonical
+    // wrapper regardless of which valid wrapper receives this call.
+    QMozContext * const coordinator = QMozContext::instance();
+    if (coordinator->property(stopActiveProperty).toBool()) {
+        coordinator->setProperty(stopAgainProperty, true);
+        return;
     }
-}
+    coordinator->setProperty(stopActiveProperty, true);
 
-quint32 QMozContext::createView(const quint32 &parentId, const uintptr_t &parentBrowsingContext, const bool hidden)
-{
-    return d->mViewCreator ? d->mViewCreator->createView(parentId, parentBrowsingContext, hidden) : 0;
+    bool waitingForWindows = false;
+    const bool hasChromeWindows =
+            QtMoz::hasTrackedChromeWindows(coordinator);
+    if (hasChromeWindows) {
+        connect(coordinator, &QMozContext::lastWindowDestroyed,
+                coordinator, &QMozContext::stopEmbedding,
+                Qt::UniqueConnection);
+    }
+    if (hasChromeWindows
+            && QtMoz::releaseTrackedChromeWindows(coordinator)) {
+        waitingForWindows = true;
+    }
+    if (!waitingForWindows) {
+        disconnect(coordinator, &QMozContext::lastWindowDestroyed,
+                   coordinator, &QMozContext::stopEmbedding);
+        d->mRuntime->stop();
+    }
+    coordinator->setProperty(stopActiveProperty, false);
+    if (coordinator->property(stopAgainProperty).toBool()) {
+        coordinator->setProperty(stopAgainProperty, false);
+        if (waitingForWindows) {
+            QMetaObject::invokeMethod(
+                    coordinator, "stopEmbedding", Qt::QueuedConnection);
+        }
+    }
 }
 
 void QMozContext::setIsAccelerated(bool aIsAccelerated)
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return;
 
-    d->mApp->SetIsAccelerated(aIsAccelerated);
+    d->mRuntime->embedLiteApp()->SetIsAccelerated(aIsAccelerated);
 }
 
 bool QMozContext::isAccelerated() const
 {
-    if (!d->mApp)
+    if (!d->mRuntime->embedLiteApp())
         return false;
-    return d->mApp->IsAccelerated();
-}
-
-void QMozContext::registerWindow(QMozWindow *window)
-{
-    if (window != d->mMozWindow) {
-        d->destroyWindow();
-    }
-    d->mMozWindow = window;
-}
-
-QMozWindow *QMozContext::registeredWindow() const
-{
-    return d->mMozWindow.data();
+    return d->mRuntime->embedLiteApp()->IsAccelerated();
 }
 
 void QMozContext::notifyFirstUIInitialized()
 {
     static bool sCalledOnce = false;
     if (!sCalledOnce) {
-        d->mApp->SendObserve("final-ui-startup", nullptr);
+        d->mRuntime->embedLiteApp()->SendObserve("final-ui-startup", nullptr);
         sCalledOnce = true;
     }
-}
-
-void QMozContext::setViewCreator(QMozViewCreator *viewCreator)
-{
-    d->mViewCreator = viewCreator;
 }

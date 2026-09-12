@@ -2,6 +2,18 @@
 <testdefinition version="1.0">
    <suite name="qtmozembed-tests" domain="ui">
        <description>QtMozEmbed Application automatic tests</description>
+       <set name="backend-api-tests" feature="QtMozEmbed">
+           <description>QtMozEmbed backend ABI tests</description>
+           <case manual="false" name="backend-api-negotiation">
+               <step>/opt/tests/qtmozembed/tst_backendapi</step>
+           </case>
+       </set>
+       <set name="surface-facade-tests" feature="QtMozEmbed">
+           <description>QtMozEmbed surface facade tests</description>
+           <case manual="false" name="surface-registry-lifetime">
+               <step>/opt/tests/qtmozembed/tst_qmozsurface</step>
+           </case>
+       </set>
        <set name="unit-tests" feature="QtMozEmbed">
            <description>QML component unit tests</description>
            <pre_steps>
@@ -42,9 +54,6 @@
            </case>
            <case manual="false" name="unittests-downloadmgr">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/downloadmgr &amp;&amp; ../../run-tests.sh</step>
-           </case>
-           <case manual="false" name="unittests-newviewrequest">
-               <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/newviewrequest &amp;&amp; ../../run-tests.sh</step>
            </case>
            <case manual="false" name="unittests-selection">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/selection &amp;&amp; ../../run-tests.sh</step>
