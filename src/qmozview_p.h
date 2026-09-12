@@ -152,6 +152,8 @@ public:
     void updateChromeTabs(
             quint64 revision, quint64 selectedTabId,
             const QVector<QMozChromeTabSnapshot> &tabs);
+    void chromeLocationChanged(
+            const char *location, bool canGoBack, bool canGoForward);
     void updateChromeContentState(const QMozChromeContentState &state);
     void recvChromeAsyncMessage(
             quint64 tabId, quint64 persistentId, quint64 locationRevision,
@@ -336,9 +338,6 @@ protected:
     QString mPendingUrl;
     bool mPendingFromExternal;
     quint64 mPendingUrlTabId;
-    quint64 mPendingUrlLocationRevision;
-    quint64 mPendingUrlSnapshotRevision;
-    bool mPendingUrlSawLoading;
     std::vector<std::string> mPendingMessageListeners;
     QStringList mPendingFrameScripts;
 };

@@ -96,6 +96,13 @@ static QMozChromeSessionCallbacks chromeSessionCallbacks(
 {
     const QPointer<QMozViewPrivate> guardedView(view);
     QMozChromeSessionCallbacks callbacks;
+    callbacks.locationChanged = [guardedView](
+            const char *location, bool canGoBack, bool canGoForward) {
+        if (guardedView) {
+            guardedView->chromeLocationChanged(
+                    location, canGoBack, canGoForward);
+        }
+    };
     callbacks.tabsChanged = [guardedView](
             quint64 revision, quint64 selectedTabId,
             const QVector<QMozChromeTabSnapshot> &tabs) {
@@ -260,9 +267,6 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mDirtyState(0)
     , mPendingFromExternal(false)
     , mPendingUrlTabId(0)
-    , mPendingUrlLocationRevision(0)
-    , mPendingUrlSnapshotRevision(0)
-    , mPendingUrlSawLoading(false)
 {
     loadFrameScript(QStringLiteral("chrome://embedlite/content/embedhelper.js"));
     addMessageListener(RUN_JAVASCRIPT_REPLY);
@@ -541,20 +545,12 @@ void QMozViewPrivate::updateChromeTabs(
 
     bool resolvePendingUrl = false;
     if (!mPendingUrl.isEmpty()) {
-        if (mPendingUrlTabId) {
-            if (!selected || selected->id != mPendingUrlTabId
-                    || selected->locationRevision
-                       != mPendingUrlLocationRevision) {
-                resolvePendingUrl = true;
-            } else if (selected->loading) {
-                mPendingUrlSawLoading = true;
-            } else if (mPendingUrlSawLoading
-                       || revision > mPendingUrlSnapshotRevision) {
-                resolvePendingUrl = true;
-            }
-        } else if (selected && selected->location == mPendingUrl) {
-            // A configured initial URL can be committed before the chrome
-            // session is attached and before load() records its tab identity.
+        if (!mPendingUrlTabId && selected) {
+            // The initial load can be dispatched before the first tab
+            // snapshot. Bind it as soon as the selected tab is published.
+            mPendingUrlTabId = selected->id;
+        } else if (mPendingUrlTabId
+                   && (!selected || selected->id != mPendingUrlTabId)) {
             resolvePendingUrl = true;
         }
     }
@@ -597,6 +593,28 @@ void QMozViewPrivate::updateChromeTabs(
     if (mIsLoading != loading) {
         mIsLoading = loading;
         mViewIface->loadingChanged();
+    }
+}
+
+void QMozViewPrivate::chromeLocationChanged(
+        const char *location, bool canGoBack, bool canGoForward)
+{
+    if (mPendingUrl.isEmpty()) {
+        return;
+    }
+
+    const QString committedLocation = QString::fromUtf8(
+            location ? location : "");
+    if (committedLocation == QStringLiteral("about:blank")
+            && !canGoBack && !canGoForward) {
+        return;
+    }
+
+    const QUrl oldExposedUrl = url();
+    clearPendingUrl();
+    mUrl = committedLocation;
+    if (oldExposedUrl != url()) {
+        mViewIface->urlChanged();
     }
 }
 
@@ -1230,9 +1248,6 @@ void QMozViewPrivate::clearPendingUrl()
     mPendingUrl.clear();
     mPendingFromExternal = false;
     mPendingUrlTabId = 0;
-    mPendingUrlLocationRevision = 0;
-    mPendingUrlSnapshotRevision = 0;
-    mPendingUrlSawLoading = false;
 }
 
 void QMozViewPrivate::goBack()
@@ -1306,16 +1321,10 @@ void QMozViewPrivate::load(const QString &url, bool fromExternal)
     const QMozChromeTabSnapshot * const selected =
             mTabModel->selectedTab();
     const quint64 selectedId = selected ? selected->id : 0;
-    const quint64 selectedLocationRevision = selected
-            ? selected->locationRevision : 0;
-    const bool selectedLoading = selected && selected->loading;
     if (!QtMoz::chromeSessionLoadURL(this, url, fromExternal)) {
         return;
     }
     mPendingUrlTabId = selectedId;
-    mPendingUrlLocationRevision = selectedLocationRevision;
-    mPendingUrlSnapshotRevision = mTabSnapshotRevision;
-    mPendingUrlSawLoading = selectedLoading;
 
     const QUrl oldExposedUrl = this->url();
     if (mPendingUrl != url || mPendingFromExternal != fromExternal) {
