@@ -88,11 +88,11 @@ QMAKE_PKGCONFIG_DESCRIPTION = Model that emits process info
 QMAKE_PKGCONFIG_LIBDIR = $$target.path
 QMAKE_PKGCONFIG_INCDIR = $$target.path
 QMAKE_PKGCONFIG_DESTDIR = pkgconfig
-QMAKE_PKGCONFIG_REQUIRES = libxul
 
 # install public headers
 FORWARDING_HEADERS = $$system( find q*.h )
 FORWARDING_HEADERS -= $$system( find q*_p.h )
+FORWARDING_HEADERS -= qmessagepump.h
 
 forwarding_headers.path = $$PREFIX/include
 forwarding_headers.files = $$FORWARDING_HEADERS
