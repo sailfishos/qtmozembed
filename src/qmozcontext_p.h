@@ -16,23 +16,18 @@
 #include <QObject>
 #include <QMap>
 #include <QStringList>
-#include <QThread>
 #include <QVariant>
-
-#include "qmozwindow.h"
 
 #ifndef Q_MOC_RUN
 #include "mozilla/embedlite/EmbedLiteApp.h"
 #endif
 
-class QMozViewCreator;
-class MessagePumpQt;
+class QMozRuntime;
 
 namespace mozilla {
 namespace embedlite {
 class EmbedLiteApp;
 class EmbedLiteAppListener;
-class EmbedLiteView;
 class EmbedLiteMessagePump;
 }
 }
@@ -51,41 +46,25 @@ public:
     explicit QMozContextPrivate(QObject *parent = 0);
     ~QMozContextPrivate();
 
-    bool ExecuteChildThread() override;
-    bool StopChildThread() override;
     void Initialized() override;
     void Destroyed() override;
     void OnObserve(const char *aTopic, const char16_t *aData) override;
-    void LastViewDestroyed() override;
     void LastWindowDestroyed() override;
-    uint32_t CreateNewWindowRequested(const uint32_t &chromeFlags,
-                                      const bool &hidden,
-                                      EmbedLiteView *aParentView,
-                                      const uintptr_t &parentBrowsingContext) override;
 
     bool IsInitialized();
     EmbedLiteMessagePump *EmbedLoop();
-    void destroyWindow();
 
 Q_SIGNALS:
     void initialized();
     void contextDestroyed();
-    void lastViewDestroyed();
     void lastWindowDestroyed();
     void recvObserve(const QString message, const QVariant data);
 
 private:
-    EmbedLiteApp *mApp;
+    QMozRuntime *mRuntime;
     std::map<std::string, uint> mObservers;
 
     bool mInitialized;
-    QPointer<QThread> mThread;
-    bool mEmbedStarted;
-    EmbedLiteMessagePump *mEventLoopPrivate;
-    MessagePumpQt *mQtPump;
-    bool mAsyncContext;
-    QMozViewCreator *mViewCreator;
-    QPointer<QMozWindow> mMozWindow;
     QMap<QString, QVariant> mInitialPreferences;
 
     friend class QMozContext;

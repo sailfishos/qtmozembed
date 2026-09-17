@@ -11,36 +11,39 @@
 #include "qmozwindow_p.h"
 
 #include "qmozwindow.h"
+#include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozframestream_p.h"
+#include "runtime/qmozsurface_p.h"
 
 #include <QGuiApplication>
 #include <QScreen>
 
-#include <mozilla/embedlite/EmbedLiteWindow.h>
-
 #ifndef MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT
-#define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 500
+// Coalesce updates posted in the same event-loop turn without delaying a
+// settled Silica orientation change.
+#define MOZWINDOW_ORIENTATION_CHANGE_TIMEOUT 0
 #endif
 
 namespace {
 
-mozilla::embedlite::ScreenRotation QtToMozillaRotation(int rotation)
+QMozSurfaceRotation qtToSurfaceRotation(int rotation)
 {
     switch (rotation) {
     case 0:
     case 360:
-        return mozilla::embedlite::ROTATION_0;
+        return QMozSurfaceRotation::Rotation0;
     case 90:
     case -270:
-        return mozilla::embedlite::ROTATION_90;
+        return QMozSurfaceRotation::Rotation90;
     case 270:
     case -90:
-        return mozilla::embedlite::ROTATION_270;
+        return QMozSurfaceRotation::Rotation270;
     case 180:
     case -180:
-        return mozilla::embedlite::ROTATION_180;
+        return QMozSurfaceRotation::Rotation180;
     default:
         Q_UNREACHABLE();
-        return mozilla::embedlite::ROTATION_0;
+        return QMozSurfaceRotation::Rotation0;
     }
 }
 
@@ -62,6 +65,9 @@ QMozWindowPrivate::QMozWindowPrivate(QMozWindow &window, const QSize &size)
 
 QMozWindowPrivate::~QMozWindowPrivate()
 {
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::takeWindowSurface(&q);
+    Q_ASSERT(surface.isNull());
 }
 
 void QMozWindowPrivate::setSize(const QSize &size)
@@ -70,7 +76,11 @@ void QMozWindowPrivate::setSize(const QSize &size)
         qCDebug(lcEmbedLiteExt) << "Trying to set empty size: " << size;
     } else if (size != mSize) {
         mSize = size;
-        mWindow->SetSize(size.width(), size.height());
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::windowSurface(&q);
+        if (surface) {
+            surface->setSize(size);
+        }
     }
 }
 
@@ -103,7 +113,12 @@ void QMozWindowPrivate::timerEvent(QTimerEvent *event)
         if (mWindow) {
             if (mOrientation != mPendingOrientation) {
                 int rotation = QGuiApplication::primaryScreen()->angleBetween(mPendingOrientation, mPrimaryOrientation);
-                mWindow->SetContentOrientation(QtToMozillaRotation(rotation));
+                const QSharedPointer<QMozSurface> surface =
+                        QtMoz::windowSurface(&q);
+                if (surface) {
+                    surface->setContentOrientation(
+                            qtToSurfaceRotation(rotation));
+                }
                 mOrientation = mPendingOrientation;
             } else {
                 q.orientationChangeFiltered(mOrientation);
@@ -125,11 +140,24 @@ bool QMozWindowPrivate::setReadyToPaint(bool ready)
 
 void QMozWindowPrivate::WindowInitialized()
 {
+    QtMoz::markChromeInitialized(&q);
     q.initialized();
 }
 
 void QMozWindowPrivate::WindowDestroyed()
 {
+    QtMoz::clearChromeInitialized(&q);
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::takeWindowSurface(&q);
+    if (surface) {
+        surface->backendDestroyed();
+    }
+    const QSharedPointer<QtMoz::QMozFrameStream> frameStream =
+            QtMoz::takeWindowFrameStream(&q);
+    if (frameStream) {
+        frameStream->backendDestroyed();
+    }
+    mWindow = nullptr;
     mReserved = false;
     q.released();
 }

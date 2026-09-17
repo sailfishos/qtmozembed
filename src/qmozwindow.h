@@ -14,7 +14,24 @@
 
 #include <functional>
 
+#include <EGL/egl.h>
+#include <EGL/eglext.h>
+
 class QMozWindowPrivate;
+
+enum class QMozTextureTarget {
+    Texture2D,
+    ExternalOES
+};
+
+struct QMozEGLImage final
+{
+    EGLImageKHR image;
+    QSize size;
+    QMozTextureTarget textureTarget;
+};
+
+using QMozEGLImageCallback = std::function<void(const QMozEGLImage &)>;
 
 class QMozWindow: public QObject
 {
@@ -34,7 +51,9 @@ public:
     Qt::ScreenOrientation contentOrientation() const;
     Qt::ScreenOrientation pendingOrientation() const;
     Qt::ScreenOrientation primaryOrientation() const;
-    void getPlatformImage(const std::function<void(void *image, int width, int height)> &callback);
+    // The callback runs synchronously. The EGLImage handle is borrowed and
+    // must be imported before the callback returns.
+    bool withPlatformImage(const QMozEGLImageCallback &callback);
     void clearPlatformImage();
     void suspendRendering();
     void resumeRendering();
@@ -47,9 +66,6 @@ public:
 Q_SIGNALS:
     void pendingOrientationChanged(Qt::ScreenOrientation orientation);
     void orientationChangeFiltered(Qt::ScreenOrientation orientation);
-    // Retained for ABI compatibility. Gecko no longer requests an embedder GL
-    // context through this signal.
-    void requestGLContext();
     void initialized();
     void released();
     void drawOverlay(QRect);

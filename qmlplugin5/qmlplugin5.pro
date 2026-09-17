@@ -2,7 +2,9 @@ MODULENAME = Qt5Mozilla
 TARGET  = qmlmozembedpluginqt5
 
 TEMPLATE = lib
-CONFIG += qt plugin c++1z
+# Gecko 153 headers require C++20, which Qt 5.6 qmake cannot select by name.
+QMAKE_CXXFLAGS += -std=gnu++20
+CONFIG += qt plugin
 QT += qml quick
 
 SOURCES += main.cpp
@@ -16,7 +18,7 @@ QTMOZEMBED_SOURCE_PATH = $$PWD/$$RELATIVE_PATH/src
 INCLUDEPATH += $$QTMOZEMBED_SOURCE_PATH
 
 isEmpty(DEFAULT_COMPONENT_PATH) {
-  DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"$$[QT_INSTALL_LIBS]/mozembedlite/\\\"\"
+  DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"$$[QT_INSTALL_LIBS]/gecko-embedlite/\\\"\"
 } else {
   DEFINES += DEFAULT_COMPONENTS_PATH=\"\\\"$$DEFAULT_COMPONENT_PATH\\\"\"
 }

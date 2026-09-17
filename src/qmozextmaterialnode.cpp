@@ -4,6 +4,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "qmozextmaterialnode.h"
+#include "qmozexttexture.h"
 
 #include <QGuiApplication>
 #include <QScreen>
@@ -42,6 +43,14 @@ MozMaterialNode::MozMaterialNode()
     setFlag(UsePreprocess);
 
     setGeometry(&m_geometry);
+
+    m_opaqueRgbMaterial.setFlag(QSGMaterial::Blending, false);
+    m_rgbMaterial.setFlag(QSGMaterial::Blending, true);
+#if defined(QT_OPENGL_ES_2)
+    m_opaqueExternalMaterial.setFlag(QSGMaterial::Blending, false);
+    m_externalMaterial.setFlag(QSGMaterial::Blending, true);
+#endif
+    setExternalTexture(false);
 }
 
 MozMaterialNode::~MozMaterialNode()
@@ -98,7 +107,30 @@ void MozMaterialNode::setTexture(QSGTexture *texture)
     if (m_texture != texture) {
         m_texture = texture;
 
+        m_opaqueRgbMaterial.setTexture(texture);
+        m_rgbMaterial.setTexture(texture);
+#if defined(QT_OPENGL_ES_2)
+        m_opaqueExternalMaterial.setTexture(texture);
+        m_externalMaterial.setTexture(texture);
+#endif
+
         m_textureChanged = true;
+    }
+}
+
+void MozMaterialNode::setExternalTexture(bool external)
+{
+#if defined(QT_OPENGL_ES_2)
+    if (external) {
+        setOpaqueMaterial(&m_opaqueExternalMaterial);
+        setMaterial(&m_externalMaterial);
+    } else
+#else
+    Q_UNUSED(external)
+#endif
+    {
+        setOpaqueMaterial(&m_opaqueRgbMaterial);
+        setMaterial(&m_rgbMaterial);
     }
 }
 
@@ -107,6 +139,17 @@ void MozMaterialNode::preprocess()
     if (QSGDynamicTexture *texture = qobject_cast<QSGDynamicTexture *>(m_texture)) {
         m_textureChanged |= texture->updateTexture();
     }
+
+#if defined(QT_OPENGL_ES_2)
+    if (QMozExtTexture *texture = qobject_cast<QMozExtTexture *>(m_texture)) {
+        const bool externalTexture = texture->usesExternalTexture();
+        if (m_externalTexture != externalTexture) {
+            m_externalTexture = externalTexture;
+            setExternalTexture(externalTexture);
+            m_textureChanged = true;
+        }
+    }
+#endif
 
     if (m_textureChanged) {
         m_textureChanged = false;
@@ -191,27 +234,6 @@ void MozMaterialNode::preprocess()
     }
 }
 
-MozRgbMaterialNode::MozRgbMaterialNode()
-{
-    m_opaqueMaterial.setFlag(QSGMaterial::Blending, false);
-    m_material.setFlag(QSGMaterial::Blending, true);
-
-    setOpaqueMaterial(&m_opaqueMaterial);
-    setMaterial(&m_material);
-}
-
-MozRgbMaterialNode::~MozRgbMaterialNode()
-{
-}
-
-void MozRgbMaterialNode::setTexture(QSGTexture *texture)
-{
-    MozMaterialNode::setTexture(texture);
-
-    m_opaqueMaterial.setTexture(texture);
-    m_material.setTexture(texture);
-}
-
 #if defined(QT_OPENGL_ES_2)
 
 class MozOpaqueExtTextureMaterialShader : public QSGMaterialShader
@@ -242,16 +264,8 @@ void MozOpaqueExtTextureMaterialShader::updateState(
             ? static_cast<const MozOpaqueExtTextureMaterial *>(newEffect)->texture()
             : nullptr;
 
-    QSGTexture * const oldTexture = oldEffect
-            ? static_cast<const MozOpaqueExtTextureMaterial *>(oldEffect)->texture()
-            : nullptr;
-
     if (newTexture) {
-        if (!oldTexture || (oldTexture->textureId() != newTexture->textureId())) {
-            newTexture->bind();
-        } else {
-            newTexture->updateBindOptions();
-        }
+        newTexture->bind();
     }
 
     if (state.isMatrixDirty()) {
@@ -389,27 +403,6 @@ QSGMaterialType *MozExtTextureMaterial::type() const
     static QSGMaterialType type;
 
     return &type;
-}
-
-MozExtMaterialNode::MozExtMaterialNode()
-{
-    m_opaqueMaterial.setFlag(QSGMaterial::Blending, false);
-    m_material.setFlag(QSGMaterial::Blending, true);
-
-    setOpaqueMaterial(&m_opaqueMaterial);
-    setMaterial(&m_material);
-}
-
-MozExtMaterialNode::~MozExtMaterialNode()
-{
-}
-
-void MozExtMaterialNode::setTexture(QSGTexture *texture)
-{
-    MozMaterialNode::setTexture(texture);
-
-    m_opaqueMaterial.setTexture(texture);
-    m_material.setTexture(texture);
 }
 
 #endif
