@@ -1785,8 +1785,8 @@ void QMozViewPrivate::sendAsyncMessage(const QString &message, const QVariant &v
                 && parseDecimalId(tabValue.toString(), false, &tabId)) {
             QtMoz::chromeSessionResolveBeforeUnloadPrompt(
                     this, requestId, tabId, acceptedValue.toBool());
+            return;
         }
-        return;
     }
 
     QVariant routedValue = value;
