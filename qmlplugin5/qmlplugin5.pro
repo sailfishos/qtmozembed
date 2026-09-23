@@ -2,7 +2,9 @@ MODULENAME = Qt5Mozilla
 TARGET  = qmlmozembedpluginqt5
 
 TEMPLATE = lib
-CONFIG += qt plugin c++1z
+# Gecko 153 headers require C++20, which Qt 5.6 qmake cannot select by name.
+QMAKE_CXXFLAGS += -std=gnu++20
+CONFIG += qt plugin
 QT += qml quick
 
 SOURCES += main.cpp

@@ -10,10 +10,14 @@
 #include "qmozwindow.h"
 
 #include "qmozcontext.h"
+#include "qmozembedlog.h"
 #include "qmozwindow_p.h"
+#include "backends/embedlite/embedlitesurface_p.h"
+#include "runtime/qmozchromehost_p.h"
+#include "runtime/qmozframestream_p.h"
+#include "runtime/qmozsurface_p.h"
 
 #include "mozilla/embedlite/EmbedLiteApp.h"
-#include "mozilla/embedlite/EmbedLiteWindow.h"
 
 using namespace mozilla::embedlite;
 
@@ -33,8 +37,45 @@ QMozWindow::~QMozWindow()
 
 void QMozWindow::reserve()
 {
-    if (!d->mWindow) {
-        d->mWindow = QMozContext::instance()->GetApp()->CreateWindow(d->mSize.width(), d->mSize.height(), d.data());
+    if (!d->mWindow && !d->mReserved) {
+        QtMoz::clearChromeInitialized(this);
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::createEmbedLiteSurface(
+                    QMozContext::instance()->GetApp(), d.data(),
+                    [guardedWindow = QPointer<QMozWindow>(this)]() {
+            if (guardedWindow) {
+                QtMoz::markChromeInitializationFailed(
+                        guardedWindow.data());
+                qCWarning(lcEmbedLiteExt)
+                        << "Gecko chrome window initialization failed";
+                if (QtMoz::chromeQuickWindowShouldDelete(
+                        QtMoz::isChromeQuickOwned(guardedWindow.data()),
+                        true, guardedWindow->isReserved())) {
+                    guardedWindow->deleteLater();
+                }
+            }
+        });
+        if (!QtMoz::installWindowSurface(this, surface)) {
+            Q_ASSERT_X(false, "QMozWindow::reserve",
+                       "A surface is already registered for this window");
+            return;
+        }
+
+        // Install frame callbacks before CreateWindow can create its
+        // compositor. Delivery itself starts later on the Qt owner thread.
+        if (!QtMoz::installWindowFrameStream(this, surface)) {
+            QtMoz::takeWindowSurface(this);
+            return;
+        }
+
+        d->mWindow = QtMoz::reserveEmbedLiteSurface(
+                surface, d->mSize, QtMoz::isChromePrivate(this),
+                QtMoz::chromeInitialUrl(this));
+        if (!d->mWindow) {
+            QtMoz::takeWindowFrameStream(this);
+            QtMoz::takeWindowSurface(this);
+            return;
+        }
         d->mReserved = true;
     }
 }
@@ -42,8 +83,15 @@ void QMozWindow::reserve()
 void QMozWindow::release()
 {
     if (d->mWindow) {
-        QMozContext::instance()->GetApp()->DestroyWindow(d->mWindow);
+        EmbedLiteWindow * const window = d->mWindow;
         d->mWindow = nullptr;
+        const QSharedPointer<QMozSurface> surface =
+                QtMoz::windowSurface(this);
+        if (surface) {
+            surface->requestDestroy();
+        } else {
+            QMozContext::instance()->GetApp()->DestroyWindow(window);
+        }
     }
 }
 
@@ -87,29 +135,69 @@ Qt::ScreenOrientation QMozWindow::primaryOrientation() const
     return d->mPrimaryOrientation;
 }
 
-void QMozWindow::getPlatformImage(const std::function<void(void *image, int width, int height)> &callback)
+bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
 {
-    d->mWindow->GetPlatformImage(callback);
+    if (!callback) {
+        return false;
+    }
+
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    return surface && surface->withPlatformImage(
+                [&](const QMozSurfaceImage &image) {
+        QMozTextureTarget textureTarget;
+        switch (image.textureTarget) {
+        case QMozSurfaceTextureTarget::Texture2D:
+            textureTarget = QMozTextureTarget::Texture2D;
+            break;
+        case QMozSurfaceTextureTarget::ExternalOES:
+            textureTarget = QMozTextureTarget::ExternalOES;
+            break;
+        }
+
+        callback({
+            static_cast<EGLImageKHR>(image.handle),
+            image.size,
+            textureTarget
+        });
+    });
 }
 
 void QMozWindow::clearPlatformImage()
 {
-    d->mWindow->ClearPlatformImage();
+    QtMoz::clearWindowPendingFrame(this);
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->clearPlatformImage();
+    }
 }
 
 void QMozWindow::suspendRendering()
 {
-    d->mWindow->SuspendRendering();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->suspendRendering();
+    }
 }
 
 void QMozWindow::resumeRendering()
 {
-    d->mWindow->ResumeRendering();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->resumeRendering();
+    }
 }
 
 void QMozWindow::scheduleUpdate()
 {
-    d->mWindow->ScheduleUpdate();
+    const QSharedPointer<QMozSurface> surface =
+            QtMoz::windowSurface(this);
+    if (surface) {
+        surface->scheduleUpdate();
+    }
 }
 
 bool QMozWindow::setReadyToPaint(bool ready)

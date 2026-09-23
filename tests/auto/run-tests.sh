@@ -10,7 +10,7 @@ else
 fi
 
 export QTTESTSROOT=${QTTESTSROOT:-"/opt/tests/qtmozembed"}
-#export MOZ_LOG=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5,EmbedLiteView:5,EmbedLiteViewThreadParent:5
+#export MOZ_LOG=EmbedLiteTrace:5,EmbedNonImpl:5,EmbedLiteApp:5
 
 # Clean up settings
 rm -rf ~/.mozilla/mozembed-testrunner/

@@ -11,7 +11,8 @@
 #define QMOZEXTTEXTURE_H
 
 #include <QSGDynamicTexture>
-#include <functional>
+
+#include "qmozwindow.h"
 
 class QMozExtTexture : public QSGDynamicTexture
 {
@@ -27,16 +28,24 @@ public:
 
     QRectF normalizedTextureSubRect() const;
 
+    bool usesExternalTexture() const;
+    Q_DECL_HIDDEN void requirePlatformFrame(
+            const QSize &size, quint64 revision);
     void bind() override;
     bool updateTexture() override;
 
 Q_SIGNALS:
-    void getPlatformImage(const std::function<void(void *image, int width, int height)> &callback);
+    void withPlatformImage(const QMozEGLImageCallback &callback);
+    void platformFrameAcquired();
 
 private:
     QRectF m_normalizedTextureSubRect;
     QSize m_textureSize;
+    QSize m_requiredPlatformFrameSize;
+    QMozTextureTarget m_textureTarget = QMozTextureTarget::Texture2D;
     uint m_textureId = 0;
+    quint64 m_requiredPlatformFrameRevision = 0;
+    bool m_platformFrameResetPending = false;
 };
 
 #endif
