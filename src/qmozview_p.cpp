@@ -1604,11 +1604,11 @@ void QMozViewPrivate::dispatchInputMethodEvent(
         uint16_t charCode = (event.commit.size() == 1 && event.commit[0].isPrint())
                           ? (int32_t)event.commit[0].unicode()
                           : 0;
-        bool ok;
-        int asciiNumber = event.commit.toInt(&ok) + Qt::Key_0;
-        if (ok && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
-                   || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
-            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(asciiNumber, Qt::NoModifier);
+        // Only individual digits are key events; pasted codes must stay intact.
+        if (charCode >= '0' && charCode <= '9'
+                && (mInputMethodHints & Qt::ImhFormattedNumbersOnly
+                    || mInputMethodHints & Qt::ImhDialableCharactersOnly)) {
+            int32_t domKeyCode = MozKey::QtKeyCodeToDOMKeyCode(charCode, Qt::NoModifier);
             QtMoz::chromeSessionSendKeyPress(
                     this, domKeyCode, 0, charCode);
             QtMoz::chromeSessionSendKeyRelease(
