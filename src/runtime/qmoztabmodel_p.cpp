@@ -128,7 +128,20 @@ void QMozTabModel::setSnapshot(
     const int oldCount = mTabs.count();
     const quint64 oldRevision = mRevision;
     const QString oldSelectedTabOpenerId = selectedTabOpenerId();
-    beginResetModel();
+    bool structureChanged = mTabs.count() != tabs.count();
+    for (int i = 0; !structureChanged && i < tabs.count(); ++i) {
+        structureChanged = mTabs.at(i).id != tabs.at(i).id;
+    }
+    QVector<int> changedRows;
+    if (structureChanged) {
+        beginResetModel();
+    } else {
+        for (int i = 0; i < tabs.count(); ++i) {
+            if (rowData(mTabs.at(i)) != rowData(tabs.at(i))) {
+                changedRows.append(i);
+            }
+        }
+    }
     mTabs = tabs;
     mSelectedTabId = selectedTabId;
     mRevision = revision;
@@ -139,7 +152,13 @@ void QMozTabModel::setSnapshot(
             break;
         }
     }
-    endResetModel();
+    if (structureChanged) {
+        endResetModel();
+    } else {
+        for (int row : changedRows) {
+            Q_EMIT dataChanged(index(row), index(row));
+        }
+    }
     if (oldCount != mTabs.count()) {
         Q_EMIT countChanged();
     }

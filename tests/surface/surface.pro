@@ -24,3 +24,6 @@ HEADERS += stubs/mozilla/embedlite/EmbedLiteApp.h \
 
 target.path = /opt/tests/qtmozembed
 INSTALLS += target
+
+SOURCES += ../../src/runtime/qmoztabmodel_p.cpp
+HEADERS += ../../src/runtime/qmoztabmodel_p.h

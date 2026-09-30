@@ -7,6 +7,8 @@
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "runtime/qmozsurface_p.h"
+#include "runtime/qmoztabmodel_p.h"
+#include <QPersistentModelIndex>
 #include "runtime/qmozframestream_p.h"
 #include "runtime/qmozchromehost_p.h"
 #include "runtime/qmozchromesession_p.h"
@@ -1300,11 +1302,46 @@ void testFailedDisablePreservesQueuedFrame()
     surface.clear();
 }
 
+void testTabSnapshotKeepsStableRows()
+{
+    QMozTabModel model;
+    QMozChromeTabSnapshot first = {};
+    first.id = 1;
+    QMozChromeTabSnapshot second = {};
+    second.id = 2;
+    model.setSnapshot({ first, second }, 1, 1);
+    QPersistentModelIndex retained(model.index(1));
+    int resets = 0;
+    int changes = 0;
+    int revisions = 0;
+    QObject::connect(&model, &QAbstractItemModel::modelReset, [&]() { ++resets; });
+    QObject::connect(&model, &QAbstractItemModel::dataChanged,
+                     [&](const QModelIndex &start, const QModelIndex &end) {
+        VERIFY(start.row() == 1 && end.row() == 1);
+        ++changes;
+    });
+    QObject::connect(&model, &QMozTabModel::revisionChanged, [&]() { ++revisions; });
+    second.progress = 50;
+    second.title = QStringLiteral("Loading");
+    model.setSnapshot({ first, second }, 1, 2);
+    VERIFY(resets == 0 && changes == 1 && revisions == 1);
+    VERIFY(retained.isValid());
+    VERIFY(retained.data(QMozTabModel::ProgressRole).toInt() == 50);
+    model.setSnapshot({ first, second }, 2, 3);
+    VERIFY(resets == 0 && changes == 1 && revisions == 2);
+    VERIFY(model.selectedTabId() == QStringLiteral("2"));
+    model.setSnapshot({ second, first }, 2, 4);
+    VERIFY(resets == 1 && !retained.isValid());
+    model.clear();
+    VERIFY(model.count() == 0 && resets == 2);
+}
+
 } // namespace
 
 int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
+    testTabSnapshotKeepsStableRows();
     testRegistryLifetime();
     testReentrantRemoval();
     testPlatformFrameForwarding();
