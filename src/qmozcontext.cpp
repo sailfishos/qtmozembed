@@ -173,6 +173,15 @@ void QMozContextPrivate::OnObserve(const char *aTopic, const char16_t *aData)
 
 void QMozContextPrivate::LastWindowDestroyed()
 {
+    // Each hosted WebView owns a chrome window. Gecko calls this only after
+    // destroying the last window and its content sessions, including those
+    // whose Qt view has already detached. Tab snapshots and Qt object deletion
+    // alone cannot establish that the engine has finished destroying a view.
+    Q_EMIT lastViewDestroyed();
+    // A legacy lastViewDestroyed handler may synchronously open another view.
+    if (mRuntime->embedLiteApp()->GetNumberOfWindows() != 0) {
+        return;
+    }
     Q_EMIT lastWindowDestroyed();
 }
 
@@ -197,6 +206,7 @@ QMozContext::QMozContext(QObject *parent)
 {
     connect(d, &QMozContextPrivate::initialized, this, &QMozContext::initialized);
     connect(d, &QMozContextPrivate::contextDestroyed, this, &QMozContext::contextDestroyed);
+    connect(d, &QMozContextPrivate::lastViewDestroyed, this, &QMozContext::lastViewDestroyed);
     connect(d, &QMozContextPrivate::lastWindowDestroyed, this, &QMozContext::lastWindowDestroyed);
     connect(d, &QMozContextPrivate::recvObserve, this, &QMozContext::recvObserve);
 }

@@ -57,6 +57,7 @@ public:
 Q_SIGNALS:
     void initialized();
     void contextDestroyed();
+    void lastViewDestroyed();
     void lastWindowDestroyed();
     void recvObserve(const QString message, const QVariant data);
 

@@ -9,6 +9,8 @@
 #include <QObject>
 #include <QVariant>
 #include <QStringList>
+#include <string>
+#include <vector>
 
 class QMozContextPrivate;
 
@@ -18,6 +20,8 @@ class EmbedLiteApp;
 }
 }
 
+// Also implements the inherited Sailfish WebView 1 ABI for the .so.1 loader.
+// Preserve its layout and documented context methods when changing QtMoz 2.
 class QMozContext : public QObject
 {
     Q_OBJECT
@@ -48,6 +52,7 @@ public:
 Q_SIGNALS:
     void initialized();
     void contextDestroyed();
+    void lastViewDestroyed();
     void lastWindowDestroyed();
     void recvObserve(const QString message, const QVariant data);
 
