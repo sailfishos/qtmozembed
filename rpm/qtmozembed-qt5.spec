@@ -72,7 +72,7 @@ CONFIGURE_VARIABLE=""
 %postun -p /sbin/ldconfig
 
 %files
-%license LICENSE.txt
+%license LICENSES/MPL-2.0.txt
 %{_libdir}/*.so.*
 %{_libdir}/qt5/qml/Qt5Mozilla/*
 
