@@ -1,6 +1,8 @@
 TEMPLATE = subdirs
 CONFIG += ordered
 SUBDIRS = src
+SUBDIRS += compat
+compat.depends = src
 SUBDIRS += qmlplugin5
 qmlplugin5.depends = src
 

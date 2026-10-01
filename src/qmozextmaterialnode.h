@@ -15,50 +15,6 @@ QT_BEGIN_NAMESPACE
 class QSGTexture;
 QT_END_NAMESPACE
 
-class MozMaterialNode : public QSGGeometryNode
-{
-public:
-    MozMaterialNode();
-    ~MozMaterialNode();
-
-    QRectF rect() const;
-    void setRect(const QRectF &rect);
-
-    Qt::ScreenOrientation orientation() const;
-    void setOrientation(Qt::ScreenOrientation orientation);
-
-    Qt::ScreenOrientation surfaceOrientation() const;
-    void setSurfaceOrientation(Qt::ScreenOrientation orientation);
-
-    QSGTexture *texture() const;
-    virtual void setTexture(QSGTexture *texture);
-
-    void preprocess() override;
-
-private:
-    QSGGeometry m_geometry { QSGGeometry::defaultAttributes_TexturedPoint2D(), 4 };
-    QRectF m_rect { 0, 0, 0, 0 };
-    QRectF m_normalizedTextureSubRect { 0, 0, 1, 1 };
-    QSGTexture *m_texture = nullptr;
-    Qt::ScreenOrientation m_orientation;
-    Qt::ScreenOrientation m_surfaceOrientation;
-    bool m_geometryChanged = true;
-    bool m_textureChanged = true;
-};
-
-class MozRgbMaterialNode : public MozMaterialNode
-{
-public:
-    MozRgbMaterialNode();
-    ~MozRgbMaterialNode();
-
-    void setTexture(QSGTexture *texture) override;
-
-private:
-    QSGOpaqueTextureMaterial m_opaqueMaterial;
-    QSGTextureMaterial m_material;
-};
-
 #if defined(QT_OPENGL_ES_2)
 
 class MozOpaqueExtTextureMaterial : public QSGMaterial
@@ -83,19 +39,46 @@ public:
     QSGMaterialType *type() const;
 };
 
-class MozExtMaterialNode : public MozMaterialNode
+#endif
+
+class MozMaterialNode : public QSGGeometryNode
 {
 public:
-    MozExtMaterialNode();
-    ~MozExtMaterialNode();
+    MozMaterialNode();
+    ~MozMaterialNode();
 
-    void setTexture(QSGTexture *texture) override;
+    QRectF rect() const;
+    void setRect(const QRectF &rect);
+
+    Qt::ScreenOrientation orientation() const;
+    void setOrientation(Qt::ScreenOrientation orientation);
+
+    Qt::ScreenOrientation surfaceOrientation() const;
+    void setSurfaceOrientation(Qt::ScreenOrientation orientation);
+
+    QSGTexture *texture() const;
+    void setTexture(QSGTexture *texture);
+
+    void preprocess() override;
 
 private:
-    MozOpaqueExtTextureMaterial m_opaqueMaterial;
-    MozExtTextureMaterial m_material;
-};
+    void setExternalTexture(bool external);
 
+    QSGGeometry m_geometry { QSGGeometry::defaultAttributes_TexturedPoint2D(), 4 };
+    QRectF m_rect { 0, 0, 0, 0 };
+    QRectF m_normalizedTextureSubRect { 0, 0, 1, 1 };
+    QSGTexture *m_texture = nullptr;
+    QSGOpaqueTextureMaterial m_opaqueRgbMaterial;
+    QSGTextureMaterial m_rgbMaterial;
+#if defined(QT_OPENGL_ES_2)
+    MozOpaqueExtTextureMaterial m_opaqueExternalMaterial;
+    MozExtTextureMaterial m_externalMaterial;
 #endif
+    Qt::ScreenOrientation m_orientation;
+    Qt::ScreenOrientation m_surfaceOrientation;
+    bool m_geometryChanged = true;
+    bool m_textureChanged = true;
+    bool m_externalTexture = false;
+};
 
 #endif /* qMozExtMaterialNode_h */

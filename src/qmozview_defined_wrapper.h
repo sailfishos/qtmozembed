@@ -96,11 +96,22 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     Q_PROPERTY(bool chromeGestureEnabled READ chromeGestureEnabled WRITE setChromeGestureEnabled NOTIFY chromeGestureEnabledChanged FINAL) \
     Q_PROPERTY(qreal chromeGestureThreshold READ chromeGestureThreshold WRITE setChromeGestureThreshold NOTIFY chromeGestureThresholdChanged FINAL) \
     Q_PROPERTY(QMozSecurity *security READ security NOTIFY securityChanged FINAL) \
+    Q_PROPERTY(bool fullscreen READ fullscreen NOTIFY fullscreenChanged FINAL) \
     Q_PROPERTY(bool desktopMode READ desktopMode WRITE setDesktopMode NOTIFY desktopModeChanged FINAL) \
+    Q_PROPERTY(bool javascriptEnabled READ javascriptEnabled WRITE setJavascriptEnabled NOTIFY javascriptEnabledChanged FINAL) \
     Q_PROPERTY(int parentId READ parentId NOTIFY parentIdChanged FINAL) \
     Q_PROPERTY(int uniqueId READ uniqueId NOTIFY uniqueIdChanged FINAL) \
     Q_PROPERTY(QString httpUserAgent READ httpUserAgent WRITE setHttpUserAgent NOTIFY httpUserAgentChanged) \
     Q_PROPERTY(bool domContentLoaded READ domContentLoaded NOTIFY domContentLoadedChanged FINAL) \
+    Q_PROPERTY(int dynamicToolbarHeight READ dynamicToolbarHeight WRITE setDynamicToolbarHeight NOTIFY dynamicToolbarHeightChanged FINAL) \
+    Q_PROPERTY(int marginTop READ marginTop WRITE setMarginTop NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginRight READ marginRight WRITE setMarginRight NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginBottom READ marginBottom WRITE setMarginBottom NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int marginLeft READ marginLeft WRITE setMarginLeft NOTIFY marginsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetTop READ safeAreaInsetTop WRITE setSafeAreaInsetTop NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetRight READ safeAreaInsetRight WRITE setSafeAreaInsetRight NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetBottom READ safeAreaInsetBottom WRITE setSafeAreaInsetBottom NOTIFY safeAreaInsetsChanged FINAL) \
+    Q_PROPERTY(int safeAreaInsetLeft READ safeAreaInsetLeft WRITE setSafeAreaInsetLeft NOTIFY safeAreaInsetsChanged FINAL) \
 
 #define Q_MOZ_VIEW_PUBLIC_METHODS \
     QUrl url() const; \
@@ -139,14 +150,33 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void setDynamicToolbarHeight(int height); \
     QMargins margins() const; \
     void setMargins(QMargins); \
+    int marginTop() const; \
+    void setMarginTop(int margin); \
+    int marginRight() const; \
+    void setMarginRight(int margin); \
+    int marginBottom() const; \
+    void setMarginBottom(int margin); \
+    int marginLeft() const; \
+    void setMarginLeft(int margin); \
     QMargins safeAreaInsets() const; \
     void setSafeAreaInsets(QMargins); \
+    int safeAreaInsetTop() const; \
+    void setSafeAreaInsetTop(int inset); \
+    int safeAreaInsetRight() const; \
+    void setSafeAreaInsetRight(int inset); \
+    int safeAreaInsetBottom() const; \
+    void setSafeAreaInsetBottom(int inset); \
+    int safeAreaInsetLeft() const; \
+    void setSafeAreaInsetLeft(int inset); \
     Q_INVOKABLE void scrollTo(int x, int y); \
     Q_INVOKABLE void scrollBy(int x, int y); \
     QMozSecurity *security(); \
+    bool fullscreen() const; \
     void addMessageListeners(const std::vector<std::string> &messageNamesList); \
     bool desktopMode() const; \
     void setDesktopMode(bool); \
+    bool javascriptEnabled() const; \
+    void setJavascriptEnabled(bool); \
     int parentId() const; \
     QString httpUserAgent() const; \
     void setHttpUserAgent(const QString &httpUserAgent); \
@@ -165,6 +195,7 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void reload(); \
     void load(const QString&, bool fromExternal); \
     void sendAsyncMessage(const QString &name, const QVariant &variant); \
+    Q_INVOKABLE bool sendAsyncMessageToTab(const QString &tabId, const QString &name, const QVariant &variant); \
     void addMessageListener(const QString &name); \
     void loadFrameScript(const QString &name); \
     void newWindow(const QString &url = "about:blank"); \
@@ -187,10 +218,13 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void loadingChanged(); \
     void viewDestroyed(); \
     void windowCloseRequested(); \
+    void windowCloseRequestedFromTab(const QString tabId, const QString persistentId); \
     void recvAsyncMessage(const QString message, const QVariant data); \
+    void recvAsyncMessageFromTab(const QString tabId, const QString persistentId, const QString message, const QVariant data); \
     bool recvSyncMessage(const QString message, const QVariant data, QMozReturnValue *response); \
     void loadRedirect(); \
     void securityChanged(QString status, uint state); \
+    void fullscreenChanged(); \
     void firstPaint(int offx, int offy); \
     void viewAreaChanged(); \
     void scrollableOffsetChanged(); \
@@ -218,10 +252,13 @@ Q_DECLARE_METATYPE(QMozReturnValue) \
     void marginsChanged(); \
     void safeAreaInsetsChanged(); \
     void desktopModeChanged(); \
+    void javascriptEnabledChanged(); \
     void parentIdChanged(); \
     void uniqueIdChanged(); \
     void httpUserAgentChanged(); \
     void domContentLoadedChanged(); \
     void scrollableSizeChanged(); \
+    void locationChanged(); \
+    void tabCloseResult(const QString tabId, bool closed); \
 
 #endif /* qmozview_defined_wrapper_h */

@@ -5,7 +5,7 @@ isEmpty(OBJ_PATH) {
   SDK_HOME=$$system(pkg-config --variable=sdkdir libxul-embedding)
   GECKO_LIB_DIR = $$SDK_HOME/lib
   GECKO_INCLUDE_DIR = $$SDK_HOME/include
-  BIN_DIR=$$replace(SDK_HOME, -devel-, -)
+  BIN_DIR=$$system(pkg-config --variable=runtimedir libxul-embedding)
   message($$BIN_DIR - binary dir)
 } else {
   CONFIG += link_pkgconfig

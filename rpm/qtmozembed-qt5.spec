@@ -1,11 +1,11 @@
-%global min_xulrunner_version 115.35.1
+%global min_gecko_embedlite_version 153.3.0
 
 %define system_nspr       1
 %define system_pixman     1
 
 Name:       qtmozembed-qt5
 Summary:    Qt embeddings for Gecko
-Version:    1.56.0
+Version:    2.0.0
 Release:    1
 License:    MPLv2.0
 URL:        https://github.com/sailfishos/qtmozembed/
@@ -23,19 +23,21 @@ BuildRequires:  pkgconfig(nspr) >= 4.13.1
 %if %{system_pixman}
 BuildRequires:  pkgconfig(pixman-1) >= 0.19.2
 %endif
-BuildRequires:  xulrunner-qt5-devel >= %{min_xulrunner_version}
+BuildRequires:  gecko-embedlite-qt5-devel >= %{min_gecko_embedlite_version}
 BuildRequires:  qt5-default
 BuildRequires:  qt5-qttools
 BuildRequires:  pkgconfig(systemsettings) >= 0.5.25
-Requires:       xulrunner-qt5 >= %{min_xulrunner_version}
 Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
-Requires:       embedlite-components-qt5 >= 2.0.0
 
 %{!?qtc_qmake5:%define qtc_qmake5 %qmake5}
 %{!?qtc_make:%define qtc_make make}
 
 %description
 Qt embeddings for Gecko browser engine
+
+Includes the version 1 runtime loader for existing binaries using the
+documented Sailfish WebView context and settings API. The raw QtMoz version 1
+view and rendering interfaces are not provided by this compatibility loader.
 
 %package devel
 Requires:   %{name} = %{version}-%{release}
@@ -74,7 +76,7 @@ CONFIGURE_VARIABLE=""
 %postun -p /sbin/ldconfig
 
 %files
-%license LICENSE.txt
+%license LICENSES/MPL-2.0.txt
 %{_libdir}/*.so.*
 %{_libdir}/qt5/qml/Qt5Mozilla/*
 
