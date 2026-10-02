@@ -36,6 +36,8 @@ public:
     QMozSurfaceFrame frame = {{0, 0}, {nullptr, QSize(), QMozSurfaceTextureTarget::Texture2D}, QMozSurfaceFrameFenceType::NoHandle};
     GLuint texture = 0;
     quint64 requirement = 0;
+    QRectF presentedRect;
+    QMetaObject::Connection geometryConnection;
 
     bool releaseFrame()
     {
@@ -115,7 +117,23 @@ QMozNativeView::QMozNativeView(QQuickItem *parent)
     connect(this, &QuickMozView::backgroundColorChanged, this, &QMozNativeView::requestPresentationUpdate);
     connect(this, &QuickMozView::activeChanged, this, &QMozNativeView::requestPresentationUpdate);
     connect(this, &QQuickItem::visibleChanged, this, &QMozNativeView::requestPresentationUpdate);
-    connect(this, &QQuickItem::windowChanged, this, &QMozNativeView::requestPresentationUpdate);
+    connect(this, &QQuickItem::windowChanged, this, [this](QQuickWindow *window) {
+        disconnect(m_presentation->geometryConnection);
+        if (window) {
+            // Ancestor transforms can move this item without a new Gecko frame
+            // or a geometryChanged notification on the view itself. Follow the
+            // QML animation on the GUI thread, including interactive page peeks.
+            m_presentation->geometryConnection = connect(
+                    window, &QQuickWindow::afterAnimating, this, [this]() {
+                if (active() && isVisible()
+                        && mapRectToScene(QRectF(d->renderingOffset(), d->mSize))
+                           != m_presentation->presentedRect) {
+                    requestPresentationUpdate();
+                }
+            });
+        }
+        requestPresentationUpdate();
+    });
 }
 
 QMozNativeView::~QMozNativeView()
@@ -368,7 +386,9 @@ void QMozNativeView::present()
     if (ready && window()) {
         const QRectF rect = mapRectToScene(QRectF(d->renderingOffset(), d->mSize));
         const qreal ratio = m_presentationWindow->devicePixelRatio();
-        draw(size, QRectF(rect.topLeft() * ratio, rect.size() * ratio), qApp->primaryScreen()->primaryOrientation());
+        if (draw(size, QRectF(rect.topLeft() * ratio, rect.size() * ratio), qApp->primaryScreen()->primaryOrientation())) {
+            p->presentedRect = rect;
+        }
     }
     p->context.swapBuffers(m_presentationWindow);
     nativeOwners.insert(m_presentationWindow, this);
