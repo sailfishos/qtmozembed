@@ -91,6 +91,7 @@ public:
     void setJavascriptEnabled(bool aEnabled);
     void setThrottlePainting(bool aThrottle);
     void updateScrollArea(unsigned int aWidth, unsigned int aHeight, float aPosX, float aPosY);
+    void scrollableUpdate();
     void testFlickingMode(QTouchEvent *event);
     void handleTouchEnd(bool &draggingChanged, bool &pinchingChanged);
     void resetTouchState();
@@ -278,6 +279,7 @@ protected:
     QRectF mContentRect;
     QSizeF mScrollableSize;
     QPointF mScrollableOffset;
+    bool mScrollable;
     bool mAtXBeginning;
     bool mAtXEnd;
     bool mAtYBeginning;
