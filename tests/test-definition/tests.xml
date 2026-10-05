@@ -25,6 +25,9 @@
            <case manual="false" name="unittests-view">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/view &amp;&amp; ../../run-tests.sh</step>
            </case>
+           <case manual="false" name="unittests-viewlifecycle">
+               <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/viewlifecycle &amp;&amp; ../../run-tests.sh</step>
+           </case>
            <case manual="false" name="unittests-basicinput">
                <step>cd /opt/tests/qtmozembed/auto/desktop-qt5/basicinput &amp;&amp; ../../run-tests.sh</step>
            </case>
