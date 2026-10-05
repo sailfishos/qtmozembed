@@ -237,6 +237,8 @@ public:
         case QMozSurfaceRotation::Rotation270:
             embedLiteRotation = ROTATION_270;
             break;
+        default:
+            return false;
         }
 
         call.window()->SetContentOrientation(embedLiteRotation);
