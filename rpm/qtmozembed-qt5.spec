@@ -35,9 +35,10 @@ Requires:       nemo-qml-plugin-systemsettings >= 0.5.25
 %description
 Qt embeddings for Gecko browser engine
 
-Includes the version 1 runtime loader for existing binaries using the
-documented Sailfish WebView context and settings API. The raw QtMoz version 1
-view and rendering interfaces are not provided by this compatibility loader.
+Includes the version 1 compatibility name for existing binaries using the
+documented Sailfish WebView context and settings API. The WebView library loads
+the version 2 implementation. Raw QtMoz version 1 view and rendering interfaces
+are not provided by this compatibility DSO.
 
 %package devel
 Requires:   %{name} = %{version}-%{release}
