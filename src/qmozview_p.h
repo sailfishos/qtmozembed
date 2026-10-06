@@ -34,6 +34,7 @@
 #include "runtime/qmozchromesession_p.h"
 
 class QTouchEvent;
+class QQuickWindow;
 class QAbstractItemModel;
 class QMozContext;
 class QMozTabModel;
@@ -229,8 +230,10 @@ protected:
     IMozQViewIface *mViewIface;
     QPointer<QObject> q;
     QPointer<QMozWindow> mMozWindow;
+    QPointer<QQuickWindow> mQuickWindow;
     QMozContext *mContext;
     bool mViewInitialized;
+    bool mViewCreationPending;
     unsigned mParentID;
     uintptr_t mParentBrowsingContext;
     bool mPrivateMode;

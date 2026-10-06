@@ -143,7 +143,8 @@ bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
 
     const QSharedPointer<QMozSurface> surface =
             QtMoz::windowSurface(this);
-    return surface && surface->withPlatformImage(
+    bool accepted = false;
+    const bool delivered = surface && surface->withPlatformImage(
                 [&](const QMozSurfaceImage &image) {
         QMozTextureTarget textureTarget;
         switch (image.textureTarget) {
@@ -153,14 +154,18 @@ bool QMozWindow::withPlatformImage(const QMozEGLImageCallback &callback)
         case QMozSurfaceTextureTarget::ExternalOES:
             textureTarget = QMozTextureTarget::ExternalOES;
             break;
+        default:
+            return;
         }
 
+        accepted = true;
         callback({
             static_cast<EGLImageKHR>(image.handle),
             image.size,
             textureTarget
         });
     });
+    return delivered && accepted;
 }
 
 void QMozWindow::clearPlatformImage()

@@ -153,6 +153,7 @@ private Q_SLOTS:
 private:
     void updateContentSize(const QSizeF &size);
     void prepareMozWindow();
+    Q_DECL_HIDDEN void scheduleViewCreation();
     Q_DECL_HIDDEN void applyMozWindowGeometry();
     Q_DECL_HIDDEN void requirePlatformFrame();
 

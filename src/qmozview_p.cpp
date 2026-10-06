@@ -186,6 +186,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mMozWindow(nullptr)
     , mContext(nullptr)
     , mViewInitialized(false)
+    , mViewCreationPending(false)
     , mParentID(0)
     , mParentBrowsingContext(0)
     , mPrivateMode(false)
@@ -1978,38 +1979,39 @@ void QMozViewPrivate::updateLoaded()
 
 void QMozViewPrivate::createView()
 {
+    Q_ASSERT(mContext->isInitialized());
     if (!mContext->isInitialized()) {
-        connect(mContext, &QMozContext::initialized, this, &QMozViewPrivate::createView);
-    } else {
-        QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
-        if (mozView) {
-            mozView->prepareMozWindow();
-        }
+        return;
+    }
 
-        if (!mMozWindow) {
-            return;
-        }
-        setScreenProperties(
-                QGuiApplication::primaryScreen()->depth(),
-                QGuiApplication::primaryScreen()
-                        ->physicalDotsPerInch());
-        const QPointer<QMozViewPrivate> guardedView(this);
-        connect(mMozWindow.data(), &QMozWindow::initialized,
-                this, [guardedView]() {
-            if (guardedView && guardedView->mMozWindow
-                    && !guardedView->mViewInitialized) {
-                const bool attached =
-                        guardedView->attachChromeSession();
-                if (guardedView && attached) {
-                    guardedView->ViewInitialized();
-                }
-            }
-        });
-        if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
-                && attachChromeSession()) {
-            if (guardedView) {
+    QuickMozView *mozView = qobject_cast<QuickMozView*>(q);
+    if (mozView) {
+        mozView->prepareMozWindow();
+    }
+
+    if (!mMozWindow) {
+        return;
+    }
+    setScreenProperties(
+            QGuiApplication::primaryScreen()->depth(),
+            QGuiApplication::primaryScreen()
+                    ->physicalDotsPerInch());
+    const QPointer<QMozViewPrivate> guardedView(this);
+    connect(mMozWindow.data(), &QMozWindow::initialized,
+            this, [guardedView]() {
+        if (guardedView && guardedView->mMozWindow
+                && !guardedView->mViewInitialized) {
+            const bool attached =
+                    guardedView->attachChromeSession();
+            if (guardedView && attached) {
                 guardedView->ViewInitialized();
             }
+        }
+    });
+    if (!mViewInitialized && QtMoz::chromeInitialized(mMozWindow.data())
+            && attachChromeSession()) {
+        if (guardedView) {
+            guardedView->ViewInitialized();
         }
     }
 }

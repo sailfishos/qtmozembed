@@ -19,6 +19,7 @@
 #include <QGuiApplication>
 #include <QPointer>
 #include <QThread>
+#include <QTimer>
 #include <QMutexLocker>
 #include <QtQuick/qquickwindow.h>
 #include <QtGui/QOpenGLShaderProgram>
@@ -102,6 +103,25 @@ QuickMozView::QuickMozView(QQuickItem *parent)
     setFlag(ItemAcceptsInputMethod, true);
 
     d->mContext = QMozContext::instance();
+    connect(d->mContext, &QMozContext::initialized,
+            this, &QuickMozView::scheduleViewCreation);
+    connect(this, &QQuickItem::windowChanged, this,
+            [this](QQuickWindow *quickWindow) {
+        if (d->mQuickWindow) {
+            disconnect(d->mQuickWindow.data(), &QWindow::widthChanged,
+                       this, &QuickMozView::scheduleViewCreation);
+            disconnect(d->mQuickWindow.data(), &QWindow::heightChanged,
+                       this, &QuickMozView::scheduleViewCreation);
+        }
+        d->mQuickWindow = quickWindow;
+        if (quickWindow) {
+            connect(quickWindow, &QWindow::widthChanged,
+                    this, &QuickMozView::scheduleViewCreation);
+            connect(quickWindow, &QWindow::heightChanged,
+                    this, &QuickMozView::scheduleViewCreation);
+        }
+        scheduleViewCreation();
+    });
     connect(this, &QuickMozView::setIsActive, this, &QuickMozView::SetIsActive);
     connect(this, &QuickMozView::viewInitialized, this, &QuickMozView::processViewInitialization);
     connect(this, &QuickMozView::enabledChanged, this, &QuickMozView::updateEnabled);
@@ -114,6 +134,8 @@ QuickMozView::QuickMozView(QQuickItem *parent)
 
 QuickMozView::~QuickMozView()
 {
+    // QQuickItem detaches from its window after our private state is deleted.
+    disconnect(this, &QQuickItem::windowChanged, this, nullptr);
     setProperty(ChromeViewDestroyingProperty, true);
     const quint64 textureConsumerId =
             QtMoz::textureFrameConsumerId(this);
@@ -428,6 +450,7 @@ void QuickMozView::updateContentSize(const QSizeF &size)
     polish();
 
     d->setSize(size);
+    scheduleViewCreation();
 
     if (d->mSize != originalSize) {
         requirePlatformFrame();
@@ -452,7 +475,11 @@ void QuickMozView::compositingFinished()
 void QuickMozView::prepareMozWindow()
 {
     if (d->mSize.isEmpty()) {
-        d->mSize = window()->size();
+        QQuickWindow *quickWindow = window();
+        if (!quickWindow || quickWindow->size().isEmpty()) {
+            return;
+        }
+        d->mSize = quickWindow->size();
     }
 
     // Preserve the traditional single-view behaviour unless the embedder has
@@ -1300,7 +1327,24 @@ void QuickMozView::timerEvent(QTimerEvent *event)
 void QuickMozView::componentComplete()
 {
     QQuickItem::componentComplete();
-    d->createView();
+    scheduleViewCreation();
+}
+
+void QuickMozView::scheduleViewCreation()
+{
+    if (!isComponentComplete() || d->mMozWindow || d->mViewCreationPending) {
+        return;
+    }
+
+    // Component completion can precede window attachment and anchor layout.
+    // Retry after readiness changes without creating a window inside layout.
+    d->mViewCreationPending = true;
+    QTimer::singleShot(0, this, [this]() {
+        d->mViewCreationPending = false;
+        if (!d->mMozWindow && d->mContext->isInitialized()) {
+            d->createView();
+        }
+    });
 }
 
 void QuickMozView::resumeRendering()
