@@ -44,6 +44,7 @@ struct EmbedLiteChromeTabSnapshot
     int32_t progress;
     int64_t current;
     int64_t total;
+    bool mediaPlaying = false;
 };
 
 struct EmbedLiteChromeBeforeUnloadPrompt

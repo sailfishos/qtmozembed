@@ -37,7 +37,8 @@ public:
         CanGoForwardRole,
         ProgressRole,
         CurrentRole,
-        TotalRole
+        TotalRole,
+        MediaPlayingRole
     };
 
     explicit QMozTabModel(QObject *parent = nullptr);

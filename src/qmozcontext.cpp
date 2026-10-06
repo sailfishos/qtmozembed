@@ -21,6 +21,7 @@
 #include "qmozembedlog.h"
 #include "qmozcontext.h"
 #include "qmozcontext_p.h"
+#include "qmozmediacontroller_p.h"
 #include "qmozenginesettings.h"
 #include "qmozwindow.h"
 #include "runtime/qmozchromewindowregistry_p.h"
@@ -80,6 +81,11 @@ static void platform_egl_workaround_close() {
   }
 }
 
+QObject *QMozContext::mediaController() const
+{
+    return d->mMediaController;
+}
+
 QMozContextPrivate *QMozContextPrivate::instance()
 {
     return mozContextPrivateInstance();
@@ -105,6 +111,7 @@ QMozContextPrivate::QMozContextPrivate(QObject *parent)
     // application and working directories must not influence library loading.
     setenv("GRE_HOME", BUILD_GRE_HOME, 1);
 
+    mMediaController = new QMozMediaController(this);
     mRuntime = new QMozRuntime(this, this);
 }
 
@@ -140,6 +147,7 @@ void QMozContextPrivate::Destroyed()
 #ifdef DEVELOPMENT_BUILD
     qCInfo(lcEmbedLiteExt);
 #endif
+    mMediaController->clear();
     mRuntime->detachListener();
 
     mRuntime->backendDestroyed();

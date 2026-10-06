@@ -38,6 +38,7 @@
 #include "qmozview_p.h"
 #include "qmozwindow_p.h"
 #include "qmozcontext.h"
+#include "qmozmediacontroller_p.h"
 #include "qmozenginesettings.h"
 #include "EmbedQtKeyUtils.h"
 #include "qmozembedlog.h"
@@ -96,6 +97,20 @@ static QMozChromeSessionCallbacks chromeSessionCallbacks(
 {
     const QPointer<QMozViewPrivate> guardedView(view);
     QMozChromeSessionCallbacks callbacks;
+    callbacks.mediaStateChanged = [guardedView](const QMozMediaState &state) {
+        if (!guardedView) {
+            return;
+        }
+        auto controller = static_cast<QMozMediaController *>(
+                QMozContext::instance()->mediaController());
+        controller->update(guardedView->publicObject(),
+                QtMoz::chromeSessionUniqueId(guardedView.data()),
+                state, [guardedView](quint64 tab, quint64 token, quint64 track,
+                                    QMozMediaCommand command, double position) {
+            return guardedView && QtMoz::chromeSessionMediaCommand(
+                    guardedView.data(), tab, token, track, command, position);
+        });
+    };
     callbacks.locationChanged = [guardedView](
             const char *location, bool canGoBack, bool canGoForward) {
         if (guardedView) {
@@ -108,6 +123,10 @@ static QMozChromeSessionCallbacks chromeSessionCallbacks(
             const QVector<QMozChromeTabSnapshot> &tabs) {
         if (guardedView) {
             guardedView->updateChromeTabs(revision, selectedTabId, tabs);
+            if (guardedView) {
+                static_cast<QMozMediaController *>(QMozContext::instance()->mediaController())
+                        ->retainTabs(guardedView->publicObject(), tabs);
+            }
         }
     };
     callbacks.beforeUnloadPrompt = [guardedView](
@@ -292,6 +311,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
 
 QMozViewPrivate::~QMozViewPrivate()
 {
+    static_cast<QMozMediaController *>(QMozContext::instance()->mediaController())->removeOwner(q);
     QtMoz::detachChromeSession(this);
     delete mViewIface;
     mViewIface = nullptr;
@@ -1861,6 +1881,7 @@ bool QMozViewPrivate::attachChromeSession()
     if (attached) {
         QtMoz::chromeSessionSetJavascriptEnabled(
                 this, mJavascriptEnabled);
+        QtMoz::chromeSessionSetBackgroundMediaEnabled(this, mBackgroundMediaEnabled);
     }
     if (attached && mRestorePending) {
         const bool accepted = QtMoz::chromeSessionRestoreTabs(
@@ -2200,6 +2221,7 @@ void QMozViewPrivate::ViewDestroyed()
     qCInfo(lcEmbedLiteExt);
 #endif
 
+    static_cast<QMozMediaController *>(QMozContext::instance()->mediaController())->removeOwner(q);
     QtMoz::detachChromeSession(this);
     clearChromeTabs();
     mViewInitialized = false;

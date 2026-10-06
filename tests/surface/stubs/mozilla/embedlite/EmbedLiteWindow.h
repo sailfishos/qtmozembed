@@ -603,6 +603,26 @@ public:
         return true;
     }
 
+    bool SetBackgroundMediaEnabled(bool enabled) override
+    {
+        backgroundMediaEnabled = enabled;
+        return true;
+    }
+    bool MediaCommand(uint64_t tab, uint64_t controller, uint64_t track,
+                      EmbedLiteMediaCommand command, double position) override
+    {
+        lastTabId = tab;
+        lastControllerToken = controller;
+        lastTrackToken = track;
+        lastMediaCommand = command;
+        lastMediaPosition = position;
+        return true;
+    }
+    void NotifyMediaState(const EmbedLiteMediaState &state)
+    {
+        if (mListener) mListener->OnMediaStateChanged(state);
+    }
+
     bool SuspendTimeouts(uint64_t tabId) override
     {
         lastTabId = tabId;
@@ -735,6 +755,11 @@ public:
     bool lastDesktopMode = false;
     bool lastJavascriptEnabled = true;
     bool lastThrottlePainting = false;
+    bool backgroundMediaEnabled = false;
+    uint64_t lastControllerToken = 0;
+    uint64_t lastTrackToken = 0;
+    EmbedLiteMediaCommand lastMediaCommand = EmbedLiteMediaCommand::Play;
+    double lastMediaPosition = 0;
     bool lastTimeoutsSuspended = false;
     std::u16string lastHttpUserAgent;
     int32_t lastTop = 0;

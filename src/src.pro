@@ -41,6 +41,9 @@ SOURCES += qmozcontext.cpp \
            backends/embedlite/embedlitechromesession_p.cpp \
            backends/embedlite/embedlitesurface_p.cpp
 
+SOURCES += qmozmediacontroller.cpp
+HEADERS += qmozmediacontroller_p.h
+
 HEADERS += qmozcontext.h \
            qmozcontext_p.h \
            qmozenginesettings.h \

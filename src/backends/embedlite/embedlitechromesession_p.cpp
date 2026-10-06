@@ -289,6 +289,17 @@ public:
                 && mContentSession->SetThrottlePainting(tabId, throttle);
     }
 
+    bool setBackgroundMediaEnabled(bool enabled) override
+    {
+        return mContentSession && mContentSession->SetBackgroundMediaEnabled(enabled);
+    }
+    bool mediaCommand(quint64 tabId, quint64 controller, quint64 track,
+                      QMozMediaCommand command, double position) override
+    {
+        return mContentSession && mContentSession->MediaCommand(tabId, controller,
+                track, static_cast<EmbedLiteMediaCommand>(command), position);
+    }
+
     bool suspendTimeouts(quint64 tabId) override
     {
         return mContentSession
@@ -530,6 +541,7 @@ public:
             target.loading = source.loading;
             target.closing = source.closing;
             target.discarded = source.discarded;
+            target.mediaPlaying = source.mediaPlaying;
             target.canGoBack = source.canGoBack;
             target.canGoForward = source.canGoForward;
             target.progress = source.progress;
@@ -620,6 +632,32 @@ public:
         }
     }
 
+    void OnMediaStateChanged(const EmbedLiteMediaState &source) override
+    {
+        const auto self = sharedFromThis();
+        const auto callback = mCallbacks.mediaStateChanged;
+        if (!self || !callback) return;
+        QMozMediaState state;
+        state.tabId = source.tabId;
+        state.locationRevision = source.locationRevision;
+        state.controllerId = source.controllerId;
+        state.controllerToken = source.controllerToken;
+        state.trackToken = source.trackToken;
+        state.mainControllerId = source.mainControllerId;
+        state.privateBrowsing = source.privateBrowsing;
+        state.active = source.active;
+        state.playing = source.playing;
+        state.capabilities = source.capabilities;
+        state.title = QString::fromUtf16(reinterpret_cast<const ushort *>(source.title));
+        state.artist = QString::fromUtf16(reinterpret_cast<const ushort *>(source.artist));
+        state.album = QString::fromUtf16(reinterpret_cast<const ushort *>(source.album));
+        state.hasPosition = source.hasPosition;
+        state.duration = source.duration;
+        state.position = source.position;
+        state.playbackRate = source.playbackRate;
+        callback(state);
+    }
+
     void OnContentStateChanged(
             const EmbedLiteChromeContentState &source) override
     {
@@ -631,6 +669,7 @@ public:
 
         QMozChromeContentState state;
         state.tabId = source.tabId;
+        state.locationRevision = source.locationRevision;
         state.persistentId = source.persistentId;
         state.locationRevision = source.locationRevision;
         state.revision = source.revision;
