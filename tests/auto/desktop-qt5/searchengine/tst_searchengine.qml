@@ -18,14 +18,6 @@ TestWindow {
 
     Connections {
         target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
-            QMozEngineSettings.setPreference("browser.search.log", true)
-            QMozEngineSettings.setPreference("keyword.enabled", true)
-            QmlMozContext.addObserver("browser-search-engine-modified")
-            QmlMozContext.addObserver("embed:search")
-        }
         onRecvObserve: {
             if (message == "embed:search") {
                 switch (data.msg) {
@@ -82,7 +74,7 @@ TestWindow {
         id: initializedSpy
 
         target: QmlMozContext
-        signalName: "initialized"
+        signalName: "onInitialized"
     }
 
     TestCase {
@@ -99,6 +91,9 @@ TestWindow {
                 initializedSpy.wait()
             }
 
+            QMozEngineSettings.setPreference("browser.search.defaultenginename", "QMOZTest")
+            QMozEngineSettings.setPreference("browser.search.log", true)
+            QmlMozContext.addObserver("browser-search-engine-modified")
             QmlMozContext.notifyObservers("embedui:search", { msg: "init" })
         }
 
@@ -127,10 +122,11 @@ TestWindow {
             QmlMozContext.notifyObservers("embedui:search", {msg:"remove", name: "QMOZTest"})
             verify(MyScript.wrtWait(function() { return !engineExistsPredicate() }))
             appWindow.testResult = ""
+            var engineUrl = TestHelper.serveFile(TestHelper.getenv("QTTESTSROOT")
+                                                 + "/auto/shared/searchengine/test.xml")
+            verify(engineUrl.toString() !== "")
             QmlMozContext.notifyObservers("embedui:search",
-                                          {msg:"loadxml",
-                                              uri: "file://" + TestHelper.getenv("QTTESTSROOT")
-                                                   + "/auto/shared/searchengine/test.xml", confirm: false})
+                                          {msg:"loadxml", uri: engineUrl.toString(), confirm: false})
             verify(MyScript.wrtWait(function() { return appWindow.testResult === "" && engineExistsPredicate() }))
             verify(MyScript.wrtWait(engineExistsPredicate))
             MyScript.dumpTs("AddSearchEngine end")

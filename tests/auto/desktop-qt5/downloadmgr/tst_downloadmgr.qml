@@ -22,9 +22,6 @@ TestWindow {
 
     Connections {
         target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
         onRecvObserve: {
             if (message == "embed:download") {
                 // print("onRecvObserve: msg:" + message + ", dmsg:" + data.msg)
@@ -48,6 +45,8 @@ TestWindow {
         onRecvAsyncMessage: {
             if (message == "embed:downloadpicker") {
                 QmlMozContext.notifyObservers("embedui:downloadpicker", {
+                                                 requestId: data.requestId,
+                                                 winId: data.winId,
                                                  downloadDirectory: "/tmp/",
                                                  defaultFileName: data.defaultFileName,
                                                  suggestedFileExtension: data.suggestedFileExtension

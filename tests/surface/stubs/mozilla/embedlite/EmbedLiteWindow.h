@@ -695,10 +695,12 @@ public:
         mListener->OnContentStateChanged(state);
     }
 
-    void NotifyAsyncMessage(const char16_t *name, const char16_t *json)
+    void NotifyAsyncMessage(const char16_t *name, const char16_t *json,
+                            uint64_t tabId = 42, uint64_t persistentId = 77,
+                            uint64_t revision = 11)
     {
         if (mListener) {
-            mListener->RecvAsyncMessage(42, 77, 11, name, json);
+            mListener->RecvAsyncMessage(tabId, persistentId, revision, name, json);
         }
     }
 

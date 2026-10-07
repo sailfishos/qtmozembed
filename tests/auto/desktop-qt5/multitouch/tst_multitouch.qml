@@ -12,13 +12,6 @@ TestWindow {
 
     name: testcaseid.name
 
-    Connections {
-        target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
-    }
-
     QmlMozView {
         id: webViewport
         visible: true

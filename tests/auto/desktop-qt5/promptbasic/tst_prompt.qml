@@ -15,13 +15,6 @@ TestWindow {
 
     name: testcaseid.name
 
-    Connections {
-        target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
-    }
-
     QmlMozView {
         id: webViewport
         visible: true
@@ -126,9 +119,8 @@ TestWindow {
             appWindow.promptReceived = false
             appWindow.testResult = null
             webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/shared/promptbasic/prompt.html";
-            verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100);
-            verify(MyScript.wrtWait(function() { return (!webViewport.painted); }))
+            // The unanswered prompt blocks the page's onload handler, so load
+            // completion cannot be awaited until cleanup supplies the response.
             verify(MyScript.wrtWait(function() { return (!appWindow.promptReceived); }))
             webViewport.sendAsyncMessage("embedtest:getelementinner", {
                                                 name: "result" })

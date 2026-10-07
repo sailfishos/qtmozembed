@@ -2804,6 +2804,16 @@ bool QMozViewPrivate::handleAsyncMessage(
         const QString &message, const QVariant &data,
         quint64 tabId, quint64 persistentId)
 {
+    if (message == QLatin1String("embed:HttpUserAgentUsed")) {
+        const QVariant userAgent = data.toMap().value(QStringLiteral("userAgent"));
+        if (userAgent.type() == QVariant::String && mHttpUserAgent != userAgent.toString()) {
+            // Report the effective request header without setting an override.
+            mHttpUserAgent = userAgent.toString();
+            mViewIface->httpUserAgentChanged();
+        }
+        return true;
+    }
+
     // Check docuri if this is an error page
     if (message == QLatin1String(CONTENT_LOADED)) {
         if (data.toMap().value(DOCURI_KEY).toString().startsWith(ABOUT_URL_PREFIX)) {

@@ -4,24 +4,22 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 "use strict";
 
-XPCOMUtils.defineLazyServiceGetter(Services, "embedlite",
-                                    "@mozilla.org/embedlite-app-service;1",
-                                    "nsIEmbedAppService");
-
-const kStateActive = 0x00000001; // :active pseudoclass for elements
+(function() {
+if (globalThis.qtmozTestHelper) {
+  for (const name of ["embedtest:getelementprop", "embedtest:getelementinner",
+                      "embedtest:focustoelement", "embedtest:clickelement",
+                      "embedtest:useragent"]) {
+    removeMessageListener(name, globalThis.qtmozTestHelper);
+  }
+}
 
 dump("###################################### TestHelper.js loaded\n");
-
-var globalObject = null;
 
 function TestHelper() {
   this._init();
 }
 
 TestHelper.prototype = {
-  QueryInterface: ChromeUtils.generateQI([Ci.nsIObserver,
-                                          Ci.nsISupportsWeakReference]),
-
   _fastFind: null,
   _init: function()
   {
@@ -73,5 +71,6 @@ TestHelper.prototype = {
   },
 };
 
-globalObject = new TestHelper();
+globalThis.qtmozTestHelper = new TestHelper();
+})();
 

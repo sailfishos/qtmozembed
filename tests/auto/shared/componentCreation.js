@@ -81,21 +81,16 @@ function dumpTs(message) {
 }
 
 function scrollBy(startX, startY, dx, dy, timeMs, isKinetic) {
-    var frameMs = 16
-    var timeMsStep = timeMs / frameMs
-    var stepRX = dx / timeMsStep
-    var stepRY = dy / timeMsStep
-    var curRX = startX
-    var curRY = startY
-    var endRX = curRX + dx
-    var endRY = curRY + dy
-    testcaseid.mousePress(webViewport, curRX, curRY, 1)
-    while (curRX !== endRX || curRY !== endRY) {
-        curRX = stepRX > 0 ? Math.min(curRX + stepRX, endRX) : Math.max(curRX + stepRX, endRX)
-        curRY = stepRY > 0 ? Math.min(curRY + stepRY, endRY) : Math.max(curRY + stepRY, endRY)
-        testcaseid.mouseMove(webViewport, curRX, curRY, -1, 1)
+    var steps = Math.max(1, Math.ceil(timeMs / 16))
+    webViewport.synthTouchBegin([Qt.point(startX, startY)])
+    for (var step = 1; step <= steps; ++step) {
+        testcaseid.wait(timeMs / steps)
+        webViewport.synthTouchMove([Qt.point(startX + dx * step / steps,
+                                           startY + dy * step / steps)])
     }
-    testcaseid.mouseRelease(webViewport, curRX, curRY, 1)
-    testcaseid.mousePress(webViewport, curRX, curRY, 1)
-    testcaseid.mouseRelease(webViewport, curRX, curRY, 1)
+    webViewport.synthTouchEnd([Qt.point(startX + dx, startY + dy)])
+    if (!isKinetic) {
+        webViewport.synthTouchBegin([Qt.point(startX + dx, startY + dy)])
+        webViewport.synthTouchEnd([Qt.point(startX + dx, startY + dy)])
+    }
 }

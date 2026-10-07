@@ -716,6 +716,20 @@ void testChromeSessionAdapter()
     VERIFY(messageName == QStringLiteral("Content:SelectionCopied"));
     VERIFY(messageJson == QStringLiteral("{\"text\":\"copied\"}"));
 
+    // Content notifications retain their source even when another tab is selected.
+    for (const char16_t *topic : {u"Link:SetIcon", u"embed:HttpUserAgentUsed", u"embed:login"}) {
+        app.window.ChromeContentSession().NotifyAsyncMessage(topic, u"{}", 84, 99, 12);
+        VERIFY(selectedTabId == 42);
+        VERIFY(messageTabId == 84);
+        VERIFY(messagePersistentId == 99);
+        VERIFY(messageLocationRevision == 12);
+        VERIFY(messageName == QString::fromUtf16(reinterpret_cast<const ushort *>(topic)));
+        app.window.ChromeContentSession().NotifyAsyncMessage(topic, u"{}", 42, 77, 13);
+        VERIFY(messageTabId == 42);
+        VERIFY(messagePersistentId == 77);
+        VERIFY(messageLocationRevision == 13);
+    }
+
     app.window.ChromeContentSession().NotifyWindowCloseRequested();
     VERIFY(closeRequestTabId == 42);
     VERIFY(closeRequestPersistentId == 77);

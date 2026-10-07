@@ -52,11 +52,12 @@ TestWindow {
 
             compare(webViewportSpy.count, 1)
 
+            webViewportSpy.signalName = "loadingChanged"
             webViewportSpy.clear()
-            webViewportSpy.signalName = "loadedChanged"
             webViewport.url = TestHelper.getenv("QTTESTSROOT") + "/auto/desktop-qt5/runjavascript/tst_runjavascript.html";
-            webViewportSpy.wait()
-            compare(webViewportSpy.count, 1)
+            verify(MyScript.wrtWait(function() { return webViewportSpy.count < 2 || webViewport.loading }))
+            compare(webViewport.loadProgress, 100)
+            tryCompare(webViewport, "loaded", true)
             webViewportSpy.clear()
         }
 
