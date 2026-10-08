@@ -60,6 +60,8 @@ QVariant QMozTabModel::data(const QModelIndex &index, int role) const
         return tab.progress;
     case CurrentRole:
         return tab.current;
+    case MediaPlayingRole:
+        return tab.mediaPlaying;
     case TotalRole:
         return tab.total;
     default:
@@ -84,6 +86,7 @@ QHash<int, QByteArray> QMozTabModel::roleNames() const
     roles.insert(ProgressRole, "progress");
     roles.insert(CurrentRole, "current");
     roles.insert(TotalRole, "total");
+    roles.insert(MediaPlayingRole, "mediaPlaying");
     return roles;
 }
 
@@ -108,6 +111,7 @@ QVariantMap QMozTabModel::rowData(
     row.insert(QStringLiteral("progress"), tab.progress);
     row.insert(QStringLiteral("current"), tab.current);
     row.insert(QStringLiteral("total"), tab.total);
+    row.insert(QStringLiteral("mediaPlaying"), tab.mediaPlaying);
     return row;
 }
 

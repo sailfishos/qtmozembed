@@ -287,6 +287,18 @@ bool chromeSessionSetJavascriptEnabled(const void *consumer, bool enabled)
     return session && session->setJavascriptEnabled(enabled);
 }
 
+bool chromeSessionSetBackgroundMediaEnabled(const void *consumer, bool enabled)
+{
+    const auto session = chromeSession(consumer);
+    return session && session->setBackgroundMediaEnabled(enabled);
+}
+bool chromeSessionMediaCommand(const void *consumer, quint64 tabId,
+        quint64 controller, quint64 track, QMozMediaCommand command, double position)
+{
+    const auto session = chromeSession(consumer);
+    return session && session->mediaCommand(tabId, controller, track, command, position);
+}
+
 bool chromeSessionSetThrottlePainting(
         const void *consumer, quint64 tabId, bool throttle)
 {

@@ -39,6 +39,7 @@ class QuickMozView : public QQuickItem
     Q_PROPERTY(QAbstractItemModel *tabModel READ tabModel CONSTANT FINAL)
     Q_PROPERTY(QString selectedTabId READ selectedTabId NOTIFY selectedTabChanged FINAL)
     Q_PROPERTY(int selectedTabIndex READ selectedTabIndex NOTIFY selectedTabChanged FINAL)
+    Q_PROPERTY(bool backgroundMediaEnabled READ backgroundMediaEnabled WRITE setBackgroundMediaEnabled NOTIFY backgroundMediaEnabledChanged FINAL)
     Q_PROPERTY(bool throttlePainting READ throttlePainting WRITE setThrottlePainting NOTIFY throttlePaintingChanged FINAL)
     Q_PROPERTY(int platformFrameGeneration READ platformFrameGeneration NOTIFY platformFrameGenerationChanged FINAL)
 
@@ -64,6 +65,8 @@ public:
     QAbstractItemModel *tabModel() const;
     QString selectedTabId() const;
     int selectedTabIndex() const;
+    bool backgroundMediaEnabled() const;
+    void setBackgroundMediaEnabled(bool enabled);
     bool throttlePainting() const;
     void setThrottlePainting(bool throttle);
     int platformFrameGeneration() const;
@@ -106,6 +109,7 @@ Q_SIGNALS:
     void viewportWidthChanged();
     void viewportHeightChanged();
     void selectedTabChanged();
+    void backgroundMediaEnabledChanged();
     void throttlePaintingChanged();
     void platformFrameGenerationChanged();
     void touched();

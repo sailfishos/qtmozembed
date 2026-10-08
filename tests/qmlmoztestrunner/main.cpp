@@ -64,6 +64,10 @@ int main(int argc, char **argv)
     QString componentPath(DEFAULT_COMPONENTS_PATH);
 
     QMozContext::instance()->setProfile(QLatin1String("mozembed-testrunner"));
+    const QString testsRoot = QString::fromLocal8Bit(qgetenv("QTTESTSROOT"));
+    QMozContext::instance()->addComponentManifest(
+            (testsRoot.isEmpty() ? QStringLiteral("/opt/tests/qtmozembed") : testsRoot)
+            + QStringLiteral("/components/TestHelpers.manifest"));
     QMozContext::instance()->addComponentManifest(componentPath + QString("/components") +
                                                   QString("/EmbedLiteBinComponents.manifest"));
     QMozContext::instance()->addComponentManifest(componentPath + QString("/chrome") +

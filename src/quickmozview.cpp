@@ -1126,6 +1126,18 @@ QMozSecurity *QuickMozView::security()
     return &d->mSecurity;
 }
 
+bool QuickMozView::backgroundMediaEnabled() const
+{
+    return d->mBackgroundMediaEnabled;
+}
+void QuickMozView::setBackgroundMediaEnabled(bool enabled)
+{
+    if (d->mBackgroundMediaEnabled == enabled) return;
+    d->mBackgroundMediaEnabled = enabled;
+    QtMoz::chromeSessionSetBackgroundMediaEnabled(d, enabled);
+    Q_EMIT backgroundMediaEnabledChanged();
+}
+
 bool QuickMozView::throttlePainting() const
 {
     return d->mThrottlePainting;

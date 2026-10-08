@@ -23,6 +23,7 @@
 #endif
 
 class QMozRuntime;
+class QMozMediaController;
 
 namespace mozilla {
 namespace embedlite {
@@ -62,6 +63,7 @@ Q_SIGNALS:
     void recvObserve(const QString message, const QVariant data);
 
 private:
+    QMozMediaController *mMediaController;
     QMozRuntime *mRuntime;
     std::map<std::string, uint> mObservers;
 

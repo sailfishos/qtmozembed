@@ -19,6 +19,13 @@ TestWindow {
         onViewInitialized: appWindow.mozViewInitialized = true
     }
 
+    SignalSpy {
+        id: loadingSpy
+
+        target: webViewport
+        signalName: "loadingChanged"
+    }
+
     TestCase {
         id: testcaseid
 
@@ -43,8 +50,9 @@ TestWindow {
 
         function test_Test2LoadAboutMozillaCheckTitle() {
             MyScript.dumpTs("test_Test2LoadAboutMozillaCheckTitle start")
+            loadingSpy.clear()
             webViewport.url = "about:mozilla"
-            verify(MyScript.waitLoadFinished(webViewport))
+            verify(MyScript.wrtWait(function() { return loadingSpy.count < 2 || webViewport.loading }))
             // Something like The "Book of Mozilla, 6:27", might vary between versions
             verify(webViewport.title.indexOf("The Book of Mozilla") == 0)
             verify(MyScript.wrtWait(function() { return !webViewport.painted }))

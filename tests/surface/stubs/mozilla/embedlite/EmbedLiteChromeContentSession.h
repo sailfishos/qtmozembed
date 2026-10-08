@@ -42,9 +42,36 @@ struct EmbedLiteChromeContentState
     double viewportHeight;
 };
 
+// Positions and durations are seconds. Identity is opaque and changes on
+// context/navigation replacement; track identity also changes with metadata.
+enum class EmbedLiteMediaCommand : uint8_t {
+  Play, Pause, PlayPause, Stop, Next, Previous, Seek
+};
+struct EmbedLiteMediaState {
+  uint64_t tabId = 0;
+  uint64_t locationRevision = 0;
+  uint64_t controllerId = 0;
+  uint64_t controllerToken = 0;
+  uint64_t trackToken = 0;
+  uint64_t mainControllerId = 0;
+  bool privateBrowsing = false;
+  bool active = false;
+  bool playing = false;
+  // Bits correspond to EmbedLiteMediaCommand, including absolute Seek.
+  uint32_t capabilities = 0;
+  const char16_t* title = u"";
+  const char16_t* artist = u"";
+  const char16_t* album = u"";
+  bool hasPosition = false;
+  double duration = 0;
+  double position = 0;
+  double playbackRate = 0;
+};
+
 class EmbedLiteChromeContentSessionListener
 {
 public:
+    virtual void OnMediaStateChanged(const EmbedLiteMediaState &) {}
     virtual void OnContentStateChanged(
             const EmbedLiteChromeContentState &) {}
     virtual void RecvAsyncMessage(
@@ -81,6 +108,9 @@ public:
     virtual bool SetDesktopMode(uint64_t, bool) = 0;
     virtual bool SetJavascriptEnabled(bool) = 0;
     virtual bool SetThrottlePainting(uint64_t, bool) = 0;
+    virtual bool SetBackgroundMediaEnabled(bool) = 0;
+    virtual bool MediaCommand(uint64_t, uint64_t, uint64_t,
+                              EmbedLiteMediaCommand, double) = 0;
     virtual bool SuspendTimeouts(uint64_t) = 0;
     virtual bool ResumeTimeouts(uint64_t) = 0;
     virtual bool SetHttpUserAgent(uint64_t, const char16_t *) = 0;

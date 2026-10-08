@@ -22,7 +22,7 @@ isEmpty(DEFAULT_COMPONENT_PATH) {
 }
 
 PKGCONFIG += Qt5QuickTest
-QT += qml quick
+QT += qml quick network
 
 target.path = /opt/tests/qtmozembed
 INSTALLS += target

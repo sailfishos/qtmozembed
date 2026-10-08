@@ -22,13 +22,6 @@ TestWindow {
 
     name: testcaseid.name
 
-    Connections {
-        target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
-    }
-
     QmlMozView {
         id: webViewport
 
@@ -71,6 +64,13 @@ TestWindow {
         }
     }
 
+    SignalSpy {
+        id: loadingSpy
+
+        target: webViewport
+        signalName: "loadingChanged"
+    }
+
     TestCase {
         id: testcaseid
 
@@ -81,27 +81,45 @@ TestWindow {
             MyScript.dumpTs("tst_inputtest cleanupTestCase")
         }
 
+        function loadPage(url) {
+            loadingSpy.clear()
+            webViewport.url = url
+            verify(MyScript.wrtWait(function() { return loadingSpy.count < 2 || webViewport.loading }))
+            compare(webViewport.loadProgress, 100)
+            tryCompare(webViewport, "painted", true)
+        }
+
+        function focusInput() {
+            for (var attempt = 0; attempt < 20 && !appWindow.isState(1, 0, 3); ++attempt) {
+                mouseClick(webViewport, 10, 10)
+                wait(50)
+            }
+            verify(appWindow.isState(1, 0, 3))
+        }
+
+        function compareInputValue(expected) {
+            for (var attempt = 0; attempt < 100 && appWindow.inputContent !== expected; ++attempt) {
+                webViewport.sendAsyncMessage("embedtest:getelementprop", {
+                    name: "myelem",
+                    property: "value"
+                })
+                wait(50)
+            }
+            compare(appWindow.inputContent, expected)
+        }
+
         function test_Test1LoadInputPage() {
             MyScript.dumpTs("test_Test1LoadInputPage start")
             verify(MyScript.waitMozContext())
             verify(MyScript.waitMozView())
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input id=myelem value=''>"
-            verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100)
-            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
-            mouseClick(webViewport, 10, 10)
-            verify(MyScript.wrtWait(function() { return !appWindow.isState(1, 0, 4) }))
+            loadPage("data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input id=myelem value=''>")
+            focusInput()
             appWindow.inputState = false
             keyClick(Qt.Key_K)
             keyClick(Qt.Key_O)
             keyClick(Qt.Key_R)
             keyClick(Qt.Key_P)
-            webViewport.sendAsyncMessage("embedtest:getelementprop", {
-                                                name: "myelem",
-                                                property: "value"
-                                               })
-            verify(MyScript.wrtWait(function() { return appWindow.inputContent == "" }))
-            compare(appWindow.inputContent, "korp")
+            compareInputValue("korp")
             MyScript.dumpTs("test_Test1LoadInputPage end")
         }
 
@@ -111,24 +129,15 @@ TestWindow {
             verify(MyScript.waitMozView())
             appWindow.inputContent = ""
             appWindow.inputType = ""
-            webViewport.url = "data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input type=number id=myelem value=''>"
-            verify(MyScript.waitLoadFinished(webViewport))
-            compare(webViewport.loadProgress, 100)
-            verify(MyScript.wrtWait(function() { return !webViewport.painted }))
-            mouseClick(webViewport, 10, 10)
-            verify(MyScript.wrtWait(function() { return !appWindow.isState(1, 0, 4) }))
+            loadPage("data:text/html,<head><meta name='viewport' content='initial-scale=1' charset='utf-8'></head><body><input type=number id=myelem value=''>")
+            focusInput()
             appWindow.inputState = false
             keyClick(Qt.Key_1)
             keyClick(Qt.Key_2)
             keyClick(Qt.Key_3)
             keyClick(Qt.Key_4)
-            webViewport.sendAsyncMessage("embedtest:getelementprop", {
-                                                name: "myelem",
-                                                property: "value"
-                                               })
-            verify(MyScript.wrtWait(function() { return appWindow.inputContent == "" }))
-            verify(MyScript.wrtWait(function() { return appWindow.inputType == "" }))
-            compare(appWindow.inputContent, "1234")
+            compareInputValue("1234")
+            compare(appWindow.inputType, "number")
             MyScript.dumpTs("test_Test1LoadInputURLPage end")
         }
     }

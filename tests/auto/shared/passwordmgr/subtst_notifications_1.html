@@ -1,27 +1,5 @@
-<html>
-<head>
-  <title>Subtest for Login Manager notifications</title>
-</head>
-<body>
-<h2>Subtest 1</h2>
-<form id="form" action="about:blank">
-  <input id="user" name="user">
-  <input id="pass" name="pass" type="password">
-  <button type='submit'>Submit</button>
-</form>
-
-<script>
-function submitForm() {
-  userField.value = "notifyu1";
-  passField.value = "notifyp1";
-  form.submit();
-}
-
-window.onload = submitForm;
-var form      = document.getElementById("form");
-var userField = document.getElementById("user");
-var passField = document.getElementById("pass");
-
-</script>
-</body>
-</html>
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="initial-scale=1">
+<style>input,button {position:absolute;left:10px;width:150px;height:30px} #user {top:10px} #pass {top:60px} button {top:110px}</style>
+</head><body><form id="form" action="/fixture"><input id="user" name="user"><input id="pass" name="pass" type="password"><button type="submit">Submit</button></form>
+</body></html>

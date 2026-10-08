@@ -10,6 +10,12 @@
 #define TEST_HELPER_H
 
 #include <QObject>
+#include <QByteArray>
+#include <QUrl>
+#include <QVariantMap>
+#include <QList>
+
+class QTcpServer;
 
 class TestHelper : public QObject
 {
@@ -18,7 +24,16 @@ class TestHelper : public QObject
 public:
     explicit TestHelper(QObject *parent = nullptr);
 
+    Q_INVOKABLE QUrl serveFile(const QString &fileName);
+    Q_INVOKABLE int requestCount() const { return mRequests.size(); }
+    Q_INVOKABLE QString requestHeader(int index, const QString &name) const;
+    Q_INVOKABLE QUrl redirectUrl() const;
     Q_INVOKABLE QString getenv(const QString &envVarName) const;
+private:
+    QTcpServer *mServer;
+    QByteArray mContent;
+    QByteArray mContentType;
+    QList<QVariantMap> mRequests;
 };
 
 #endif

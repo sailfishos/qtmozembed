@@ -51,6 +51,8 @@ class QMozViewPrivate : public QObject
 {
     Q_OBJECT
 public:
+    QObject *publicObject() const { return q.data(); }
+
     enum DirtyStateBit {
         DirtySize = 0x0001,
         DirtyMargin = 0x0002,
@@ -240,6 +242,7 @@ protected:
     bool mHidden;
     bool mDesktopMode;
     bool mJavascriptEnabled;
+    bool mBackgroundMediaEnabled = false;
     bool mThrottlePainting;
     bool mActive;
     bool mLoaded;

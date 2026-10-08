@@ -13,13 +13,6 @@ TestWindow {
 
     name: testcaseid.name
 
-    Connections {
-        target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
-    }
-
     QmlMozView {
         id: webViewport
         visible: true
@@ -28,8 +21,8 @@ TestWindow {
         anchors.fill: parent
 
         onViewInitialized: appWindow.mozViewInitialized = true
-        onViewAreaChanged: {
-            print("onViewAreaChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y)
+        onScrollableOffsetChanged: {
+            print("onScrollableOffsetChanged: ", webViewport.scrollableOffset.x, webViewport.scrollableOffset.y)
             var offset = webViewport.scrollableOffset
             appWindow.scrollX = offset.x
             appWindow.scrollY = offset.y
@@ -53,10 +46,11 @@ TestWindow {
             verify(MyScript.waitLoadFinished(webViewport))
             compare(webViewport.loadProgress, 100)
             verify(MyScript.wrtWait(function() { return !webViewport.painted }))
-            while (appWindow.scrollY === 0) {
-                MyScript.scrollBy(100, 301, 0, -200, 100, false)
+            for (var attempt = 0; attempt < 10 && appWindow.scrollY === 0; ++attempt) {
+                MyScript.scrollBy(100, 150, 0, -100, 200, true)
                 wait(100)
             }
+            verify(appWindow.scrollY > 0)
             verify(appWindow.scrollX === 0)
             MyScript.dumpTs("test_TestScrollPaintOperations end")
         }

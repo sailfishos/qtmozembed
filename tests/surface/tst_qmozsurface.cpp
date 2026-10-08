@@ -558,7 +558,9 @@ void testChromeSessionAdapter()
     quint64 closeResultTabId = 0;
     bool closeResultClosed = false;
     int closeResultCount = 0;
+    QMozMediaState mediaState;
     QMozChromeSessionCallbacks callbacks;
+    callbacks.mediaStateChanged = [&](const QMozMediaState &state) { mediaState = state; };
     callbacks.locationChanged = [&](const char *value, bool canGoBack,
                                     bool canGoForward) {
         location = value;
@@ -714,6 +716,20 @@ void testChromeSessionAdapter()
     VERIFY(messageName == QStringLiteral("Content:SelectionCopied"));
     VERIFY(messageJson == QStringLiteral("{\"text\":\"copied\"}"));
 
+    // Content notifications retain their source even when another tab is selected.
+    for (const char16_t *topic : {u"Link:SetIcon", u"embed:HttpUserAgentUsed", u"embed:login"}) {
+        app.window.ChromeContentSession().NotifyAsyncMessage(topic, u"{}", 84, 99, 12);
+        VERIFY(selectedTabId == 42);
+        VERIFY(messageTabId == 84);
+        VERIFY(messagePersistentId == 99);
+        VERIFY(messageLocationRevision == 12);
+        VERIFY(messageName == QString::fromUtf16(reinterpret_cast<const ushort *>(topic)));
+        app.window.ChromeContentSession().NotifyAsyncMessage(topic, u"{}", 42, 77, 13);
+        VERIFY(messageTabId == 42);
+        VERIFY(messagePersistentId == 77);
+        VERIFY(messageLocationRevision == 13);
+    }
+
     app.window.ChromeContentSession().NotifyWindowCloseRequested();
     VERIFY(closeRequestTabId == 42);
     VERIFY(closeRequestPersistentId == 77);
@@ -815,6 +831,36 @@ void testChromeSessionAdapter()
     VERIFY(QtMoz::chromeSessionSetThrottlePainting(
             &consumer, 42, true));
     VERIFY(app.window.ChromeContentSession().lastThrottlePainting);
+    EmbedLiteMediaState nativeMedia;
+    nativeMedia.tabId = 42;
+    nativeMedia.locationRevision = 11;
+    nativeMedia.controllerId = nativeMedia.mainControllerId = 100;
+    nativeMedia.controllerToken = 101;
+    nativeMedia.trackToken = 102;
+    nativeMedia.active = nativeMedia.playing = nativeMedia.privateBrowsing = true;
+    nativeMedia.capabilities = 0x7f;
+    nativeMedia.hasPosition = true;
+    nativeMedia.position = 12.125;
+    nativeMedia.duration = 120;
+    char16_t mediaTitle[] = u"borrowed title";
+    nativeMedia.title = mediaTitle;
+    app.window.ChromeContentSession().NotifyMediaState(nativeMedia);
+    mediaTitle[0] = u'X';
+    VERIFY(mediaState.title == QStringLiteral("borrowed title"));
+    VERIFY(mediaState.tabId == 42 && mediaState.locationRevision == 11);
+    VERIFY(mediaState.controllerToken == 101 && mediaState.trackToken == 102);
+    VERIFY(mediaState.privateBrowsing && mediaState.playing && mediaState.active);
+    VERIFY(mediaState.capabilities == 0x7f && mediaState.hasPosition);
+    VERIFY(mediaState.position == 12.125 && mediaState.duration == 120);
+    VERIFY(!app.window.ChromeContentSession().backgroundMediaEnabled);
+    VERIFY(QtMoz::chromeSessionSetBackgroundMediaEnabled(&consumer, true));
+    VERIFY(app.window.ChromeContentSession().backgroundMediaEnabled);
+    VERIFY(QtMoz::chromeSessionMediaCommand(&consumer, 42, 100, 101,
+            QMozMediaCommand::Seek, 12.125));
+    VERIFY(app.window.ChromeContentSession().lastControllerToken == 100);
+    VERIFY(app.window.ChromeContentSession().lastTrackToken == 101);
+    VERIFY(app.window.ChromeContentSession().lastMediaCommand == EmbedLiteMediaCommand::Seek);
+    VERIFY(app.window.ChromeContentSession().lastMediaPosition == 12.125);
     VERIFY(QtMoz::chromeSessionSuspendTimeouts(&consumer, 42));
     VERIFY(app.window.ChromeContentSession().lastTimeoutsSuspended);
     VERIFY(QtMoz::chromeSessionResumeTimeouts(&consumer, 42));

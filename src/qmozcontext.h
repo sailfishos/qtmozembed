@@ -25,6 +25,7 @@ class EmbedLiteApp;
 class QMozContext : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QObject *mediaController READ mediaController CONSTANT)
     Q_PROPERTY(bool initialized READ isInitialized NOTIFY initialized)
 public:
     typedef void (*TaskCallback)(void *data);
@@ -34,6 +35,8 @@ public:
 
     explicit QMozContext(QObject *parent = 0);
     virtual ~QMozContext();
+
+    QObject *mediaController() const;
 
     mozilla::embedlite::EmbedLiteApp *GetApp();
 

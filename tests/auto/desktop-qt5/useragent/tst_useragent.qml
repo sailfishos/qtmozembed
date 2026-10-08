@@ -10,16 +10,9 @@ TestWindow {
 
     readonly property string override_default: "Default domain-specific override"
     readonly property string override_developer: "Developer specified override"
-    readonly property string test_page: "https://browser.sailfishos.org/tests/testuseragent.html"
+    property url test_page
 
     name: testcaseid.name
-
-    Connections {
-        target: QmlMozContext
-        onOnInitialized: {
-            QmlMozContext.addComponentManifest(TestHelper.getenv("QTTESTSROOT") + "/components/TestHelpers.manifest")
-        }
-    }
 
     QmlMozView {
         id: webViewport
@@ -53,6 +46,8 @@ TestWindow {
         }
         testcaseid.compare(webViewport.loading, false)
         testcaseid.compare(webViewport.loadProgress, 100)
+        testcaseid.compare(TestHelper.requestHeader(TestHelper.requestCount() - 1, "User-Agent"),
+                           webViewport.httpUserAgent || override_default)
     }
 
     TestCase {
@@ -62,11 +57,30 @@ TestWindow {
         when: windowShown
 
         function initTestCase() {
+            appWindow.test_page = TestHelper.serveFile(TestHelper.getenv("QTTESTSROOT")
+                    + "/auto/desktop-qt5/runjavascript/tst_runjavascript.html")
             QMozEngineSettings.setPreference("general.useragent.override", override_default)
 
             webViewportSpy.wait()
             compare(webViewportSpy.count, 1)
             webViewportSpy.clear()
+        }
+
+        function test_RequestHeadersAcrossRedirectAndReload() {
+            for (var i = 0; i < 2; ++i) {
+                var expected = i === 0 ? override_developer : override_default
+                webViewport.httpUserAgent = i === 0 ? override_developer : ""
+                var start = TestHelper.requestCount()
+                loadPage(TestHelper.redirectUrl())
+                compare(TestHelper.requestCount(), start + 2)
+                compare(TestHelper.requestHeader(start, "User-Agent"), expected)
+                compare(TestHelper.requestHeader(start + 1, "User-Agent"), expected)
+                webViewportSpy.signalName = "loadingChanged"
+                webViewportSpy.clear()
+                webViewport.reload()
+                verify(MyScript.wrtWait(function() { return webViewportSpy.count < 2 || webViewport.loading }))
+                compare(TestHelper.requestHeader(TestHelper.requestCount() - 1, "User-Agent"), expected)
+            }
         }
 
         function test_TestUserAgentDefaultPage() {
@@ -97,7 +111,7 @@ TestWindow {
             webViewport.httpUserAgent = ""
             verify(webViewport.httpUserAgent === "")
             loadPage(test_page)
-            verify(webViewport.httpUserAgent === override_default)
+            tryCompare(webViewport, "httpUserAgent", override_default)
         }
 
         function test_TestUserAgentSignalSent() {

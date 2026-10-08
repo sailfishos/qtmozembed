@@ -48,6 +48,7 @@ struct QMozChromeTabSnapshot final
     bool loading;
     bool closing;
     bool discarded;
+    bool mediaPlaying = false;
     bool canGoBack;
     bool canGoForward;
     int progress;
@@ -105,8 +106,28 @@ struct QMozChromeContentState final
     double viewportHeight;
 };
 
+enum class QMozMediaCommand : quint8 { Play, Pause, PlayPause, Stop, Next, Previous, Seek };
+struct QMozMediaState final {
+    quint64 tabId = 0;
+    quint64 locationRevision = 0;
+    quint64 controllerId = 0;
+    quint64 controllerToken = 0;
+    quint64 trackToken = 0;
+    quint64 mainControllerId = 0;
+    bool privateBrowsing = false;
+    bool active = false;
+    bool playing = false;
+    quint32 capabilities = 0;
+    QString title, artist, album;
+    bool hasPosition = false;
+    double duration = 0;
+    double position = 0;
+    double playbackRate = 0;
+};
+
 struct QMozChromeSessionCallbacks final
 {
+    std::function<void(const QMozMediaState &)> mediaStateChanged;
     std::function<void(const char *, bool, bool)> locationChanged;
     std::function<void(const char *)> loadStarted;
     std::function<void()> loadFinished;
@@ -175,6 +196,8 @@ public:
     virtual bool setDesktopMode(quint64 tabId, bool desktopMode) = 0;
     virtual bool setJavascriptEnabled(bool enabled) = 0;
     virtual bool setThrottlePainting(quint64 tabId, bool throttle) = 0;
+    virtual bool setBackgroundMediaEnabled(bool) { return false; }
+    virtual bool mediaCommand(quint64, quint64, quint64, QMozMediaCommand, double) { return false; }
     virtual bool suspendTimeouts(quint64 tabId) = 0;
     virtual bool resumeTimeouts(quint64 tabId) = 0;
     virtual bool setHttpUserAgent(
@@ -263,6 +286,9 @@ Q_DECL_HIDDEN bool chromeSessionSetDesktopMode(
         const void *consumer, quint64 tabId, bool desktopMode);
 Q_DECL_HIDDEN bool chromeSessionSetJavascriptEnabled(
         const void *consumer, bool enabled);
+Q_DECL_HIDDEN bool chromeSessionSetBackgroundMediaEnabled(const void *, bool);
+Q_DECL_HIDDEN bool chromeSessionMediaCommand(const void *, quint64, quint64,
+        quint64, QMozMediaCommand, double);
 Q_DECL_HIDDEN bool chromeSessionSetThrottlePainting(
         const void *consumer, quint64 tabId, bool throttle);
 Q_DECL_HIDDEN bool chromeSessionSuspendTimeouts(
