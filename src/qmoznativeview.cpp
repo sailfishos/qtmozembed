@@ -263,8 +263,8 @@ bool QMozNativeView::prepareFrame()
         GLuint texture = 0;
         QMozSurfaceFrame next;
         const auto bindImage = reinterpret_cast<PFNGLEGLIMAGETARGETTEXTURE2DOESPROC>(eglGetProcAddress("glEGLImageTargetTexture2DOES"));
-        const bool acquired = bindImage && surface->acquirePlatformFrame(token, [&](const QMozSurfaceFrame &frame) {
-            if (frame.token.epoch != token.epoch || frame.token.sequence != token.sequence
+        const bool acquired = bindImage && surface->acquireLatestPlatformFrame(token.epoch, [&](const QMozSurfaceFrame &frame) {
+            if (frame.token.epoch != token.epoch
                     || !frame.image.handle || frame.image.size.isEmpty()) return false;
             // Framebuffer pixels and item pixels may differ by the display
             // scale. Match the orientation/aspect, allowing one pixel rounding.

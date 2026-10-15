@@ -131,10 +131,9 @@ public:
             { nullptr, QSize(), QMozSurfaceTextureTarget::Texture2D },
             QMozSurfaceFrameFenceType::NoHandle
         };
-        const bool acquired = surface->acquirePlatformFrame(
-                token, [&](const QMozSurfaceFrame &frame) {
+        const bool acquired = surface->acquireLatestPlatformFrame(
+                token.epoch, [&](const QMozSurfaceFrame &frame) {
             if (frame.token.epoch != token.epoch
-                    || frame.token.sequence != token.sequence
                     || !frame.image.handle || frame.image.size.isEmpty()) {
                 return false;
             }

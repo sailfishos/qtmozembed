@@ -56,8 +56,7 @@ public:
     };
 
     SurfaceEvent(const QSharedPointer<EmbedLiteSurface> &surface, Kind kind,
-                 quint64 generation = 0,
-                 const QMozSurfaceFrameToken &token = { 0, 0 });
+                 quint64 generation = 0);
 
     void dispatch();
 
@@ -72,7 +71,6 @@ private:
     QSharedPointer<EmbedLiteSurface> mSurface;
     Kind mKind;
     quint64 mGeneration;
-    QMozSurfaceFrameToken mToken;
 };
 
 class CallbackDispatcher final : public QObject
@@ -122,6 +120,8 @@ public:
         , mFrameDeliveryEnabled(false)
         , mFrameDeliveryStopPending(false)
         , mFrameEventGeneration(0)
+        , mFrameEventPosted(false)
+        , mFrameEventToken({ 0, 0 })
     {
         Q_ASSERT(mApp);
         Q_ASSERT(mListener);
@@ -327,6 +327,10 @@ public:
                 if (!mFrameEventGeneration) {
                     ++mFrameEventGeneration;
                 }
+                // A queued event from the previous generation must not
+                // suppress the first notification in this generation.
+                mFrameEventPosted = false;
+                mFrameEventToken = { 0, 0 };
             }
             generation = mFrameEventGeneration;
         }
@@ -366,6 +370,33 @@ public:
             if (!convertPlatformFrame(descriptor, &frame)
                     || frame.token.epoch != token.epoch
                     || frame.token.sequence != token.sequence) {
+                return false;
+            }
+            accepted = callback(frame);
+            return accepted;
+        });
+        return delivered && accepted;
+    }
+
+    bool acquireLatestPlatformFrame(
+            quint64 epoch, const QMozSurfaceFrameCallback &callback) override
+    {
+        if (!epoch || !callback) {
+            return false;
+        }
+
+        NativeCall call(this);
+        if (!call) {
+            return false;
+        }
+
+        bool accepted = false;
+        const bool delivered = call.window()->AcquireLatestPlatformFrame(
+                epoch,
+                [&](const PlatformFrameDescriptor &descriptor) {
+            QMozSurfaceFrame frame;
+            if (!convertPlatformFrame(descriptor, &frame)
+                    || frame.token.epoch != epoch) {
                 return false;
             }
             accepted = callback(frame);
@@ -503,8 +534,7 @@ public:
     {
         if (QThread::currentThread() == mOwnerThread) {
             dispatchSurfaceEvent(
-                    SurfaceEvent::ChromeWindowInitializationFailed, 0,
-                    { 0, 0 });
+                    SurfaceEvent::ChromeWindowInitializationFailed, 0);
         } else {
             postSurfaceEvent(
                     SurfaceEvent::ChromeWindowInitializationFailed, 0);
@@ -522,9 +552,13 @@ public:
                 return;
             }
             generation = mFrameEventGeneration;
+            mFrameEventToken = { token.epoch, token.sequence };
+            if (mFrameEventPosted) {
+                return;
+            }
+            mFrameEventPosted = true;
         }
-        postSurfaceEvent(SurfaceEvent::FrameReady, generation,
-                         { token.epoch, token.sequence });
+        postSurfaceEvent(SurfaceEvent::FrameReady, generation);
     }
 
     void PlatformFrameDeliveryStopped() override
@@ -715,8 +749,7 @@ private:
         dispatchDestroy(window);
     }
 
-    void dispatchSurfaceEvent(SurfaceEvent::Kind kind, quint64 generation,
-                              const QMozSurfaceFrameToken &token)
+    void dispatchSurfaceEvent(SurfaceEvent::Kind kind, quint64 generation)
     {
         Q_ASSERT(QThread::currentThread() == mOwnerThread);
         if (kind == SurfaceEvent::ContinueDestroy) {
@@ -737,6 +770,7 @@ private:
 
         QMozSurfaceFrameReadyCallback readyCallback;
         QMozSurfaceFrameDeliveryStoppedCallback stoppedCallback;
+        QMozSurfaceFrameToken readyToken = { 0, 0 };
         bool continueDestroy = false;
         {
             QMutexLocker controlLock(&mFrameControlMutex);
@@ -747,9 +781,14 @@ private:
             if (kind == SurfaceEvent::FrameReady) {
                 if (mDestroyRequested || !mFrameDeliveryEnabled
                         || mFrameDeliveryStopPending) {
+                    mFrameEventPosted = false;
                     return;
                 }
                 readyCallback = mFrameReadyCallback;
+                readyToken = mFrameEventToken;
+                // Clear before invoking user code so publication during the
+                // callback queues another event instead of being lost.
+                mFrameEventPosted = false;
             } else if (kind == SurfaceEvent::FrameDeliveryStopped) {
                 if (!mFrameDeliveryStopPending) {
                     return;
@@ -761,7 +800,7 @@ private:
         }
 
         if (readyCallback) {
-            readyCallback(token);
+            readyCallback(readyToken);
         } else if (stoppedCallback) {
             stoppedCallback();
         }
@@ -770,9 +809,7 @@ private:
         }
     }
 
-    void postSurfaceEvent(
-            SurfaceEvent::Kind kind, quint64 generation,
-            const QMozSurfaceFrameToken &token = { 0, 0 })
+    void postSurfaceEvent(SurfaceEvent::Kind kind, quint64 generation)
     {
         const QSharedPointer<EmbedLiteSurface> self = sharedFromThis();
         Q_ASSERT(!self.isNull());
@@ -780,8 +817,7 @@ private:
             return;
         }
         QCoreApplication::postEvent(
-                mDispatcher,
-                new SurfaceEvent(self, kind, generation, token));
+                mDispatcher, new SurfaceEvent(self, kind, generation));
     }
 
     void dispatchDestroy(EmbedLiteWindow *window)
@@ -827,6 +863,8 @@ private:
     bool mFrameDeliveryEnabled;
     bool mFrameDeliveryStopPending;
     quint64 mFrameEventGeneration;
+    bool mFrameEventPosted;
+    QMozSurfaceFrameToken mFrameEventToken;
     QMozSurfaceFrameReadyCallback mFrameReadyCallback;
     QMozSurfaceFrameDeliveryStoppedCallback
             mFrameDeliveryStoppedCallback;
@@ -853,18 +891,17 @@ void DestroyEvent::dispatch()
 
 SurfaceEvent::SurfaceEvent(
         const QSharedPointer<EmbedLiteSurface> &surface, Kind kind,
-        quint64 generation, const QMozSurfaceFrameToken &token)
+        quint64 generation)
     : QEvent(eventType())
     , mSurface(surface)
     , mKind(kind)
     , mGeneration(generation)
-    , mToken(token)
 {
 }
 
 void SurfaceEvent::dispatch()
 {
-    mSurface->dispatchSurfaceEvent(mKind, mGeneration, mToken);
+    mSurface->dispatchSurfaceEvent(mKind, mGeneration);
 }
 
 EmbedLiteSurface *embedLiteSurface(
