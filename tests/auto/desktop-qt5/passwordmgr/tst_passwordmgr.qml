@@ -25,6 +25,9 @@ TestWindow {
     QmlMozView {
         id: webViewport
 
+        // QtMoz exposes saved-login suggestions through the keyboard extension.
+        property var __inputMethodExtensions
+
         visible: true
         focus: true
         active: true
@@ -40,6 +43,13 @@ TestWindow {
                 appWindow.loginPrompt = data
             }
         }
+    }
+
+    SignalSpy {
+        id: loadSpy
+
+        target: webViewport
+        signalName: "loadingChanged"
     }
 
     TestCase {
@@ -122,6 +132,20 @@ TestWindow {
                 compare(logins.length, 1)
                 compare(logins[0].username, "korp")
                 compare(logins[0].password, "pass")
+                // Query the stored username through the real document actor.
+                loadSpy.clear()
+                webViewport.url = webViewport.url.toString() + "?suggestions"
+                verify(MyScript.wrtWait(function() { return loadSpy.count < 2 || webViewport.loading }))
+                enterText("user", 30, 25, [], "korp")
+                enterText("user", 30, 25, [Qt.Key_End, Qt.Key_Backspace,
+                        Qt.Key_Backspace, Qt.Key_Backspace, Qt.Key_Backspace], "")
+                verify(MyScript.wrtWait(function() {
+                    return !webViewport.__inputMethodExtensions
+                            || !webViewport.__inputMethodExtensions.autoFillSuggestions
+                }, 100, 50))
+                var suggestions = webViewport.__inputMethodExtensions.autoFillSuggestions
+                compare(suggestions.length, 1)
+                compare(suggestions[0], "korp")
                 QmlMozContext.notifyObservers("embedui:logins", {action: "remove", login: logins[0]})
                 for (var removal = 0; removal < 100 && getLogins().length !== 0; ++removal)
                     wait(50)

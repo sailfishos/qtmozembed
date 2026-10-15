@@ -1,5 +1,5 @@
 import QtTest 1.0
-import QtQuick 2.0
+import QtQuick 2.6
 import Qt5Mozilla 1.0
 import QtMozEmbed.Tests 1.0
 import "../../shared/componentCreation.js" as MyScript
@@ -50,6 +50,24 @@ TestWindow {
             verify(MyScript.wrtWait(function() { return mozView.url === "about:mozilla" }))
             verify(MyScript.wrtWait(function() { return !mozView.painted }))
             MyScript.dumpTs("test_3viewLoadURL end")
+        }
+        function test_4delayedStylesheet() {
+            var base = TestHelper.getenv("QTTESTSROOT") + "/auto/desktop-qt5/basicview/"
+            mozView.url = TestHelper.serveStyledFile(base + "delayed-style.html",
+                                                    base + "delayed-style.css", 750)
+            tryCompare(mozView, "title", "Delayed stylesheet", 10000)
+            tryCompare(mozView, "loading", false, 10000)
+            tryCompare(mozView, "painted", true, 10000)
+            var firstFrame
+            for (var attempt = 0; attempt < 100 && !firstFrame; ++attempt) {
+                mozView.runJavaScript("return window.firstFrame", function(result) {
+                    firstFrame = result
+                })
+                wait(50)
+            }
+            verify(firstFrame !== undefined && firstFrame !== null)
+            compare(firstFrame.width, "137px")
+            compare(firstFrame.styled, true)
         }
     }
 }

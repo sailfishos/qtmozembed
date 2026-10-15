@@ -13,6 +13,7 @@
 #include <QTcpServer>
 #include <QTcpSocket>
 #include <QHostAddress>
+#include <QTimer>
 
 TestHelper::TestHelper(QObject *parent)
     : QObject(parent)
@@ -42,6 +43,16 @@ TestHelper::TestHelper(QObject *parent)
                 }
                 mRequests.append(headers);
                 const QByteArray target = request.split(' ').value(1).split('?').value(0);
+                if (request.startsWith("GET ") && target == "/style.css") {
+                    const QByteArray style = mStyle;
+                    QTimer::singleShot(mStyleDelay, socket, [socket, style]() {
+                        socket->write("HTTP/1.1 200 OK\r\nContent-Type: text/css\r\nContent-Length: "
+                                      + QByteArray::number(style.size())
+                                      + "\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n" + style);
+                        socket->disconnectFromHost();
+                    });
+                    return;
+                }
                 if (request.startsWith("GET ") && target == "/redirect") {
                     socket->write("HTTP/1.1 302 Found\r\nLocation: /fixture\r\nCache-Control: no-store\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
                 } else if (!request.startsWith("GET ") || target != "/fixture") {
@@ -70,6 +81,16 @@ QUrl TestHelper::serveFile(const QString &fileName)
         return QUrl();
     }
     return QUrl(QStringLiteral("http://127.0.0.1:%1/fixture").arg(mServer->serverPort()));
+}
+
+QUrl TestHelper::serveStyledFile(const QString &fileName, const QString &styleName, int delay)
+{
+    QFile style(styleName);
+    if (delay < 0 || !style.open(QIODevice::ReadOnly))
+        return QUrl();
+    mStyle = style.readAll();
+    mStyleDelay = delay;
+    return serveFile(fileName);
 }
 
 QString TestHelper::getenv(const QString &envVarName) const

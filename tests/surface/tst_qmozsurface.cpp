@@ -20,6 +20,7 @@
 #include "mozilla/embedlite/EmbedLiteWindow.h"
 
 #include <QCoreApplication>
+#include <QEvent>
 #include <QString>
 #include <QThread>
 #include <cstdio>
@@ -130,6 +131,20 @@ public:
             { reinterpret_cast<void *>(2), QSize(2, 3),
               QMozSurfaceTextureTarget::ExternalOES },
             QMozSurfaceFrameFenceType::EGLSync
+        });
+    }
+
+    bool acquireLatestPlatformFrame(
+            quint64 epoch, const QMozSurfaceFrameCallback &callback) override
+    {
+        if (!mFrameDeliveryEnabled || !epoch || !callback) {
+            return false;
+        }
+        return callback({
+            { epoch, 99 },
+            { reinterpret_cast<void *>(4), QSize(4, 5),
+              QMozSurfaceTextureTarget::Texture2D },
+            QMozSurfaceFrameFenceType::NoHandle
         });
     }
 
@@ -342,10 +357,76 @@ void testPlatformFrameForwarding()
            QMozSurfaceFrameFenceType::EGLSync);
     VERIFY(surface->releasedFrame().fence == fence);
 
+    bool latestAcquired = false;
+    VERIFY(surface->acquireLatestPlatformFrame(
+            token.epoch, [&](const QMozSurfaceFrame &frame) {
+        latestAcquired = true;
+        VERIFY(frame.token.epoch == token.epoch);
+        VERIFY(frame.token.sequence == 99);
+        return true;
+    }));
+    VERIFY(latestAcquired);
+
+    VERIFY(surface->releasePlatformFrame({
+        { token.epoch, 99 }, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+
     VERIFY(surface->setPlatformFrameDeliveryEnabled(false));
     VERIFY(stopped);
     surface.clear();
     VERIFY(destructions == 1);
+}
+
+void testEmbedLiteLatestFrameAcquisition()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200), false);
+    VERIFY(window != nullptr);
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [](const QMozSurfaceFrameToken &) {}, []() {}));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+
+    const QMozSurfaceFrameToken oldToken = { 9, 10 };
+    const QMozSurfaceFrameToken latestToken = { 9, 11 };
+    window->NotifyFrameReady({ oldToken.epoch, oldToken.sequence });
+    processEvents();
+    window->NotifyFrameReady({ latestToken.epoch, latestToken.sequence });
+
+    bool exactAccepted = false;
+    VERIFY(!surface->acquirePlatformFrame(
+            oldToken, [&](const QMozSurfaceFrame &) {
+        exactAccepted = true;
+        return true;
+    }));
+    VERIFY(!exactAccepted);
+
+    VERIFY(!surface->acquireLatestPlatformFrame(
+            oldToken.epoch + 1, [](const QMozSurfaceFrame &) {
+        return true;
+    }));
+
+    QMozSurfaceFrameToken acquiredToken = { 0, 0 };
+    VERIFY(surface->acquireLatestPlatformFrame(
+            latestToken.epoch, [&](const QMozSurfaceFrame &frame) {
+        acquiredToken = frame.token;
+        return true;
+    }));
+    VERIFY(acquiredToken.epoch == latestToken.epoch);
+    VERIFY(acquiredToken.sequence == latestToken.sequence);
+    VERIFY(!surface->releasePlatformFrame({
+        oldToken, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+    VERIFY(surface->releasePlatformFrame({
+        acquiredToken, QMozSurfaceFrameFenceType::NoHandle, nullptr
+    }));
+
+    surface->requestDestroy();
+    surface->backendDestroyed();
+    surface.clear();
 }
 
 void testFrameStreamTracksLatestConsumerFrame()
@@ -405,16 +486,23 @@ void testQueuedFrameSuppressedAfterStop()
     EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
             surface, QSize(100, 200), false);
     int readyCount = 0;
+    QMozSurfaceFrameToken lastReadyToken = { 0, 0 };
     int stoppedCount = 0;
     bool readyOnOwnerThread = false;
     bool stoppedOnOwnerThread = false;
+    bool publishDuringDispatch = false;
     QThread * const ownerThread = QThread::currentThread();
 
     VERIFY(window == &app.window);
     VERIFY(surface->setPlatformFrameCallbacks(
-            [&](const QMozSurfaceFrameToken &) {
+            [&](const QMozSurfaceFrameToken &token) {
         ++readyCount;
+        lastReadyToken = token;
         readyOnOwnerThread = QThread::currentThread() == ownerThread;
+        if (publishDuringDispatch && token.sequence == 5) {
+            window->NotifyFrameReady({ 3, 6 });
+            publishDuringDispatch = false;
+        }
     }, [&]() {
         ++stoppedCount;
         stoppedOnOwnerThread = QThread::currentThread() == ownerThread;
@@ -422,12 +510,18 @@ void testQueuedFrameSuppressedAfterStop()
     VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
     std::thread readyThread([&]() {
         window->NotifyFrameReady({ 3, 4 });
+        window->NotifyFrameReady({ 3, 5 });
     });
     readyThread.join();
     VERIFY(readyCount == 0);
+    publishDuringDispatch = true;
     processEvents();
-    VERIFY(readyCount == 1);
+    VERIFY(readyCount == 2);
+    VERIFY(lastReadyToken.epoch == 3);
+    VERIFY(lastReadyToken.sequence == 6);
     VERIFY(readyOnOwnerThread);
+
+    VERIFY(!publishDuringDispatch);
 
     std::thread suppressedReadyThread([&]() {
         window->NotifyFrameReady({ 3, 5 });
@@ -441,11 +535,75 @@ void testQueuedFrameSuppressedAfterStop()
     VERIFY(stoppedCount == 0);
     processEvents();
 
-    VERIFY(readyCount == 1);
+    VERIFY(readyCount == 2);
     VERIFY(stoppedCount == 1);
     VERIFY(stoppedOnOwnerThread);
     surface->requestDestroy();
     VERIFY(app.destroyCount == 1);
+    surface->backendDestroyed();
+    surface.clear();
+}
+
+void testOldFrameEventAfterReenable()
+{
+    EmbedLiteApp app;
+    EmbedLiteWindowListener listener;
+    QSharedPointer<QMozSurface> surface =
+            QtMoz::createEmbedLiteSurface(&app, &listener);
+    EmbedLiteWindow * const window = QtMoz::reserveEmbedLiteSurface(
+            surface, QSize(100, 200), false);
+    int readyCount = 0;
+    int stoppedCount = 0;
+    QMozSurfaceFrameToken readyToken = { 0, 0 };
+    VERIFY(surface->setPlatformFrameCallbacks(
+            [&](const QMozSurfaceFrameToken &token) {
+        ++readyCount;
+        readyToken = token;
+    }, [&]() {
+        ++stoppedCount;
+        VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+        window->NotifyFrameReady({ 4, 1 });
+    }));
+    VERIFY(surface->setPlatformFrameDeliveryEnabled(true));
+
+    // Application filters see events for every receiver. Hold the old ready
+    // event on its delivery stack while a nested delivery completes stop and
+    // re-enable. This reproduces an old event arriving after the new epoch
+    // without exposing the private dispatcher or adding production test hooks.
+    class InterceptEvent final : public QObject {
+    public:
+        std::function<void()> intercept;
+        bool eventFilter(QObject *, QEvent *event) override
+        {
+            if (intercept && event->type() >= QEvent::User) {
+                const auto callback = intercept;
+                intercept = nullptr;
+                callback();
+            }
+            return false;
+        }
+    } filter;
+    filter.intercept = [&]() {
+        VERIFY(surface->setPlatformFrameDeliveryEnabled(false));
+        window->NotifyFrameDeliveryStopped();
+        QCoreApplication::sendPostedEvents();
+        VERIFY(stoppedCount == 1);
+    };
+    QCoreApplication::instance()->installEventFilter(&filter);
+    window->NotifyFrameReady({ 3, 1 });
+    QCoreApplication::sendPostedEvents();
+    QCoreApplication::instance()->removeEventFilter(&filter);
+    VERIFY(!filter.intercept);
+    VERIFY(readyCount == 0);
+
+    // The stale event must neither suppress this hint nor clear the already
+    // posted current-generation event and cause duplicate notifications.
+    window->NotifyFrameReady({ 4, 2 });
+    processEvents();
+    VERIFY(readyCount == 1);
+    VERIFY(readyToken.epoch == 4);
+    VERIFY(readyToken.sequence == 2);
+    surface->requestDestroy();
     surface->backendDestroyed();
     surface.clear();
 }
@@ -1391,8 +1549,10 @@ int main(int argc, char **argv)
     testRegistryLifetime();
     testReentrantRemoval();
     testPlatformFrameForwarding();
+    testEmbedLiteLatestFrameAcquisition();
     testFrameStreamTracksLatestConsumerFrame();
     testQueuedFrameSuppressedAfterStop();
+    testOldFrameEventAfterReenable();
     testPrivateChromeWindowSelection();
     testChromeInitialUrlDefault();
     testPrivateChromeTabWindowSelection();

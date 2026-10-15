@@ -6,9 +6,10 @@
 
 (function() {
 if (globalThis.qtmozTestHelper) {
+  globalThis.qtmozTestHelper._cancelApz?.();
   for (const name of ["embedtest:getelementprop", "embedtest:getelementinner",
                       "embedtest:focustoelement", "embedtest:clickelement",
-                      "embedtest:useragent"]) {
+                      "embedtest:useragent", "embedtest:flushapz"]) {
     removeMessageListener(name, globalThis.qtmozTestHelper);
   }
 }
@@ -31,6 +32,7 @@ TestHelper.prototype = {
     addMessageListener("embedtest:focustoelement", this);
     addMessageListener("embedtest:clickelement", this);
     addMessageListener("embedtest:useragent", this);
+    addMessageListener("embedtest:flushapz", this);
   },
 
   observe: function(aSubject, aTopic, data) {
@@ -58,6 +60,37 @@ TestHelper.prototype = {
       case "embedtest:clickelement": {
         let element = content.document.getElementById(aMessage.json.name);
         element.click();
+        break;
+      }
+      case "embedtest:flushapz": {
+        this._cancelApz?.();
+        const win = content;
+        const document = win.document;
+        let pending = true;
+        let timer;
+        const finish = (ready, reply = true) => {
+          if (!pending) return;
+          pending = false;
+          Services.obs.removeObserver(done, "apz-repaints-flushed");
+          win.removeEventListener("pagehide", cancel);
+          win.clearTimeout(timer);
+          this._cancelApz = null;
+          if (reply && content.document === document) {
+            sendAsyncMessage("testembed:apzready", {value: ready});
+          }
+        };
+        const done = () => finish(true);
+        const cancel = () => finish(false, false);
+        this._cancelApz = cancel;
+        Services.obs.addObserver(done, "apz-repaints-flushed");
+        win.addEventListener("pagehide", cancel);
+        timer = win.setTimeout(() => finish(false), 5000);
+        try {
+          // A content paint can precede the compositor's APZ state update.
+          if (!win.windowUtils.flushApzRepaints()) done();
+        } catch (error) {
+          finish(false);
+        }
         break;
       }
       case "embedtest:useragent": {
