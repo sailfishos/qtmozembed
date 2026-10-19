@@ -885,6 +885,29 @@ public:
         return accepted;
     }
 
+    bool AcquireLatestPlatformFrame(uint64_t epoch,
+                                    const PlatformFrameCallback &callback)
+    {
+        if (!mDeliveryEnabled || mAcquired || !callback
+                || epoch != mReadyToken.epoch) {
+            return false;
+        }
+        const PlatformFrameToken token = mReadyToken;
+        const bool accepted = callback({
+            token,
+            { PlatformImageHandleType::EGLImage,
+              reinterpret_cast<void *>(2),
+              PlatformImageTextureTarget::ExternalOES, 2, 3 },
+            PlatformFrameFenceHandleType::EGLSync
+        });
+        if (accepted) {
+            mAcquired = true;
+            mAcquiredToken = token;
+            mEvents->push_back("acquired-latest");
+        }
+        return accepted;
+    }
+
     bool ReleasePlatformFrame(const PlatformFrameRelease &release)
     {
         if (!mAcquired || release.token.epoch != mAcquiredToken.epoch

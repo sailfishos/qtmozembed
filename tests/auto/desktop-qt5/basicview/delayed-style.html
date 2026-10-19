@@ -1,0 +1,12 @@
+<!doctype html>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delayed stylesheet</title>
+<script>
+window.firstFrame = null;
+requestAnimationFrame(function () {
+    window.firstFrame = {width: getComputedStyle(document.getElementById("target")).width,
+                         styled: window.styleLoaded === true};
+});
+</script>
+<link rel="stylesheet" href="/style.css" onload="window.styleLoaded = true">
+<div id="target">Styled before first frame</div>

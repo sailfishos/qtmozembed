@@ -97,6 +97,10 @@ public:
     virtual bool acquirePlatformFrame(
             const QMozSurfaceFrameToken &token,
             const QMozSurfaceFrameCallback &callback) = 0;
+    // Acquire the newest ready frame in epoch. The callback receives the
+    // actual token selected by the backend, which may supersede the hint.
+    virtual bool acquireLatestPlatformFrame(
+            quint64 epoch, const QMozSurfaceFrameCallback &callback) = 0;
     // Fence ownership transfers to the backend only when this returns true.
     // Release remains available while asynchronous surface teardown waits.
     virtual bool releasePlatformFrame(

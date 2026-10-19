@@ -25,6 +25,7 @@ public:
     explicit TestHelper(QObject *parent = nullptr);
 
     Q_INVOKABLE QUrl serveFile(const QString &fileName);
+    Q_INVOKABLE QUrl serveStyledFile(const QString &fileName, const QString &styleName, int delay);
     Q_INVOKABLE int requestCount() const { return mRequests.size(); }
     Q_INVOKABLE QString requestHeader(int index, const QString &name) const;
     Q_INVOKABLE QUrl redirectUrl() const;
@@ -33,6 +34,8 @@ private:
     QTcpServer *mServer;
     QByteArray mContent;
     QByteArray mContentType;
+    QByteArray mStyle;
+    int mStyleDelay = 0;
     QList<QVariantMap> mRequests;
 };
 
