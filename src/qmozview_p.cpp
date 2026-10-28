@@ -2340,24 +2340,43 @@ void QMozViewPrivate::IMENotification(int aIstate, bool aOpen, int aCause, int a
     Qt::InputMethodHints hints = Qt::ImhNone;
     hints = aIstate == 2 ? Qt::ImhHiddenText : Qt::ImhPreferLowercase;
 
+    // https://html.spec.whatwg.org/dev/interaction.html#input-modalities:-the-inputmode-attribute
+    QString imMode((QChar *)inputMode);
+    imMode = imMode.toLower();
+
     QString imType((QChar *)inputType);
     imType = imType.toLower();
-    if (imType == QLatin1String("number")) {
-        //hints |= Qt::ImhDigitsOnly;
-        hints |= Qt::ImhFormattedNumbersOnly;
-    } else if (imType == QLatin1String("tel")) {
+
+    if (imMode == QLatin1String("text") || imMode == QLatin1String("search")) {
+        // No hints to set
+    } else if (imMode == QLatin1String("tel")) {
         hints |= Qt::ImhDialableCharactersOnly;
-    } else if (imType == QLatin1String("email")) {
+    } else if (imMode == QLatin1String("email")) {
         hints |= Qt::ImhEmailCharactersOnly;
-    } else if (imType == QLatin1String("url")) {
+    } else if (imMode == QLatin1String("url")) {
         hints |= Qt::ImhUrlCharactersOnly;
-    } else if (imType == QLatin1String("date")) {
-        hints |= Qt::ImhDate;
-    } else if (imType == QLatin1String("datetime") || imType == QLatin1String("datetime-local")) {
-        hints |= Qt::ImhDate;
-        hints |= Qt::ImhTime;
-    } else if (imType == QLatin1String("time")) {
-        hints |= Qt::ImhTime;
+    } else if (imMode == QLatin1String("numeric")) {
+        hints |= Qt::ImhDigitsOnly;
+    } else if (imMode == QLatin1String("decimal")) {
+        hints |= Qt::ImhFormattedNumbersOnly;
+    } else {
+        if (imType == QLatin1String("number")) {
+            //hints |= Qt::ImhDigitsOnly;
+            hints |= Qt::ImhFormattedNumbersOnly;
+        } else if (imType == QLatin1String("tel")) {
+            hints |= Qt::ImhDialableCharactersOnly;
+        } else if (imType == QLatin1String("email")) {
+            hints |= Qt::ImhEmailCharactersOnly;
+        } else if (imType == QLatin1String("url")) {
+            hints |= Qt::ImhUrlCharactersOnly;
+        } else if (imType == QLatin1String("date")) {
+            hints |= Qt::ImhDate;
+        } else if (imType == QLatin1String("datetime") || imType == QLatin1String("datetime-local")) {
+            hints |= Qt::ImhDate;
+            hints |= Qt::ImhTime;
+        } else if (imType == QLatin1String("time")) {
+            hints |= Qt::ImhTime;
+        }
     }
 
     mViewIface->setInputMethodHints(hints);
