@@ -1722,13 +1722,6 @@ void QMozViewPrivate::inputMethodEvent(QInputMethodEvent *event)
         dispatchInputMethodEvent(pending);
     }
 
-    if (pending.commit.isEmpty() && !pending.preedit.isEmpty()) {
-        QInputMethod *inputContext = qGuiApp->inputMethod();
-        if (inputContext) {
-            QMetaObject::invokeMethod(
-                    inputContext, "commit", Qt::QueuedConnection);
-        }
-    }
     mPreedit = !event->preeditString().isEmpty();
 }
 
