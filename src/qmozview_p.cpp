@@ -226,6 +226,7 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mChromeGestureEnabled(true)
     , mChromeGestureThreshold(0.0)
     , mChrome(true)
+    , mShortPageRestoreThreshold(-1.0)
     , mMoveDelta(0.0)
     , mDragStartY(0.0)
     , mMoving(false)
@@ -954,8 +955,7 @@ void QMozViewPrivate::updateScrollArea(unsigned int aWidth, unsigned int aHeight
             } else if (currentDelta < -mChromeGestureThreshold) {
                 qCDebug(lcEmbedLiteExt) << "currentDelta < -mChromeGestureThreshold:" << mChrome;
                 if (!mChrome) {
-                    mChrome = true;
-                    mViewIface->chromeChanged();
+                    setChrome(true);
                 }
             }
             mMoveDelta = qAbs(currentDelta);
@@ -1926,6 +1926,9 @@ void QMozViewPrivate::setChromeGestureThreshold(qreal value)
 void QMozViewPrivate::setChrome(bool value)
 {
     if (value != mChrome) {
+        if (value) {
+            mShortPageRestoreThreshold = -1.0;
+        }
         mChrome = value;
         mViewIface->chromeChanged();
     }
@@ -2427,6 +2430,27 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         if (touchPointsCount > 1 && !mPinching) {
             mPinching = true;
             pinchingChanged = true;
+        }
+
+        // Short documents can run out of scroll travel before the chrome
+        // gesture threshold. Use finger travel for those documents.
+        if (touchPointsCount == 1 && !mPinching && mEnabled && mChromeGestureEnabled) {
+            const QTouchEvent::TouchPoint &point = event->touchPoints().first();
+            const QPointF delta = point.screenPos() - point.startScreenPos();
+            if (mChrome && mDynamicToolbarHeight > 0
+                    && -delta.y() > qMax(qAbs(delta.x()), mChromeGestureThreshold)) {
+                const qreal viewportHeight = mContentRect.height() * mContentResolution;
+                const qreal travel = mScrollableSize.height() - viewportHeight;
+                if (viewportHeight > 0 && travel >= -mDynamicToolbarHeight
+                        && travel <= mDynamicToolbarHeight + mChromeGestureThreshold) {
+                    // Hiding the toolbar clears its height and gesture threshold.
+                    mShortPageRestoreThreshold = mChromeGestureThreshold;
+                    setChrome(false);
+                }
+            } else if (!mChrome && mShortPageRestoreThreshold >= 0
+                    && delta.y() > qMax(qAbs(delta.x()), mShortPageRestoreThreshold)) {
+                setChrome(true);
+            }
         }
     } else if (event->type() == QEvent::TouchEnd) {
         Q_ASSERT(touchPointsCount > 0);

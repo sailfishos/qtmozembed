@@ -258,6 +258,7 @@ protected:
     bool mChromeGestureEnabled;
     qreal mChromeGestureThreshold;
     bool mChrome;
+    qreal mShortPageRestoreThreshold;
     qreal mMoveDelta;
     qreal mDragStartY;
     bool mMoving;
