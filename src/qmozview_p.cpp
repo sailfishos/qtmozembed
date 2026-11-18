@@ -218,7 +218,6 @@ QMozViewPrivate::QMozViewPrivate(IMozQViewIface *aViewIface, QObject *publicPtr)
     , mDOMContentLoaded(false)
     , mBackgroundColor(Qt::white)
     , mTopMargin(0.0)
-    , mBottomMargin(0.0)
     , mDynamicToolbarHeight(0)
     , mMargins(0, 0, 0, 0)
     , mSafeAreaInsets(0, 0, 0, 0)
@@ -2088,15 +2087,15 @@ void QMozViewPrivate::setDynamicToolbarHeight(const int height)
     }
 }
 
-void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopBottom)
+void QMozViewPrivate::setMargins(const QMargins &margins, bool updateTopMargin)
 {
+    // Scrolling may already have cleared the effective top margin.
+    if (updateTopMargin) {
+        mTopMargin = margins.top();
+    }
+
     if (margins != mMargins) {
         mMargins = margins;
-
-        if (updateTopBottom) {
-            mTopMargin = mMargins.top();
-            mBottomMargin = mMargins.bottom();
-        }
 
         if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();

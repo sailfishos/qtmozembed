@@ -627,12 +627,8 @@ void QuickMozView::updateMargins()
             m.setTop(d->mTopMargin);
         }
 
-        if ((offset.y() + height() + d->mBottomMargin) < contentHeight()) {
-            m.setBottom(0);
-        } else {
-            m.setBottom(d->mBottomMargin);
-        }
-
+        // The bottom margin reserves space for the input method or fixed
+        // chrome. Scrolling must not change the embedder's requested inset.
         d->setMargins(m, false);
     }
 }
