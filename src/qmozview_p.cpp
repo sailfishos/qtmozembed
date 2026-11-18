@@ -1212,7 +1212,7 @@ void QMozViewPrivate::applyChromePageSettings()
     const bool toolbarApplied = QtMoz::chromeSessionSetDynamicToolbarHeight(
             this, tabId, mDynamicToolbarHeight);
     const bool userAgentApplied = QtMoz::chromeSessionSetHttpUserAgent(
-            this, tabId, mHttpUserAgent);
+            this, tabId, mRequestedHttpUserAgent);
     if (desktopApplied) {
         mDirtyState &= ~DirtyDesktopMode;
     } else {
@@ -2800,7 +2800,7 @@ bool QMozViewPrivate::handleAsyncMessage(
     if (message == QLatin1String("embed:HttpUserAgentUsed")) {
         const QVariant userAgent = data.toMap().value(QStringLiteral("userAgent"));
         if (userAgent.type() == QVariant::String && mHttpUserAgent != userAgent.toString()) {
-            // Report the effective request header without setting an override.
+            // Report the effective request header without changing the requested override.
             mHttpUserAgent = userAgent.toString();
             mViewIface->httpUserAgentChanged();
         }
@@ -2959,7 +2959,8 @@ void QMozViewPrivate::applyAutoCorrect()
 
 void QMozViewPrivate::setHttpUserAgent(const QString &httpUserAgent)
 {
-    if (mHttpUserAgent != httpUserAgent) {
+    if (mRequestedHttpUserAgent != httpUserAgent) {
+        mRequestedHttpUserAgent = httpUserAgent;
         mHttpUserAgent = httpUserAgent;
         if (mViewInitialized) {
             const quint64 tabId = selectedChromeTabId();
