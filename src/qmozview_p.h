@@ -87,7 +87,7 @@ public:
 
     // Starting from here these are QMozViewPrivate methods.
     void setDynamicToolbarHeight(const int height);
-    void setMargins(const QMargins &margins, bool updateTopBottom);
+    void setMargins(const QMargins &margins, bool updateTopMargin);
     void setSafeAreaInsets(const QMargins &insets);
     void setIsFocused(bool aIsFocused);
     void setDesktopMode(bool aDesktopMode);
@@ -249,7 +249,6 @@ protected:
     bool mDOMContentLoaded;
     QColor mBackgroundColor;
     qreal mTopMargin;
-    qreal mBottomMargin;
     int mDynamicToolbarHeight;
     QMargins mMargins;
     QMargins mSafeAreaInsets;
