@@ -323,6 +323,7 @@ protected:
     };
     QMap<uint, PendingJSCall> mPendingJSCalls;
     uint mNextJSCallId;
+    QString mRequestedHttpUserAgent;
     QString mHttpUserAgent;
     bool mAutoCompleteActive;
     QStringList mAutoCompleteList;
