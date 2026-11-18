@@ -2437,8 +2437,10 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
         if (touchPointsCount == 1 && !mPinching && mEnabled && mChromeGestureEnabled) {
             const QTouchEvent::TouchPoint &point = event->touchPoints().first();
             const QPointF delta = point.screenPos() - point.startScreenPos();
+            const qreal horizontalTravel = qAbs(delta.x());
             if (mChrome && mDynamicToolbarHeight > 0
-                    && -delta.y() > qMax(qAbs(delta.x()), mChromeGestureThreshold)) {
+                    && delta.y() < -horizontalTravel
+                    && delta.y() < -mChromeGestureThreshold) {
                 const qreal viewportHeight = mContentRect.height() * mContentResolution;
                 const qreal travel = mScrollableSize.height() - viewportHeight;
                 if (viewportHeight > 0 && travel >= -mDynamicToolbarHeight
@@ -2448,7 +2450,8 @@ void QMozViewPrivate::touchEvent(QTouchEvent *event)
                     setChrome(false);
                 }
             } else if (!mChrome && mShortPageRestoreThreshold >= 0
-                    && delta.y() > qMax(qAbs(delta.x()), mShortPageRestoreThreshold)) {
+                    && delta.y() > horizontalTravel
+                    && delta.y() > mShortPageRestoreThreshold) {
                 setChrome(true);
             }
         }
